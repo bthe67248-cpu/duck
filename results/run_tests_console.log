@@ -1,0 +1,44 @@
+Duckling project: C:\dev\duckling_sim
+
+== Hand calculations ==
+mass                 0.789 kg
+CoM height h         0.120 m   (above ankle pivot)
+knee holding torque  0.135 N.m  (14% of stall 0.96 N.m; rule: under 33%)
+fall rate p          9.06 rad/s
+doubling time        77 ms
+needed bandwidth wc  18.1 rad/s = 2.9 Hz
+minimum loop rate    58 Hz  (controller runs at 100 Hz)
+delay check p*td     0.27  (below 0.3 comfortable, above 0.5 very hard)
+max recoverable tilt 14.7 deg
+max push forward     0.219 N.s  (= 4.4 N for 0.05 s)
+max push backward    0.106 N.s  (= 2.1 N for 0.05 s)
+
+== PD ankle gains ==
+Kp = 2.74 N.m/rad, Kd = 0.220 N.m.s/rad
+ankle offset = 2.49*pitch + 0.200*pitch_rate   (rad)
+expected knee sag (both feet down) 7.0 deg
+
+== LQR (base-MATLAB solver) ==
+K = [-13.62  -1.43  2.57]
+closed-loop poles: [-10 -30.7+26.6i -30.7-26.6i]
+PDF check (h=0.12): K = [-13.61  -1.43  2.56]  (PDF says [-13.61 -1.43 2.56])
+Plant rendering options: Local, Global, None
+Built C:\dev\duckling_sim\matlab\duck_sim.slx
+Duckling V3 Simulink+MuJoCo tests, 16-Nov-2026 23:05:49
+gains: ankle = 2.49*pitch + 0.200*rate
+
+1. Hold pose, loop OFF, 10 s : FELL (tips over at t = 1.05 s)
+   knee sag at t = 0.25 s: 5.5 deg (hand calc 7.0 deg)
+2. Stand, loop ON, 60 s      : stands | pitch mean +1.71 deg, band +/- 0.47 deg around it (after 2 s)
+3. Push 2 N x 0.05 s (0.10 N.s): stands | peak pitch 2.2 deg, back within 1 deg after 0.27 s
+4. Push limit forward       : survives 5.0 N, falls at 5.5 N -> 0.250..0.275 N.s (hand calc 0.219 N.s)
+4. Push limit backward      : survives 2.0 N, falls at 2.5 N -> 0.100..0.125 N.s (hand calc 0.106 N.s)
+5. +1 sample delay, 2 N push  : stands | peak pitch 2.4 deg, band 0.15 deg
+5. +2 sample delay, 2 N push  : stands | peak pitch 2.6 deg, band 0.43 deg
+5. +3 sample delay, 2 N push  : stands | peak pitch 2.7 deg, band 0.15 deg
+6. Torso mass mplus          : stand stands (band 0.26 deg), 2 N push stands (peak 2.2 deg)
+6. Torso mass mminus         : stand stands (band 0.35 deg), 2 N push stands (peak 2.2 deg)
+
+Saved C:\dev\duckling_sim\results\test_results.txt
+[Warning: Unable to close the model 'duck_sim' because it has been changed. To save changes, use close_system('duck_sim',1). To discard
+changes, use close_system('duck_sim',0).] 

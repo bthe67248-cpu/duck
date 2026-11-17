@@ -1,0 +1,908 @@
+<?xml version='1.0' encoding='utf-8'?>
+<robot name="duck_v3">
+  <link name="trunk_base">
+    <inertial>
+      <origin xyz="-0.0226332 -2.70828e-05 0.00280064" rpy="0 0 0" />
+      <mass value="0.199224" />
+      <inertia ixx="0.000123975" iyy="0.000145931" izz="0.000115351" ixy="7.1651e-08" ixz="-2.06915e-05" iyz="1.32429e-07" />
+    </inertial>
+    <visual>
+      <origin xyz="0.006 0.0175 -0.005" rpy="-0.000000 0.000000 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/seeed_bearing__configuration__22x16x4.stl" />
+      </geometry>
+      <material name="trunk_base_m0">
+        <color rgba="0.811765 0.858824 0.898039 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.004 -0.0005 -0.0175" rpy="0.000000 0.000000 1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/right_shell.stl" />
+      </geometry>
+      <material name="trunk_base_m1">
+        <color rgba="0.85098 0.85098 0.839216 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.0042 0 -0.0175215" rpy="0.000000 0.000000 1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/banana_pcb_locker.stl" />
+      </geometry>
+      <material name="trunk_base_m2">
+        <color rgba="0.647059 0.647059 0.647059 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.004 -0 -0.0175" rpy="-0.000000 0.000000 1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/trunk_base.stl" />
+      </geometry>
+      <material name="trunk_base_m3">
+        <color rgba="0.129412 0.152941 0.129412 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.006 0.0175 0.0115" rpy="-0.000000 -1.570796 -0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/xl330.stl" />
+      </geometry>
+      <material name="trunk_base_m4">
+        <color rgba="0.286275 0.286275 0.286275 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.004 -0 -0.0175215" rpy="-0.000000 0.000000 1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/power_support.stl" />
+      </geometry>
+      <material name="trunk_base_m5">
+        <color rgba="0.67451 0.639216 0.603922 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.004 -0 -0.0175215" rpy="-0.000000 0.000000 1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/power_support.stl" />
+      </geometry>
+      <material name="trunk_base_m6">
+        <color rgba="0.67451 0.639216 0.603922 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.0359693 0 -0.00385049" rpy="3.124139 0.000000 -1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/np_f970.stl" />
+      </geometry>
+      <material name="trunk_base_m7">
+        <color rgba="0.301961 0.301961 0.301961 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.006 -0.0175 0.0115" rpy="-0.000000 -1.570796 -0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/xl330.stl" />
+      </geometry>
+      <material name="trunk_base_m8">
+        <color rgba="0.286275 0.286275 0.286275 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.004 -0 -0.0175785" rpy="-0.000000 0.000000 1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/left_shell.stl" />
+      </geometry>
+      <material name="trunk_base_m9">
+        <color rgba="0.8 0.8 0.8 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.006 -0.0175 -0.005" rpy="-0.000000 0.000000 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/seeed_bearing__configuration__22x16x4.stl" />
+      </geometry>
+      <material name="trunk_base_m10">
+        <color rgba="0.811765 0.858824 0.898039 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.04075 0.00000 0.02000" rpy="1.570796 0.000000 -1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/hat_rear_shield_v3.stl" />
+      </geometry>
+      <material name="trunk_base_m11">
+        <color rgba="0.22 0.23 0.25 1" />
+      </material>
+    </visual>
+  </link>
+  <link name="yaw2roll">
+    <inertial>
+      <origin xyz="-8.8e-11 0.00099414 0.0168917" rpy="0 0 0" />
+      <mass value="0.0230406" />
+      <inertia ixx="4.1964e-06" iyy="3.41752e-06" izz="2.3265e-06" ixy="-0" ixz="-0" iyz="-5.0881e-08" />
+    </inertial>
+    <visual>
+      <origin xyz="-0.0175 -0.002 0.0125" rpy="3.141593 0.000000 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/yaw2roll.stl" />
+      </geometry>
+      <material name="yaw2roll_m0">
+        <color rgba="0.129412 0.152941 0.129412 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0 -0 0.0125" rpy="-3.141593 0.000000 -1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/xl330.stl" />
+      </geometry>
+      <material name="yaw2roll_m1">
+        <color rgba="0.286275 0.286275 0.286275 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0 0.0165 0.0125" rpy="0.000000 1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/seeed_bearing__configuration__22x16x4.stl" />
+      </geometry>
+      <material name="yaw2roll_m2">
+        <color rgba="0.811765 0.858824 0.898039 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.0175 -0.002 0.0125" rpy="3.141593 -0.000000 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/bearing_roll.stl" />
+      </geometry>
+      <material name="yaw2roll_m3">
+        <color rgba="0.129412 0.152941 0.129412 1" />
+      </material>
+    </visual>
+  </link>
+  <joint name="left_hip_yaw" type="revolute">
+    <parent link="trunk_base" />
+    <child link="yaw2roll" />
+    <origin xyz="0.006 0.0175 -0.005" rpy="3.141593 -0.000000 1.570796" />
+    <axis xyz="0 0 1" />
+    <limit lower="-0.4363323129985824" upper="0.5235987755982988" effort="0.96" velocity="6.0" />
+  </joint>
+  <link name="hip_l">
+    <inertial>
+      <origin xyz="0.014815 1.6179e-08 -0.00829992" rpy="0 0 0" />
+      <mass value="0.00618934" />
+      <inertia ixx="8.60626e-07" iyy="1.15753e-06" izz="6.51588e-07" ixy="1e-12" ixz="3.89882e-07" iyz="-1e-12" />
+    </inertial>
+    <visual>
+      <origin xyz="0.021 0 -0.0185" rpy="1.570796 0.000000 1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/seeed_bearing__configuration__22x16x4.stl" />
+      </geometry>
+      <material name="hip_l_m0">
+        <color rgba="0.811765 0.858824 0.898039 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.0175 0 -0.0185" rpy="-1.570796 0.000000 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/hip_l.stl" />
+      </geometry>
+      <material name="hip_l_m1">
+        <color rgba="0.67451 0.639216 0.603922 1" />
+      </material>
+    </visual>
+  </link>
+  <joint name="left_hip_roll" type="revolute">
+    <parent link="yaw2roll" />
+    <child link="hip_l" />
+    <origin xyz="0 0.0165 0.0125" rpy="-1.570796 0.000000 -0.000000" />
+    <axis xyz="0 0 1" />
+    <limit lower="-0.3839724354386992" upper="0.38397243543880577" effort="0.96" velocity="6.0" />
+  </joint>
+  <link name="upper_leg_left">
+    <inertial>
+      <origin xyz="0.006766 0.0228838 0.0134531" rpy="0 0 0" />
+      <mass value="0.0482067" />
+      <inertia ixx="1.68753e-05" iyy="1.03691e-05" izz="1.98269e-05" ixy="-4.41852e-06" ixz="2.27982e-07" iyz="3.89298e-07" />
+    </inertial>
+    <visual>
+      <origin xyz="-0 -0 -0.0425" rpy="0.000000 -1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/upper_leg_left.stl" />
+      </geometry>
+      <material name="upper_leg_left_m0">
+        <color rgba="0.85098 0.85098 0.839216 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.022 0.0357771 0.0125" rpy="0.000000 -1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/xl330.stl" />
+      </geometry>
+      <material name="upper_leg_left_m1">
+        <color rgba="0.286275 0.286275 0.286275 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 -0.0425" rpy="0.000000 -1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/upper_leg_rigidity_plate.stl" />
+      </geometry>
+      <material name="upper_leg_left_m2">
+        <color rgba="0.67451 0.639216 0.603922 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.022 0.0357771 -0.004" rpy="0.000000 -0.000000 3.141593" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/seeed_bearing__configuration__22x16x4.stl" />
+      </geometry>
+      <material name="upper_leg_left_m3">
+        <color rgba="0.811765 0.858824 0.898039 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0 -0 0.0125" rpy="0.000000 -1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/xl330.stl" />
+      </geometry>
+      <material name="upper_leg_left_m4">
+        <color rgba="0.286275 0.286275 0.286275 1" />
+      </material>
+    </visual>
+  </link>
+  <joint name="left_hip_pitch" type="revolute">
+    <parent link="hip_l" />
+    <child link="upper_leg_left" />
+    <origin xyz="0.025 0 -0.0185" rpy="-1.570796 0.000000 -1.570796" />
+    <axis xyz="0 0 1" />
+    <limit lower="-1.570796326794949" upper="1.5707963267948442" effort="0.96" velocity="6.0" />
+  </joint>
+  <link name="leg">
+    <inertial>
+      <origin xyz="-1.52e-10 0.0318937 -0.00953505" rpy="0 0 0" />
+      <mass value="0.0215844" />
+      <inertia ixx="5.25056e-06" iyy="2.15507e-06" izz="4.33925e-06" ixy="-1e-12" ixz="0" iyz="7.65005e-07" />
+    </inertial>
+    <visual>
+      <origin xyz="-0.022 0.0357771 0.0385" rpy="0.000000 1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/leg.stl" />
+      </geometry>
+      <material name="leg_m0">
+        <color rgba="0.67451 0.639216 0.603922 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.022 0.0357771 0.0385" rpy="0.000000 1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/leg.stl" />
+      </geometry>
+      <material name="leg_m1">
+        <color rgba="0.67451 0.639216 0.603922 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0 0.042 -0.0115" rpy="0.000000 -1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/xl330.stl" />
+      </geometry>
+      <material name="leg_m2">
+        <color rgba="0.286275 0.286275 0.286275 1" />
+      </material>
+    </visual>
+  </link>
+  <joint name="left_knee" type="revolute">
+    <parent link="upper_leg_left" />
+    <child link="leg" />
+    <origin xyz="0.022 0.0357771 -0.004" rpy="3.141593 0.000000 1.570796" />
+    <axis xyz="0 0 1" />
+    <limit lower="-1.5707963267948983" upper="1.5707963267948948" effort="0.96" velocity="6.0" />
+  </joint>
+  <link name="ankle_left">
+    <inertial>
+      <origin xyz="-0.00615742 -0.0137483 -0.0156585" rpy="0 0 0" />
+      <mass value="0.0300246" />
+      <inertia ixx="5.91525e-06" iyy="1.11534e-05" izz="7.74016e-06" ixy="-2.05354e-07" ixz="8.218e-08" iyz="5.6722e-08" />
+    </inertial>
+    <visual>
+      <origin xyz="-0.022 0.00622291 -0.0647" rpy="0.000000 -1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/sole_left.stl" />
+      </geometry>
+      <material name="ankle_left_m0">
+        <color rgba="0.956863 0.686275 0.137255 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.022 0.00622291 -0.0647" rpy="0.000000 -1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/foot_left.stl" />
+      </geometry>
+      <material name="ankle_left_m2">
+        <color rgba="1 0.403922 0.121569 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 -0.0322" rpy="0.000000 0.000000 3.141593" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/seeed_bearing__configuration_default.stl" />
+      </geometry>
+      <material name="ankle_left_m3">
+        <color rgba="0.811765 0.858824 0.898039 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.022 0.00622291 -0.0647" rpy="0.000000 -1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/ankle_left.stl" />
+      </geometry>
+      <material name="ankle_left_m4">
+        <color rgba="1 0.403922 0.121569 1" />
+      </material>
+    </visual>
+  </link>
+  <joint name="left_ankle" type="revolute">
+    <parent link="leg" />
+    <child link="ankle_left" />
+    <origin xyz="-0 0.042 -0.026" rpy="-3.141593 0.000000 0.000000" />
+    <axis xyz="0 0 1" />
+    <limit lower="-1.5707963267949063" upper="1.5707963267948868" effort="0.96" velocity="6.0" />
+  </joint>
+  <link name="neck">
+    <inertial>
+      <origin xyz="-0 -0.025 0.0141665" rpy="0 0 0" />
+      <mass value="0.0368414" />
+      <inertia ixx="1.72925e-05" iyy="3.12694e-06" izz="1.63707e-05" ixy="-0" ixz="0" iyz="-0" />
+    </inertial>
+    <visual>
+      <origin xyz="0.022 0.05 0.028" rpy="0.000000 1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/neck.stl" />
+      </geometry>
+      <material name="neck_m0">
+        <color rgba="0.67451 0.639216 0.603922 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0.0145" rpy="0.000000 -1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/xl330.stl" />
+      </geometry>
+      <material name="neck_m1">
+        <color rgba="0.286275 0.286275 0.286275 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0 -0.05 0.0145" rpy="0.000000 -1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/xl330.stl" />
+      </geometry>
+      <material name="neck_m2">
+        <color rgba="0.286275 0.286275 0.286275 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.022 0.05 0.003" rpy="0.000000 1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/neck.stl" />
+      </geometry>
+      <material name="neck_m3">
+        <color rgba="0.67451 0.639216 0.603922 1" />
+      </material>
+    </visual>
+  </link>
+  <joint name="neck_pitch" type="revolute">
+    <parent link="trunk_base" />
+    <child link="neck" />
+    <origin xyz="0.026 0.0145 0.0324215" rpy="-1.570796 0.000000 3.141593" />
+    <axis xyz="0 0 1" />
+    <limit lower="-1.5707963267948974" upper="1.0471975511965967" effort="0.96" velocity="6.0" />
+  </joint>
+  <link name="neck_pitch">
+    <inertial>
+      <origin xyz="-6.533e-09 0.0116641 -0.0145" rpy="0 0 0" />
+      <mass value="0.00572" />
+      <inertia ixx="1.09186e-06" iyy="9.66855e-07" izz="5.12111e-07" ixy="0" ixz="0" iyz="0" />
+    </inertial>
+    <visual>
+      <origin xyz="-0 0.0287931 -0.0145" rpy="0.000000 -1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/neck_pitch.stl" />
+      </geometry>
+      <material name="neck_pitch_m0">
+        <color rgba="0.34902 0.376471 0.4 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0 0.0207931 -0.0145" rpy="1.570796 -0.000000 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/seeed_bearing__configuration__22x16x4.stl" />
+      </geometry>
+      <material name="neck_pitch_m1">
+        <color rgba="0.811765 0.858824 0.898039 1" />
+      </material>
+    </visual>
+  </link>
+  <joint name="head_pitch" type="revolute">
+    <parent link="neck" />
+    <child link="neck_pitch" />
+    <origin xyz="-0 -0.05 0" rpy="3.141593 0.000000 -0.000000" />
+    <axis xyz="0 0 1" />
+    <limit lower="-1.5707963267948966" upper="1.5707963267948966" effort="0.96" velocity="6.0" />
+  </joint>
+  <link name="yaw_roll_motion">
+    <inertial>
+      <origin xyz="-0.000166657 -0.00500964 0.0178065" rpy="0 0 0" />
+      <mass value="0.0486" />
+      <inertia ixx="6.97903e-06" iyy="8.10293e-06" izz="9.57884e-06" ixy="3.21657e-07" ixz="-3.4797e-08" iyz="3.4295e-07" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.01" rpy="0.000000 0.000000 1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/yaw_roll_motion.stl" />
+      </geometry>
+      <material name="yaw_roll_motion_m0">
+        <color rgba="0.129412 0.152941 0.129412 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0.0145" rpy="0.000000 -1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/xl330.stl" />
+      </geometry>
+      <material name="yaw_roll_motion_m1">
+        <color rgba="0.286275 0.286275 0.286275 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.016 0 0.0145" rpy="0.000000 -1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/seeed_bearing__configuration__22x16x4.stl" />
+      </geometry>
+      <material name="yaw_roll_motion_m2">
+        <color rgba="0.811765 0.858824 0.898039 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.018 0 0.0145" rpy="0.000000 -1.570796 -0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/seeed_bearing__configuration__22x16x4.stl" />
+      </geometry>
+      <material name="yaw_roll_motion_m3">
+        <color rgba="0.811765 0.858824 0.898039 1" />
+      </material>
+    </visual>
+  </link>
+  <joint name="head_yaw" type="revolute">
+    <parent link="neck_pitch" />
+    <child link="yaw_roll_motion" />
+    <origin xyz="-0 0.0186931 -0.0145" rpy="1.570796 -0.000000 3.141593" />
+    <axis xyz="0 0 1" />
+    <limit lower="-2.9670597283903613" upper="2.9670597283903595" effort="0.96" velocity="6.0" />
+  </joint>
+  <link name="jaw_soft">
+    <inertial>
+      <origin xyz="0.00460523 0.00120047 -0.0324761" rpy="0 0 0" />
+      <mass value="0.188766" />
+      <inertia ixx="0.000320811" iyy="0.0002541" izz="0.000149882" ixy="-6.32293e-07" ixz="6.57153e-06" iyz="4.18477e-06" />
+    </inertial>
+    <visual>
+      <origin xyz="0.0155 -9.13778e-05 -0.05548" rpy="-1.570796 0.000000 -1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/lens.stl" />
+      </geometry>
+      <material name="jaw_soft_m0">
+        <color rgba="0.262745 0.282353 0.301961 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.0045 -9.13778e-05 -0.0178" rpy="1.570796 0.000000 1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/face_part.stl" />
+      </geometry>
+      <material name="jaw_soft_m1">
+        <color rgba="0.67451 0.639216 0.603922 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.003 0.0255 -0.018" rpy="0.000000 0.000000 -1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/xl330.stl" />
+      </geometry>
+      <material name="jaw_soft_m2">
+        <color rgba="0.286275 0.286275 0.286275 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.0046 0 -0.0179996" rpy="1.570796 0.000000 1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/jaw_soft.stl" />
+      </geometry>
+      <material name="jaw_soft_m3">
+        <color rgba="0.85098 0.756863 0.866667 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.0045 -0 -0.018" rpy="1.570796 0.000000 1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/motor_support.stl" />
+      </geometry>
+      <material name="jaw_soft_m4">
+        <color rgba="0.129412 0.152941 0.129412 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0.0145" rpy="0.000000 -1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/xl330.stl" />
+      </geometry>
+      <material name="jaw_soft_m5">
+        <color rgba="0.286275 0.286275 0.286275 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.0032 -0.04 -0.018" rpy="0.000000 1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/seeed_bearing__configuration_default.stl" />
+      </geometry>
+      <material name="jaw_soft_m6">
+        <color rgba="0.811765 0.858824 0.898039 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.02694 0.0289936 -0.0519" rpy="0.000000 0.000000 -1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/elec_rpi_robot_hat_pcb.stl" />
+      </geometry>
+      <material name="jaw_soft_m7">
+        <color rgba="0.313725 0.486275 0.411765 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.00420071 1.7776e-08 -0.0180814" rpy="1.570796 0.000000 1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/soft_mouth_top.stl" />
+      </geometry>
+      <material name="jaw_soft_m8">
+        <color rgba="0.85098 0.756863 0.866667 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.0045 -9.13778e-05 -0.0178" rpy="1.570796 0.000000 1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/noenoeil.stl" />
+      </geometry>
+      <material name="jaw_soft_m9">
+        <color rgba="0.956863 0.686275 0.137255 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.0045 -0 -0.018" rpy="1.570796 0.000000 1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/jaw.stl" />
+      </geometry>
+      <material name="jaw_soft_m10">
+        <color rgba="1 0.403922 0.121569 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.0155 -9.13778e-05 -0.05558" rpy="-1.570796 0.000000 -1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/m12_lens_holder.stl" />
+      </geometry>
+      <material name="jaw_soft_m11">
+        <color rgba="0.262745 0.282353 0.301961 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.015435 -1.13778e-05 -0.06001" rpy="-1.570796 0.000000 1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/pcb__raspberry_pi_zero_2_w.stl" />
+      </geometry>
+      <material name="jaw_soft_m12">
+        <color rgba="0.498039 0.498039 0.498039 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.01 -0.016786 0.0260226" rpy="1.570796 0.000000 1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/speaker.stl" />
+      </geometry>
+      <material name="jaw_soft_m13">
+        <color rgba="0.294118 0.290196 0.290196 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.00541 0.00200 -0.02819" rpy="1.570796 0.000000 1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/duck_head_upper_v3.stl" />
+      </geometry>
+      <material name="jaw_soft_m14">
+        <color rgba="0.22 0.23 0.25 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.01694 0.00200 -0.02819" rpy="1.570796 0.000000 1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/duck_head_lower_v3.stl" />
+      </geometry>
+      <material name="jaw_soft_m15">
+        <color rgba="0.22 0.23 0.25 1" />
+      </material>
+    </visual>
+  </link>
+  <joint name="head_roll" type="revolute">
+    <parent link="yaw_roll_motion" />
+    <child link="jaw_soft" />
+    <origin xyz="-0.0179 0 0.0145" rpy="0.000000 -1.570796 -0.000000" />
+    <axis xyz="0 0 1" />
+    <limit lower="-0.43633231299858327" upper="0.4363323129985815" effort="0.96" velocity="6.0" />
+  </joint>
+  <link name="v3_extra_duck_head_upper_v3">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.01717" />
+      <inertia ixx="2.575e-06" iyy="2.575e-06" izz="2.575e-06" ixy="0" ixz="0" iyz="0" />
+    </inertial>
+  </link>
+  <joint name="jaw_soft_to_v3_extra_duck_head_upper_v3" type="fixed">
+    <parent link="jaw_soft" />
+    <child link="v3_extra_duck_head_upper_v3" />
+    <origin xyz="0.03170 0.00001 -0.02646" rpy="0.000000 0.000000 0.000000" />
+  </joint>
+  <link name="v3_extra_duck_head_lower_v3">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.00571" />
+      <inertia ixx="8.569e-07" iyy="8.569e-07" izz="8.569e-07" ixy="0" ixz="0" iyz="0" />
+    </inertial>
+  </link>
+  <joint name="jaw_soft_to_v3_extra_duck_head_lower_v3" type="fixed">
+    <parent link="jaw_soft" />
+    <child link="v3_extra_duck_head_lower_v3" />
+    <origin xyz="-0.00779 -0.00106 -0.03780" rpy="0.000000 0.000000 0.000000" />
+  </joint>
+  <link name="bearing_roll">
+    <inertial>
+      <origin xyz="-8.8e-11 0.00099414 0.0168917" rpy="0 0 0" />
+      <mass value="0.0230406" />
+      <inertia ixx="4.1964e-06" iyy="3.41752e-06" izz="2.3265e-06" ixy="-0" ixz="-0" iyz="-5.0881e-08" />
+    </inertial>
+    <visual>
+      <origin xyz="-0.0175 -0.002 0.0125" rpy="3.141593 0.000000 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/yaw2roll.stl" />
+      </geometry>
+      <material name="bearing_roll_m0">
+        <color rgba="0.129412 0.152941 0.129412 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0 -0 0.0125" rpy="3.141593 0.000000 -1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/xl330.stl" />
+      </geometry>
+      <material name="bearing_roll_m1">
+        <color rgba="0.286275 0.286275 0.286275 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.0175 -0.002 0.0125" rpy="3.141593 0.000000 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/bearing_roll.stl" />
+      </geometry>
+      <material name="bearing_roll_m2">
+        <color rgba="0.129412 0.152941 0.129412 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0 0.0165 0.0125" rpy="0.000000 1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/seeed_bearing__configuration__22x16x4.stl" />
+      </geometry>
+      <material name="bearing_roll_m3">
+        <color rgba="0.811765 0.858824 0.898039 1" />
+      </material>
+    </visual>
+  </link>
+  <joint name="right_hip_yaw" type="revolute">
+    <parent link="trunk_base" />
+    <child link="bearing_roll" />
+    <origin xyz="0.006 -0.0175 -0.005" rpy="-3.141593 0.000000 1.570796" />
+    <axis xyz="0 0 1" />
+    <limit lower="-0.523598775598297" upper="0.43633231299858416" effort="0.96" velocity="6.0" />
+  </joint>
+  <link name="hip_l_2">
+    <inertial>
+      <origin xyz="0.014815 1.6212e-08 -0.00829992" rpy="0 0 0" />
+      <mass value="0.00618934" />
+      <inertia ixx="8.60626e-07" iyy="1.15753e-06" izz="6.51588e-07" ixy="1e-12" ixz="3.89882e-07" iyz="-1e-12" />
+    </inertial>
+    <visual>
+      <origin xyz="-0.0175 0 -0.0185" rpy="-1.570796 -0.000000 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/hip_l.stl" />
+      </geometry>
+      <material name="hip_l_2_m0">
+        <color rgba="0.67451 0.639216 0.603922 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.025 0 -0.0185" rpy="1.570796 0.000000 -1.570796" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/seeed_bearing__configuration__22x16x4.stl" />
+      </geometry>
+      <material name="hip_l_2_m1">
+        <color rgba="0.811765 0.858824 0.898039 1" />
+      </material>
+    </visual>
+  </link>
+  <joint name="right_hip_roll" type="revolute">
+    <parent link="bearing_roll" />
+    <child link="hip_l_2" />
+    <origin xyz="-0 0.0165 0.0125" rpy="1.570796 0.000000 3.141593" />
+    <axis xyz="0 0 1" />
+    <limit lower="-0.3839724354387507" upper="0.38397243543875426" effort="0.96" velocity="6.0" />
+  </joint>
+  <link name="upper_leg_right">
+    <inertial>
+      <origin xyz="-0.006766 0.0228838 0.0134531" rpy="0 0 0" />
+      <mass value="0.0482067" />
+      <inertia ixx="1.68753e-05" iyy="1.03691e-05" izz="1.98269e-05" ixy="4.41852e-06" ixz="-2.27982e-07" iyz="3.89298e-07" />
+    </inertial>
+    <visual>
+      <origin xyz="-0.022 0.0357771 0.0125" rpy="0.000000 -1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/xl330.stl" />
+      </geometry>
+      <material name="upper_leg_right_m0">
+        <color rgba="0.286275 0.286275 0.286275 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.022 0.0357771 0" rpy="3.141593 0.000000 -0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/seeed_bearing__configuration__22x16x4.stl" />
+      </geometry>
+      <material name="upper_leg_right_m1">
+        <color rgba="0.811765 0.858824 0.898039 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0 -0 0.0435" rpy="0.000000 1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/upper_leg_rigidity_plate.stl" />
+      </geometry>
+      <material name="upper_leg_right_m2">
+        <color rgba="0.67451 0.639216 0.603922 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0 -0 -0.0425" rpy="0.000000 1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/upper_leg_right.stl" />
+      </geometry>
+      <material name="upper_leg_right_m3">
+        <color rgba="0.85098 0.85098 0.839216 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0 -0 0.0125" rpy="0.000000 -1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/xl330.stl" />
+      </geometry>
+      <material name="upper_leg_right_m4">
+        <color rgba="0.286275 0.286275 0.286275 1" />
+      </material>
+    </visual>
+  </link>
+  <joint name="right_hip_pitch" type="revolute">
+    <parent link="hip_l_2" />
+    <child link="upper_leg_right" />
+    <origin xyz="0.025 0 -0.0185" rpy="-1.570796 0.000000 -1.570796" />
+    <axis xyz="0 0 1" />
+    <limit lower="-1.57079632679494" upper="1.570796326794853" effort="0.96" velocity="6.0" />
+  </joint>
+  <link name="leg_2">
+    <inertial>
+      <origin xyz="-0.0318937 -1.52e-10 -0.00953505" rpy="0 0 0" />
+      <mass value="0.0215844" />
+      <inertia ixx="2.15507e-06" iyy="5.25056e-06" izz="4.33925e-06" ixy="1e-12" ixz="-7.65005e-07" iyz="0" />
+    </inertial>
+    <visual>
+      <origin xyz="-0.042 0 -0.0115" rpy="0.000000 -1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/xl330.stl" />
+      </geometry>
+      <material name="leg_2_m0">
+        <color rgba="0.286275 0.286275 0.286275 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.0357771 -0.022 0.0385" rpy="0.000000 1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/leg.stl" />
+      </geometry>
+      <material name="leg_2_m1">
+        <color rgba="0.67451 0.639216 0.603922 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.0357771 -0.022 0.0385" rpy="0.000000 1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/leg.stl" />
+      </geometry>
+      <material name="leg_2_m2">
+        <color rgba="0.67451 0.639216 0.603922 1" />
+      </material>
+    </visual>
+  </link>
+  <joint name="right_knee" type="revolute">
+    <parent link="upper_leg_right" />
+    <child link="leg_2" />
+    <origin xyz="-0.022 0.0357771 -0.004" rpy="3.141593 0.000000 -0.000000" />
+    <axis xyz="0 0 1" />
+    <limit lower="-1.5707963267949339" upper="1.5707963267948593" effort="0.96" velocity="6.0" />
+  </joint>
+  <link name="ankle_right">
+    <inertial>
+      <origin xyz="0.00615539 -0.0137482 -0.0156566" rpy="0 0 0" />
+      <mass value="0.0300251" />
+      <inertia ixx="5.91534e-06" iyy="1.11534e-05" izz="7.74015e-06" ixy="2.04877e-07" ixz="-8.2467e-08" iyz="5.7017e-08" />
+    </inertial>
+    <visual>
+      <origin xyz="0.022 0.00622291 -0.0647" rpy="0.000000 1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/ankle_right.stl" />
+      </geometry>
+      <material name="ankle_right_m0">
+        <color rgba="1 0.403922 0.121569 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.022 0.00622291 -0.0647" rpy="0.000000 1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/sole_right.stl" />
+      </geometry>
+      <material name="ankle_right_m1">
+        <color rgba="0.956863 0.686275 0.137255 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0 -0 -0.0292" rpy="3.141593 -0.000000 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/seeed_bearing__configuration_default.stl" />
+      </geometry>
+      <material name="ankle_right_m3">
+        <color rgba="0.811765 0.858824 0.898039 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.022 0.00622291 -0.0647" rpy="0.000000 1.570796 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/foot_right.stl" />
+      </geometry>
+      <material name="ankle_right_m4">
+        <color rgba="1 0.403922 0.121569 1" />
+      </material>
+    </visual>
+  </link>
+  <joint name="right_ankle" type="revolute">
+    <parent link="leg_2" />
+    <child link="ankle_right" />
+    <origin xyz="-0.042 0 -0.026" rpy="-3.141593 0.000000 1.570796" />
+    <axis xyz="0 0 1" />
+    <limit lower="-1.5707963267949028" upper="1.5707963267948903" effort="0.96" velocity="6.0" />
+  </joint>
+  <link name="v3_shield">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.02909" />
+      <inertia ixx="1.746e-05" iyy="1.746e-05" izz="1.746e-05" ixy="0" ixz="0" iyz="0" />
+    </inertial>
+  </link>
+  <joint name="trunk_base_to_v3_shield" type="fixed">
+    <parent link="trunk_base" />
+    <child link="v3_shield" />
+    <origin xyz="-0.05493 -0.00000 0.02000" rpy="0.000000 0.000000 0.000000" />
+  </joint>
+</robot>

@@ -1,0 +1,14 @@
+Duckling V3 Simulink+MuJoCo tests, 16-Nov-2026 23:05:49
+gains: ankle = 2.49*pitch + 0.200*rate
+
+1. Hold pose, loop OFF, 10 s : FELL (tips over at t = 1.05 s)
+   knee sag at t = 0.25 s: 5.5 deg (hand calc 7.0 deg)
+2. Stand, loop ON, 60 s      : stands | pitch mean +1.71 deg, band +/- 0.47 deg around it (after 2 s)
+3. Push 2 N x 0.05 s (0.10 N.s): stands | peak pitch 2.2 deg, back within 1 deg after 0.27 s
+4. Push limit forward       : survives 5.0 N, falls at 5.5 N -> 0.250..0.275 N.s (hand calc 0.219 N.s)
+4. Push limit backward      : survives 2.0 N, falls at 2.5 N -> 0.100..0.125 N.s (hand calc 0.106 N.s)
+5. +1 sample delay, 2 N push  : stands | peak pitch 2.4 deg, band 0.15 deg
+5. +2 sample delay, 2 N push  : stands | peak pitch 2.6 deg, band 0.43 deg
+5. +3 sample delay, 2 N push  : stands | peak pitch 2.7 deg, band 0.15 deg
+6. Torso mass mplus          : stand stands (band 0.26 deg), 2 N push stands (peak 2.2 deg)
+6. Torso mass mminus         : stand stands (band 0.35 deg), 2 N push stands (peak 2.2 deg)
