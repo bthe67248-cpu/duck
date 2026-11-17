@@ -1,18 +1,29 @@
 """slam_node -- DuckSLAM as a ROS 2 node.
 
-Subscribes  /imu (gyro z, tilt check), /cmd_vel (walk command), /camera/depth + /camera/pose_level (same stamp),
+Subscribes  /imu (gyro + accel -> complementary attitude filter), /cmd_vel (gait command, expires after 0.5 s),
+            sensor_mode:=depth (ideal profile): /camera/depth + /camera/pose_level (same stamp) + /camera/camera_info
+            sensor_mode:=tof   (realistic):     /tof/zones (PointCloud2) + /tof/pose_level (same stamp),
+                                                /camera/pose_level + /camera/camera_info for detection association
             /yolo/detections (vision_msgs/Detection2DArray)
-Publishes   /map (nav_msgs/OccupancyGrid, 1 Hz), TF map -> base_level, /slam/pose (PoseStamped),
-            /goal (PointStamped): the beacon's map position, from YOLO boxes + depth
+Publishes   /map (OccupancyGrid, 1 Hz), TF map -> base_level, /slam/pose (PoseStamped),
+            /slam/state (String: "ok" | "recovering": large tilt/fall, map and odometry updates suspended),
+            /goal (PointStamped): the beacon's map position, only when a detection has a trustworthy range,
+            /slam/beacon (String): "ranged ..." / "unranged: ..." for every beacon detection (diagnostics)
+
+Timing: every sensor frame is processed at the SLAM pose of its acquisition stamp (from a bounded pose history),
+and any scan-match correction is carried forward to the current pose. Detections wait (up to `det_wait` s) for
+the sensor frame with their stamp; unmatched ones expire.
 """
 import math
+from collections import deque
 
 import numpy as np
 import rclpy
 from geometry_msgs.msg import PointStamped, PoseStamped, TransformStamped, Twist
 from nav_msgs.msg import OccupancyGrid
 from rclpy.node import Node
-from sensor_msgs.msg import Image, Imu
+from sensor_msgs.msg import CameraInfo, Image, Imu, PointCloud2
+from std_msgs.msg import String
 from tf2_ros import TransformBroadcaster
 from vision_msgs.msg import Detection2DArray
 
@@ -29,34 +40,119 @@ def quat_to_mat(w, x, y, z):
                      [2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x * x + y * y)]])
 
 
+class StampBuffer:
+    """Bounded {stamp_ns: value} with exact and nearest lookups."""
+
+    def __init__(self, n):
+        self.n = n; self.d = {}
+
+    def put(self, k, v):
+        self.d[k] = v
+        if len(self.d) > self.n:
+            for old in sorted(self.d)[:len(self.d) - self.n]:
+                del self.d[old]
+
+    def get(self, k):
+        return self.d.get(k)
+
+    def nearest(self, k, tol_ns):
+        if not self.d:
+            return None, None
+        best = min(self.d, key=lambda s: abs(s - k))
+        return (best, self.d[best]) if abs(best - k) <= tol_ns else (None, None)
+
+
 class SlamNode(Node):
     def __init__(self):
         super().__init__("duck_slam")
-        self.declare_parameter("v_gain", 0.445)        # m/s per unit walk command (calibrated in MuJoCo)
+        self.declare_parameter("sensor_mode", "depth")        # "depth" (ideal RGB-D) | "tof" (realistic USB+ToF)
+        self.declare_parameter("v_gain", 0.445)               # m/s per unit forward command (MuJoCo calibration)
+        self.declare_parameter("v_gain_rev", 0.59)            # MuJoCo calibration; moves only beyond -0.4
+        self.declare_parameter("v_gain_lat", 0.0)             # asymmetric in MuJoCo -> not predicted
+        self.declare_parameter("cmd_timeout", 0.5)
         self.declare_parameter("scan_matching", True)
-        self.slam = ds.DuckSLAM(self.get_parameter("v_gain").value)
-        self.cmd_vx = 0.0; self.last_imu_t = None; self.upright = True
-        self.cam_poses = {}; self.frames = {}          # stamp -> camera pose / (depth, R, t, slam pose)
-        self.goal = None; self.goal_n = 0; self.pending = None
+        self.declare_parameter("fall_tilt_deg", 35.0)         # filtered tilt above this -> "recovering"
+        self.declare_parameter("upright_tilt_deg", 15.0)      # ... back to "ok" after `upright_hold` s below this
+        self.declare_parameter("upright_hold", 1.0)
+        self.declare_parameter("target_radius", 0.0)          # m; 0.04 only for the known sim beacon cylinder
+        self.declare_parameter("tof_range_convention", "radial")
+        self.declare_parameter("tof_fov_deg", 45.0)
+        self.declare_parameter("tof_max_range", 2.0)
+        self.declare_parameter("det_wait", 1.0)
+        self.declare_parameter("range_spread_max", 0.15)      # m; ToF zones in a box must agree this well
+        self.declare_parameter("goal_confirmations", 2)       # consistent ranged sightings before /goal is published
+        self.mode = str(self.get_parameter("sensor_mode").value)
+        if self.mode not in ("depth", "tof"):
+            raise ValueError("sensor_mode must be 'depth' or 'tof'")
+        gains = ds.OdomGains(fwd=float(self.get_parameter("v_gain").value), rev=float(self.get_parameter("v_gain_rev").value),
+                             lat=float(self.get_parameter("v_gain_lat").value))
+        if self.mode == "tof":
+            self.slam = ds.DuckSLAM(gains, max_r=float(self.get_parameter("tof_max_range").value), min_hits=4)
+            fov = float(self.get_parameter("tof_fov_deg").value)
+            self.tof_rays = ds.tof_zone_rays(8, fov, fov)
+        else:
+            self.slam = ds.DuckSLAM(gains)
+        self.tilt = ds.TiltFilter()
+        self.cmd = (0.0, 0.0); self.cmd_t = -1e9; self.last_imu_t = None
+        self.state = "ok"; self.upright_since = None
+        self.K = None
+        self.pose_hist = StampBuffer(200)                     # 4 s of 50 Hz poses
+        self.cam_poses = StampBuffer(20); self.sensor_poses = StampBuffer(30)
+        self.pending_frames = deque(maxlen=6)                 # sensor frames waiting for their pose
+        self.frames = StampBuffer(15)                         # stamp -> (kind, data, slam pose at acquisition)
+        self.pending_dets = deque(maxlen=20)
+        self.goal = None; self.goal_n = 0; self.candidates = []
         self.pub_map = self.create_publisher(OccupancyGrid, "map", 1)
         self.pub_pose = self.create_publisher(PoseStamped, "slam/pose", 10)
+        self.pub_state = self.create_publisher(String, "slam/state", 10)
         self.pub_goal = self.create_publisher(PointStamped, "goal", 10)
+        self.pub_beacon = self.create_publisher(String, "slam/beacon", 10)
         self.tf = TransformBroadcaster(self)
         self.create_subscription(Imu, "imu", self.on_imu, 50)
-        self.create_subscription(Twist, "cmd_vel", lambda m: setattr(self, "cmd_vx", m.linear.x), 10)
-        self.create_subscription(PoseStamped, "camera/pose_level", self.on_cam_pose, 5)
-        self.create_subscription(Image, "camera/depth", self.on_depth, 2)
+        self.create_subscription(Twist, "cmd_vel", self.on_cmd, 10)
+        self.create_subscription(CameraInfo, "camera/camera_info", self.on_info, 2)
+        self.create_subscription(PoseStamped, "camera/pose_level", self.on_cam_pose, 10)
+        if self.mode == "depth":
+            self.create_subscription(Image, "camera/depth", self.on_frame, 2)
+        else:
+            self.create_subscription(PoseStamped, "tof/pose_level", self.on_sensor_pose, 10)
+            self.create_subscription(PointCloud2, "tof/zones", self.on_frame, 5)
         self.create_subscription(Detection2DArray, "yolo/detections", self.on_det, 5)
         self.create_timer(1.0, self.publish_map)
+        self.create_timer(0.2, self.flush_detections)
+
+    def now_ns(self):
+        return self.get_clock().now().nanoseconds
 
     # 1. predict (50 Hz) ------------------------------------------------------------------
+    def on_cmd(self, m):
+        self.cmd = (m.linear.x, m.linear.y); self.cmd_t = self.now_ns() * 1e-9
+
     def on_imu(self, msg):
         t = stamp_ns(msg.header) * 1e-9
-        a = msg.linear_acceleration
-        self.upright = a.z > 0.85 * math.sqrt(a.x ** 2 + a.y ** 2 + a.z ** 2 + 1e-9)
-        if self.last_imu_t is not None and 0 < t - self.last_imu_t < 0.2:
-            self.slam.predict(self.cmd_vx if self.upright else 0.0, msg.angular_velocity.z, t - self.last_imu_t)
+        gyro = np.array([msg.angular_velocity.x, msg.angular_velocity.y, msg.angular_velocity.z])
+        acc = np.array([msg.linear_acceleration.x, msg.linear_acceleration.y, msg.linear_acceleration.z])
+        dt = t - self.last_imu_t if self.last_imu_t is not None else 0.0
         self.last_imu_t = t
+        up = self.tilt.update(gyro, acc, dt if 0 < dt < 0.2 else 0.0)
+        tilt = math.degrees(self.tilt.tilt())
+        if self.state == "ok" and tilt > self.get_parameter("fall_tilt_deg").value:
+            self.state = "recovering"; self.upright_since = None
+            self.get_logger().warn(f"tilt {tilt:.0f} deg: fall/recovery, map and odometry updates suspended")
+        elif self.state == "recovering":
+            if tilt < self.get_parameter("upright_tilt_deg").value:
+                self.upright_since = self.upright_since or t
+                if t - self.upright_since > self.get_parameter("upright_hold").value:
+                    self.state = "ok"
+                    self.get_logger().info("upright again: resuming (pose may need relocalisation by scan matching)")
+            else:
+                self.upright_since = None
+        self.pub_state.publish(String(data=self.state))
+        if 0 < dt < 0.2 and self.state == "ok":
+            fresh = t - self.cmd_t < self.get_parameter("cmd_timeout").value
+            vx, vy = self.cmd if fresh else (0.0, 0.0)
+            self.slam.predict(vx, ds.world_yaw_rate(gyro, up), dt, cmd_vy=vy)
+        self.pose_hist.put(stamp_ns(msg.header), self.slam.pose.copy())
         x, y, th = self.slam.pose
         tf = TransformStamped(); tf.header.stamp = msg.header.stamp; tf.header.frame_id = "map"; tf.child_frame_id = "base_level"
         tf.transform.translation.x, tf.transform.translation.y = float(x), float(y)
@@ -67,69 +163,179 @@ class SlamNode(Node):
         p.pose.orientation.z, p.pose.orientation.w = math.sin(th / 2), math.cos(th / 2)
         self.pub_pose.publish(p)
 
-    def on_cam_pose(self, msg):
-        o, p = msg.pose.orientation, msg.pose.position
-        self.cam_poses[stamp_ns(msg.header)] = (quat_to_mat(o.w, o.x, o.y, o.z), np.array([p.x, p.y, p.z]))
-        for k in sorted(self.cam_poses)[:-8]:
-            del self.cam_poses[k]
-        if self.pending is not None and stamp_ns(self.pending.header) in self.cam_poses:   # depth arrived first
-            msg_d, self.pending = self.pending, None
-            self.on_depth(msg_d)
+    # 2. sensor frames -------------------------------------------------------------------------
+    def on_info(self, m):
+        if m.k[0] > 0:
+            self.K = ds.Intrinsics(m.width, m.height, m.k[0], m.k[4], m.k[2], m.k[5])
 
-    # 2-4. scan, match, map (5 Hz) ------------------------------------------------------------
-    def on_depth(self, msg):
+    @staticmethod
+    def _pose(msg):
+        o, p = msg.pose.orientation, msg.pose.position
+        return quat_to_mat(o.w, o.x, o.y, o.z), np.array([p.x, p.y, p.z])
+
+    def on_cam_pose(self, msg):
+        self.cam_poses.put(stamp_ns(msg.header), self._pose(msg))
+        if self.mode == "depth":
+            self.retry_pending()
+
+    def on_sensor_pose(self, msg):
+        self.sensor_poses.put(stamp_ns(msg.header), self._pose(msg))
+        self.retry_pending()
+
+    def retry_pending(self):
+        for _ in range(len(self.pending_frames)):
+            self.on_frame(self.pending_frames.popleft())
+
+    def on_frame(self, msg):
         ns = stamp_ns(msg.header)
-        if ns not in self.cam_poses:
-            self.pending = msg                      # wait for the camera pose with the same stamp
+        poses = self.cam_poses if self.mode == "depth" else self.sensor_poses
+        sp = poses.get(ns)
+        if sp is None:
+            self.pending_frames.append(msg); return            # wait for the sensor pose with the same stamp
+        if self.state != "ok":
             return
-        if not self.upright:
+        hist_k, pose_acq = self.pose_hist.nearest(ns, 30_000_000)
+        if pose_acq is None:
             return
-        R_bc, t_bc = self.cam_poses[ns]
-        depth = np.frombuffer(msg.data, np.float32).reshape(msg.height, msg.width)
-        ang, r, hit = self.slam.scan_from_depth(depth, R_bc, t_bc)
+        R, t = sp
+        if self.mode == "depth":
+            if self.K is None:
+                return
+            depth = np.frombuffer(msg.data, np.float32).reshape(msg.height, msg.width)
+            ang, r, hit = self.slam.scan_from_depth(depth, R, t, self.K)
+            data = depth
+        else:
+            ranges, valid = self.read_tof(msg)
+            ang, r, hit = self.slam.scan_from_tof(ranges, valid, self.tof_rays, R, t,
+                                                  self.get_parameter("tof_range_convention").value,
+                                                  fov_h_deg=float(self.get_parameter("tof_fov_deg").value))
+            pts = ds.tof_points(ranges, valid, self.tof_rays, self.get_parameter("tof_range_convention").value)
+            data = (pts @ R.T + t, ranges[valid] if len(pts) else np.zeros(0))   # level-frame points + ranges
         if len(ang):
+            current = self.slam.pose.copy()
+            self.slam.pose = pose_acq.copy()                   # process at the acquisition pose ...
             if self.get_parameter("scan_matching").value:
                 self.slam.match(ang, r, hit)
+            corr = self.slam.pose - pose_acq
             self.slam.update_map(ang, r, hit)
-        self.frames[ns] = (depth, R_bc, t_bc, self.slam.pose.copy())
-        for k in sorted(self.frames)[:-10]:
-            del self.frames[k]
+            self.slam.pose = current + corr                    # ... and carry the correction to now
+        self.frames.put(ns, (data, pose_acq.copy()))
 
-    # 5. beacon position from YOLO boxes + depth ---------------------------------------------
+    @staticmethod
+    def read_tof(msg):
+        from sensor_msgs_py import point_cloud2
+        rec = point_cloud2.read_points_numpy(msg, field_names=("range", "status", "zone"))
+        n = 64
+        ranges = np.full(n, np.nan); valid = np.zeros(n, bool)
+        for r, s, z in rec:
+            z = int(z)
+            if 0 <= z < n:
+                ranges[z] = r; valid[z] = int(s) == 0 and np.isfinite(r)
+        return ranges, valid
+
+    # 3. beacon position from YOLO boxes + range --------------------------------------------
     def on_det(self, msg):
-        ns = stamp_ns(msg.header)
-        if ns not in self.frames:
-            return
-        depth, R_bc, t_bc, pose = self.frames[ns]
+        if any(d.results and d.results[0].hypothesis.class_id == "beacon" for d in msg.detections):
+            self.pending_dets.append(msg)
+            self.flush_detections()
+
+    def flush_detections(self):
+        now = self.now_ns(); wait = int(self.get_parameter("det_wait").value * 1e9)
+        keep = deque(maxlen=self.pending_dets.maxlen)
+        while self.pending_dets:
+            msg = self.pending_dets.popleft()
+            ns = stamp_ns(msg.header)
+            if self.process_det(msg, ns):
+                continue
+            if now - ns < wait:
+                keep.append(msg)
+            else:
+                self.pub_beacon.publish(String(data="unranged: no matching sensor frame (expired)"))
+        self.pending_dets = keep
+
+    def process_det(self, msg, ns):
+        """True when the detection could be evaluated (ranged or definitively unranged)."""
+        if self.K is None:
+            return False
+        if self.mode == "depth":
+            fr = self.frames.get(ns)
+            if fr is None:
+                return False
+            cam = self.cam_poses.get(ns)
+        else:
+            k, fr = self.frames.nearest(ns, 150_000_000)        # ToF runs at its own rate: nearest within 150 ms
+            if fr is None:
+                newest = max(self.frames.d) if self.frames.d else -1
+                return newest > ns + 150_000_000                # a later frame exists -> this one never will
+            cam = self.cam_poses.get(ns)
+        if cam is None:
+            return False
+        data, pose = fr
+        R_bc, t_bc = cam
         for det in msg.detections:
             if not det.results or det.results[0].hypothesis.class_id != "beacon":
                 continue
             cx, cy, w, h = det.bbox.center.position.x, det.bbox.center.position.y, det.bbox.size_x, det.bbox.size_y
-            u0, u1 = int(max(0, cx - w / 4)), int(min(ds.W, cx + w / 4 + 1))
-            v0, v1 = int(max(0, cy - h / 4)), int(min(ds.H, cy + h / 4 + 1))
-            patch = depth[v0:v1, u0:u1]
-            if patch.size == 0:
-                continue
-            z = float(np.median(patch))
-            if not 0.1 < z < ds.MAX_R:
-                continue
-            pb = ds.pixel_to_level(cx, cy, z, R_bc, t_bc)
-            pb[:2] *= (np.hypot(*pb[:2]) + 0.04) / max(np.hypot(*pb[:2]), 1e-6)      # surface -> centre of the cylinder
+            pb, why = (self.range_depth if self.mode == "depth" else self.range_tof)(data, cx, cy, w, h, R_bc, t_bc)
+            if pb is None:
+                self.pub_beacon.publish(String(data=f"unranged: {why}")); continue
+            rad = float(self.get_parameter("target_radius").value)
+            if rad > 0:                                          # surface -> centre of a known cylinder
+                pb[:2] *= (np.hypot(*pb[:2]) + rad) / max(np.hypot(*pb[:2]), 1e-6)
             c, s = math.cos(pose[2]), math.sin(pose[2])
             g = np.array([pose[0] + c * pb[0] - s * pb[1], pose[1] + s * pb[0] + c * pb[1]])
-            self.goal_n += 1
-            self.goal = g if self.goal is None else self.goal + (g - self.goal) / min(self.goal_n, 20)
-            if self.goal_n == 1:
-                self.get_logger().info(f"beacon first seen by YOLO, at ({g[0]:.2f}, {g[1]:.2f}) in the map")
+            self.pub_beacon.publish(String(data=f"ranged ({g[0]:.2f}, {g[1]:.2f})"))
+            self.accept(g)
         if self.goal is not None:
             p = PointStamped(); p.header.stamp = msg.header.stamp; p.header.frame_id = "map"
             p.point.x, p.point.y = float(self.goal[0]), float(self.goal[1])
             self.pub_goal.publish(p)
+        return True
+
+    def accept(self, g):
+        """Temporal agreement: a goal is published only after `goal_confirmations` sightings within 0.3 m."""
+        if self.goal is not None:
+            if np.hypot(*(g - self.goal)) > 0.5:
+                self.pub_beacon.publish(String(data="ranged sighting rejected: disagrees with the estimate by > 0.5 m"))
+                return
+            self.goal_n += 1
+            self.goal = self.goal + (g - self.goal) / min(self.goal_n, 20)
+            return
+        self.candidates = [c for c in self.candidates if np.hypot(*(g - c)) < 0.3] + [g]
+        if len(self.candidates) >= int(self.get_parameter("goal_confirmations").value):
+            self.goal = np.mean(self.candidates, axis=0); self.goal_n = len(self.candidates)
+            self.get_logger().info(f"beacon located by YOLO + {self.mode}: ({self.goal[0]:.2f}, {self.goal[1]:.2f}) in the map")
+
+    def range_depth(self, depth, cx, cy, w, h, R_bc, t_bc):
+        K = self.K
+        u0, u1 = int(max(0, cx - w / 4)), int(min(K.width, cx + w / 4 + 1))
+        v0, v1 = int(max(0, cy - h / 4)), int(min(K.height, cy + h / 4 + 1))
+        patch = depth[v0:v1, u0:u1]
+        if patch.size == 0:
+            return None, "empty box"
+        z = float(np.median(patch))
+        if not 0.1 < z < self.slam.max_r:
+            return None, f"depth {z:.2f} m out of range"
+        return ds.pixel_to_level(cx, cy, z, R_bc, t_bc, K), ""
+
+    def range_tof(self, data, cx, cy, w, h, R_bc, t_bc):
+        pts, rng = data
+        if len(pts) == 0:
+            return None, "no valid ToF zones"
+        u, v, z = ds.level_to_pixel(pts, R_bc, t_bc, self.K)
+        inside = (z > 0.05) & (np.abs(u - cx) <= w / 4 + 2) & (np.abs(v - cy) <= h / 4 + 2)
+        if not inside.any():
+            return None, "no valid ToF zone projects into the box"
+        r = rng[inside]
+        if r.max() - r.min() > self.get_parameter("range_spread_max").value:
+            return None, f"ToF zones in the box disagree ({r.min():.2f}-{r.max():.2f} m): object/background mix"
+        return np.median(pts[inside], axis=0), ""
 
     def publish_map(self):
+        info = self.slam.info
         g = OccupancyGrid(); g.header.stamp = self.get_clock().now().to_msg(); g.header.frame_id = "map"
-        g.info.resolution = ds.RES; g.info.width, g.info.height = ds.NX, ds.NY
-        g.info.origin.position.x, g.info.origin.position.y = ds.X0, ds.Y0; g.info.origin.orientation.w = 1.0
+        g.info.resolution = info.res; g.info.width, g.info.height = info.nx, info.ny
+        g.info.origin.position.x, g.info.origin.position.y = info.x0, info.y0; g.info.origin.orientation.w = 1.0
         g.data = self.slam.occupancy().T.flatten().tolist()              # row-major, rows along y
         self.pub_map.publish(g)
 

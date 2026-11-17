@@ -1,69 +1,202 @@
-"""duckslam.py -- the DuckSLAM core (no ROS in here): predict, depth->scan, scan matching, grid map,
-and the wavefront planner. Same algorithm as scripts/slam_nav.py, parameterised for the ROS nodes.
+"""duckslam.py -- the DuckSLAM core (no ROS in here): predict, depth/ToF -> scan, scan matching, grid map,
+the wavefront planner and the exploration-state check. Parameterised so the ROS nodes and unit tests share it.
+
+Conventions
+- Grids are indexed [ix, iy] (shape (nx, ny)); ROS OccupancyGrid data is row-major with rows along y,
+  so convert with `grid_from_msg_data` / `.T.flatten()`.
+- Cell values: -1 unknown, 0 free, 100 occupied (ROS convention).
+- All map geometry comes from a `MapInfo`; the module-level constants are only the default map used by the
+  simulated room. Nothing silently assumes them when a node receives a different map.
 """
 import math
 from collections import deque
+from dataclasses import dataclass
 
 import numpy as np
 from scipy import ndimage
 
-RES = 0.025                                    # m per cell
-X0, Y0, NX, NY = -1.5, -2.75, 260, 220         # map covers x -1.5..5.0, y -2.75..2.75
-W, H, FOVY = 320, 240, 60.0
-MAX_R = 2.5
-FOCAL = (H / 2) / math.tan(math.radians(FOVY) / 2)
+
+@dataclass(frozen=True)
+class MapInfo:
+    res: float = 0.025          # m per cell
+    x0: float = -1.5            # world x of cell (0, 0)'s lower corner
+    y0: float = -2.75
+    nx: int = 260               # cells along x  (default map: x -1.5..5.0)
+    ny: int = 220               # cells along y  (default map: y -2.75..2.75)
+
+    def cell(self, x, y):
+        """World (x, y) -> integer cell (ix, iy) using floor (no truncation towards zero)."""
+        return int(math.floor((x - self.x0) / self.res)), int(math.floor((y - self.y0) / self.res))
+
+    def inside(self, i, j):
+        return 0 <= i < self.nx and 0 <= j < self.ny
+
+    def center(self, i, j):
+        return self.x0 + (i + 0.5) * self.res, self.y0 + (j + 0.5) * self.res
 
 
-def cell(x, y):
-    return int((x - X0) / RES), int((y - Y0) / RES)
+DEFAULT_MAP = MapInfo()
+# Back-compat names for scripts that import them.
+RES, X0, Y0, NX, NY = DEFAULT_MAP.res, DEFAULT_MAP.x0, DEFAULT_MAP.y0, DEFAULT_MAP.nx, DEFAULT_MAP.ny
+MAX_R = 2.5                     # ideal depth camera: ranges used for mapping (m)
 
 
-def pixel_to_level(u, v, z, R_bc, t_bc):
-    """Pixel (u, v) at depth z -> point in the level body frame."""
-    pc = np.array([(u + 0.5 - W / 2) * z / FOCAL, -(v + 0.5 - H / 2) * z / FOCAL, -z])
+def cell(x, y, info=DEFAULT_MAP):
+    return info.cell(x, y)
+
+
+@dataclass(frozen=True)
+class Intrinsics:
+    """Pinhole camera; fx/fy/cx/cy in pixels (from sensor_msgs/CameraInfo K)."""
+    width: int
+    height: int
+    fx: float
+    fy: float
+    cx: float
+    cy: float
+
+    @staticmethod
+    def from_fovy(width, height, fovy_deg):
+        f = (height / 2) / math.tan(math.radians(fovy_deg) / 2)
+        return Intrinsics(width, height, f, f, width / 2, height / 2)
+
+
+SIM_CAMERA = Intrinsics.from_fovy(320, 240, 60.0)       # the simulated ideal camera only
+
+
+def pixel_to_level(u, v, z, R_bc, t_bc, K=SIM_CAMERA):
+    """Pixel (u, v) at camera-axis depth z -> point in the level body frame (MuJoCo camera: looks along -z, y up)."""
+    pc = np.array([(u - K.cx) * z / K.fx, -(v - K.cy) * z / K.fy, -z])
     return R_bc @ pc + t_bc
 
 
+def level_to_pixel(p_level, R_bc, t_bc, K):
+    """Points (N, 3) in the level body frame -> pixel (u, v) and camera-axis depth z; z <= 0 means behind."""
+    pc = (np.atleast_2d(p_level) - t_bc) @ R_bc         # R_bc^T (p - t), row form
+    z = -pc[:, 2]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        u = K.cx + pc[:, 0] * K.fx / z
+        v = K.cy - pc[:, 1] * K.fy / z
+    return u, v, z
+
+
+# ---------------------------------------------------------------- VL53L5CX-style multizone ToF -----------
+def tof_zone_rays(n=8, fov_h_deg=45.0, fov_v_deg=45.0):
+    """Unit centre-ray directions for an n x n zone sensor, in the sensor frame (+x boresight, +y left, +z up).
+    Zone order is row-major starting top-left as seen from behind the sensor; this MUST be verified on the
+    real part (ST's zone order depends on mounting and the driver) with left/right/up/down targets.
+    Returns (n*n, 3). A centre ray per zone is a first approximation: a real zone integrates its whole cone."""
+    ah = np.radians(fov_h_deg) / n
+    av = np.radians(fov_v_deg) / n
+    rays = []
+    for r in range(n):                                  # r = 0 is the top row
+        el = (n / 2 - 0.5 - r) * av
+        for c in range(n):                              # c = 0 is the left column
+            az = (n / 2 - 0.5 - c) * ah
+            d = np.array([1.0, math.tan(az), math.tan(el)])
+            rays.append(d / np.linalg.norm(d))
+    return np.array(rays)
+
+
+def tof_points(ranges, valid, rays, convention="radial"):
+    """Zone ranges (m) -> points in the sensor frame. `convention`: 'radial' = distance along the zone ray,
+    'axial' = distance along the boresight (x). Which one the driver reports must be checked on hardware."""
+    r = np.asarray(ranges, float)
+    if convention == "axial":
+        r = r / np.maximum(rays[:, 0], 1e-6)
+    pts = rays * r[:, None]
+    return pts[np.asarray(valid, bool)]
+
+
+# ---------------------------------------------------------------- SLAM core -----------------------------
+@dataclass
+class OdomGains:
+    """Learned-gait command -> measured SI velocity, from ros2/duck_nav/tools/calibrate_odom.py in the open
+    MuJoCo scene with the upstream velstand policy (results/post_fix/odom_calibration.txt). Simulation only:
+    NOT valid for the real Feetech robot. Measured: forward 0.44-0.45 m/s per unit for 0.3-0.5; reverse only moves
+    for commands beyond about -0.4 (0.59 m/s per unit at -0.5, nothing at -0.3); lateral is asymmetric
+    (+0.3 moves at 0.18 m/s per unit, -0.3 does not move), so lateral is not predicted (gain 0)."""
+    fwd: float = 0.445          # m/s per unit forward command
+    rev: float = 0.59           # m/s per unit reverse command
+    lat: float = 0.0            # m/s per unit lateral command (0 = not predicted)
+    deadband: float = 0.25      # forward / lateral |command| below this: the policy stands still
+    rev_deadband: float = 0.4   # reverse |command| below this: the policy stands still
+
+
 class DuckSLAM:
-    def __init__(self, v_gain):
+    def __init__(self, gains=None, info=DEFAULT_MAP, max_r=MAX_R, min_hits=12):
+        if not isinstance(gains, OdomGains):            # old call style: DuckSLAM(v_gain)
+            gains = OdomGains(fwd=float(gains)) if gains is not None else OdomGains()
+        self.gains = gains
+        self.info = info
+        self.max_r = max_r
+        self.min_hits = min_hits        # scan hits needed before a scan match is attempted
         self.pose = np.array([0.0, 0.0, 0.0])
-        self.logodds = np.zeros((NX, NY), np.float32)
-        self.v_gain = v_gain
+        self.logodds = np.zeros((info.nx, info.ny), np.float32)
         self.n_match = 0
 
-    def predict(self, cmd_vx, gyro_z, dt):
-        v = self.v_gain * cmd_vx if cmd_vx >= 0.25 else 0.0
-        self.pose[2] += gyro_z * dt
-        self.pose[0] += v * math.cos(self.pose[2]) * dt
-        self.pose[1] += v * math.sin(self.pose[2]) * dt
+    def body_velocity(self, cmd_vx, cmd_vy):
+        g = self.gains
+        vx = 0.0
+        if cmd_vx >= g.deadband:
+            vx = g.fwd * cmd_vx
+        elif cmd_vx <= -g.rev_deadband:
+            vx = g.rev * cmd_vx
+        vy = g.lat * cmd_vy if abs(cmd_vy) >= g.deadband else 0.0
+        return vx, vy
+
+    def predict(self, cmd_vx, yaw_rate, dt, cmd_vy=0.0):
+        """Dead-reckoning step. `yaw_rate` must be the WORLD yaw rate (see `world_yaw_rate`), not raw gyro z."""
+        vx, vy = self.body_velocity(cmd_vx, cmd_vy)
+        self.pose[2] = (self.pose[2] + yaw_rate * dt + math.pi) % (2 * math.pi) - math.pi
+        c, s = math.cos(self.pose[2]), math.sin(self.pose[2])
+        self.pose[0] += (c * vx - s * vy) * dt
+        self.pose[1] += (s * vx + c * vy) * dt
 
     @staticmethod
-    def scan_from_depth(depth, R_bc, t_bc, stride=2):
-        d = depth[::stride, ::stride]
-        u, v = np.meshgrid(np.arange(0, W, stride) + 0.5 - W / 2, np.arange(0, H, stride) + 0.5 - H / 2)
-        ok = (d > 0.03) & (d < MAX_R)
-        pc = np.stack([u * d / FOCAL, -v * d / FOCAL, -d], -1)[ok]
-        pb = pc @ R_bc.T + t_bc
+    def scan_from_points(pb, min_bin_points=1, bin_deg=2.0, bin_offset=0.0):
+        """Points in the level body frame (N, 3) -> 2-D scan (bearing, range, hit) for mapping/matching.
+        `min_bin_points` = 3 suits the dense depth image; sparse ToF zones use 1 (each zone is one measurement).
+        Bins are centred on (k + bin_offset) * bin_deg."""
+        if len(pb) == 0:
+            return np.zeros(0), np.zeros(0), np.zeros(0, bool)
         rng = np.hypot(pb[:, 0], pb[:, 1]); bear = np.arctan2(pb[:, 1], pb[:, 0])
         obst = (pb[:, 2] > 0.03) & (pb[:, 2] < 0.30)
         floor = pb[:, 2] < 0.03
-        bins = np.round(np.degrees(bear) / 2).astype(int)
+        bins = np.round(np.degrees(bear) / bin_deg - bin_offset).astype(int)
         ang, r, hit = [], [], []
         for b in np.unique(bins):
             sel = bins == b
             o = sel & obst
-            if o.sum() >= 3:
+            if o.sum() >= min_bin_points:
                 ang.append(b); r.append(float(np.percentile(rng[o], 10))); hit.append(True)
             else:
                 fl = sel & floor
-                if fl.sum() >= 3:
+                if fl.sum() >= min_bin_points:
                     ang.append(b); r.append(float(rng[fl].max())); hit.append(False)
-        return np.radians(2.0 * np.array(ang)), np.array(r), np.array(hit, bool)
+        return np.radians(bin_deg * (np.array(ang, float) + bin_offset)), np.array(r), np.array(hit, bool)
+
+    def scan_from_depth(self, depth, R_bc, t_bc, K=SIM_CAMERA, stride=2):
+        """Ideal dense depth image (camera-axis z, metres) -> scan."""
+        d = depth[::stride, ::stride]
+        u, v = np.meshgrid(np.arange(0, K.width, stride) + 0.5 - K.cx, np.arange(0, K.height, stride) + 0.5 - K.cy)
+        ok = (d > 0.03) & (d < self.max_r)
+        pc = np.stack([u * d / K.fx, -v * d / K.fy, -d], -1)[ok]
+        return self.scan_from_points(pc @ R_bc.T + t_bc, min_bin_points=3)
+
+    def scan_from_tof(self, ranges, valid, rays, R_bs, t_bs, convention="radial", fov_h_deg=45.0, n=8):
+        """Sparse ToF zones -> scan, one bearing bin per zone column. Invalid / no-return zones are dropped:
+        they are NOT free space."""
+        ps = tof_points(ranges, valid, rays, convention)
+        ps = ps[np.linalg.norm(ps, axis=1) < self.max_r]
+        return self.scan_from_points(ps @ R_bs.T + t_bs, min_bin_points=1, bin_deg=fov_h_deg / n,
+                                     bin_offset=0.5 if n % 2 == 0 else 0.0)     # one bin per zone column
 
     def match(self, ang, r, hit):
+        info = self.info
         occ = (self.logodds > 0.8).astype(np.float32)
-        if hit.sum() < 12 or occ.sum() < 80:
-            return
+        if hit.sum() < self.min_hits or occ.sum() < 80:
+            return False
         field = ndimage.gaussian_filter(occ, 1.6)
         px, py = r[hit] * np.cos(ang[hit]), r[hit] * np.sin(ang[hit])
         best, best_s = (0.0, 0.0, 0.0), -1.0
@@ -72,9 +205,9 @@ class DuckSLAM:
             wx, wy = c * px - s * py, s * px + c * py
             for dx in np.arange(-0.075, 0.076, 0.025):
                 for dy in np.arange(-0.075, 0.076, 0.025):
-                    ix = ((self.pose[0] + dx + wx - X0) / RES).astype(int)
-                    iy = ((self.pose[1] + dy + wy - Y0) / RES).astype(int)
-                    inside = (ix >= 0) & (ix < NX) & (iy >= 0) & (iy < NY)
+                    ix = np.floor((self.pose[0] + dx + wx - info.x0) / info.res).astype(int)
+                    iy = np.floor((self.pose[1] + dy + wy - info.y0) / info.res).astype(int)
+                    inside = (ix >= 0) & (ix < info.nx) & (iy >= 0) & (iy < info.ny)
                     score = field[ix[inside], iy[inside]].sum() / len(px)
                     score -= 0.02 * (abs(dx) + abs(dy)) / 0.075 + 0.02 * abs(dth) / math.radians(6)
                     if score > best_s:
@@ -82,68 +215,198 @@ class DuckSLAM:
         if best_s > 0.12:
             self.pose += 0.6 * np.array(best)
             self.n_match += 1
+            return True
+        return False
 
-    def update_map(self, ang, r, hit):
+    def update_map(self, ang, r, hit, free_weight=0.35, hit_weight=1.2):
+        info = self.info
         x, y, th = self.pose
-        steps = np.arange(RES, MAX_R, RES)
+        steps = np.arange(info.res, self.max_r, info.res)
         for a, rr, h in zip(ang, r, hit):
             ca, sa = math.cos(th + a), math.sin(th + a)
-            s = steps[steps < rr - RES]
-            ix = ((x + ca * s - X0) / RES).astype(int); iy = ((y + sa * s - Y0) / RES).astype(int)
-            k = (ix >= 0) & (ix < NX) & (iy >= 0) & (iy < NY)
-            self.logodds[ix[k], iy[k]] -= 0.35
+            s = steps[steps < rr - info.res]
+            ix = np.floor((x + ca * s - info.x0) / info.res).astype(int)
+            iy = np.floor((y + sa * s - info.y0) / info.res).astype(int)
+            k = (ix >= 0) & (ix < info.nx) & (iy >= 0) & (iy < info.ny)
+            self.logodds[ix[k], iy[k]] -= free_weight
             if h:
-                i, j = cell(x + ca * rr, y + sa * rr)
-                if 0 <= i < NX and 0 <= j < NY:
-                    self.logodds[i, j] += 1.2
+                i, j = info.cell(x + ca * rr, y + sa * rr)
+                if info.inside(i, j):
+                    self.logodds[i, j] += hit_weight
         np.clip(self.logodds, -4, 6, out=self.logodds)
 
     def occupancy(self):
-        """int8 grid in ROS convention: -1 unknown, 0 free, 100 occupied. Shape (NX, NY)."""
-        g = np.full((NX, NY), -1, np.int8)
+        """int8 grid in ROS convention: -1 unknown, 0 free, 100 occupied. Shape (nx, ny)."""
+        g = np.full((self.info.nx, self.info.ny), -1, np.int8)
         g[self.logodds < -0.5] = 0
         g[self.logodds > 0.8] = 100
         return g
 
 
-def plan(grid, pose, goal=None, goal_radius=0.34):
-    """Wavefront plan on an occupancy grid (NX, NY; -1/0/100). Returns (path [(x, y)...] or None, mode)."""
+def world_yaw_rate(gyro_body, up_body):
+    """World yaw rate from the body gyro and the world 'up' direction expressed in the body frame
+    (from a filtered attitude estimate). Equals gyro z only when the body is level."""
+    u = np.asarray(up_body, float)
+    n = np.linalg.norm(u)
+    return float(np.dot(gyro_body, u / n)) if n > 1e-6 else 0.0
+
+
+class TiltFilter:
+    """Complementary attitude filter: tracks the world 'up' vector in the body frame. The accelerometer is
+    trusted only when its magnitude is near 1 g (dynamic motion corrupts it as a gravity observation)."""
+
+    def __init__(self, tau=0.5, g=9.81, accel_band=0.15):
+        self.up = np.array([0.0, 0.0, 1.0]); self.tau = tau; self.g = g; self.band = accel_band
+        self.initialised = False
+
+    def update(self, gyro, acc, dt):
+        acc = np.asarray(acc, float); gyro = np.asarray(gyro, float)
+        an = np.linalg.norm(acc)
+        if not self.initialised:
+            if an > 1e-3:
+                self.up = acc / an; self.initialised = True
+            return self.up
+        # a fixed world direction seen from the rotating body:  du/dt = -w x u
+        self.up = self.up - np.cross(gyro, self.up) * dt
+        self.up /= np.linalg.norm(self.up)
+        if abs(an - self.g) < self.band * self.g:
+            a = dt / (self.tau + dt)
+            self.up = (1 - a) * self.up + a * acc / an
+            self.up /= np.linalg.norm(self.up)
+        return self.up
+
+    def tilt(self):
+        return math.acos(float(np.clip(self.up[2], -1.0, 1.0)))
+
+
+# ---------------------------------------------------------------- planning -----------------------------
+ROBOT_RADIUS = 0.125            # m. Default clearance; NOT verified against the real envelope (sway, head, shield).
+
+STATUS_TEXT = {
+    "goal": "heading for the beacon",
+    "explore": "exploring",
+    "escape": "inside the clearance margin: backing out along known-free cells",
+    "start_blocked": "robot cell is mapped occupied or boxed in: stopping",
+    "out_of_map": "robot is outside the map: stopping",
+    "no_frontier": "no reachable frontier",
+}
+
+
+def grid_from_msg_data(data, width, height):
+    """ROS OccupancyGrid data (row-major, rows along y) -> (nx, ny) array."""
+    return np.asarray(data, np.int8).reshape(height, width).T
+
+
+def _clearance_m(grid, info):
     occ = grid == 100
-    free = grid == 0
-    blocked = ndimage.binary_dilation(occ, iterations=5)                 # 12.5 cm clearance
-    trav = free & ~blocked
-    ci, cj = cell(pose[0], pose[1])
-    ii, jj = np.ogrid[:NX, :NY]
-    trav[(ii - ci) ** 2 + (jj - cj) ** 2 <= 16] = True
-    dist = np.full((NX, NY), -1, np.int32); parent = {}
-    dist[ci, cj] = 0; q = deque([(ci, cj)])
+    if occ.any():
+        return occ, ndimage.distance_transform_edt(~occ) * info.res
+    return occ, np.full(grid.shape, np.inf)
+
+
+def _bfs(trav, start):
+    nx, ny = trav.shape
+    dist = np.full((nx, ny), -1, np.int32); parent = {}
+    dist[start] = 0; q = deque([start])
     while q:
         i, j = q.popleft()
         for di, dj in ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)):
             a, b = i + di, j + dj
-            if 0 <= a < NX and 0 <= b < NY and trav[a, b] and dist[a, b] < 0:
-                dist[a, b] = dist[i, j] + 1; parent[(a, b)] = (i, j); q.append((a, b))
-    reached = dist >= 0
-    target, mode = None, "explore"
-    if goal is not None:
-        gi, gj = cell(*goal)
-        d2 = (ii - gi) ** 2 + (jj - gj) ** 2
-        cand = reached & (d2 <= (goal_radius / RES) ** 2)
-        if cand.any():
-            target, mode = np.unravel_index(np.argmin(np.where(cand, d2, 1e9)), d2.shape), "goal"
-    if target is None:
-        near_unknown = ndimage.binary_dilation(grid == -1, iterations=1)
-        frontier = reached & near_unknown & (dist > 0.35 / RES)
-        lab, n = ndimage.label(frontier)
-        if n:
-            sizes = ndimage.sum(frontier, lab, range(1, n + 1))
-            big = np.isin(lab, np.nonzero(sizes >= 8)[0] + 1)
-            if big.any():
-                target = np.unravel_index(np.argmin(np.where(big, dist, 1e9)), dist.shape)
-    if target is None:
-        return None, "done"
+            if not (0 <= a < nx and 0 <= b < ny) or not trav[a, b] or dist[a, b] >= 0:
+                continue
+            if di and dj and not (trav[i + di, j] and trav[i, j + dj]):
+                continue                                    # no diagonal corner cutting
+            dist[a, b] = dist[i, j] + 1; parent[(a, b)] = (i, j); q.append((a, b))
+    return dist, parent
+
+
+def _trace(parent, target, start, info):
     path = [tuple(int(v) for v in target)]
-    while path[-1] != (ci, cj):
+    while path[-1] != start:
         path.append(parent[path[-1]])
     path.reverse()
-    return [(X0 + (i + 0.5) * RES, Y0 + (j + 0.5) * RES) for i, j in path], mode
+    return [info.center(i, j) for i, j in path]
+
+
+def _argmin_where(mask, values):
+    big = np.iinfo(np.int64).max
+    return np.unravel_index(np.argmin(np.where(mask, values.astype(np.int64), big)), mask.shape)
+
+
+def plan(grid, pose, goal=None, goal_radius=0.34, info=DEFAULT_MAP, clearance=ROBOT_RADIUS, min_frontier=8):
+    """Wavefront plan on an occupancy grid (nx, ny; -1/0/100).
+    Returns (path [(x, y)...] or None, mode); mode is one of STATUS_TEXT's keys.
+    - Raw occupied cells are never made traversable.
+    - Cells within `clearance` of an occupied cell are not traversable (Euclidean distance transform).
+    - The robot's own footprint counts as free while it is still UNKNOWN (the body stands there and the camera
+      cannot see under itself); a footprint cell mapped occupied stays occupied.
+    - A start inside the clearance margin gets an 'escape' path over known-free cells to the nearest cell with
+      full clearance, instead of clearing the margin."""
+    if grid.shape != (info.nx, info.ny):
+        raise ValueError(f"grid shape {grid.shape} does not match map info ({info.nx}, {info.ny})")
+    ci, cj = info.cell(pose[0], pose[1])
+    if not info.inside(ci, cj):
+        return None, "out_of_map"
+    occ, clear_m = _clearance_m(grid, info)
+    if occ[ci, cj]:
+        return None, "start_blocked"
+    ii, jj = np.ogrid[:info.nx, :info.ny]
+    foot = ((ii - ci) ** 2 + (jj - cj) ** 2) * info.res ** 2 <= clearance ** 2
+    known_free = (grid == 0) | (foot & (grid == -1))
+    trav = known_free & (clear_m >= clearance)
+    start = (ci, cj)
+
+    if not trav[start]:
+        dist, parent = _bfs(known_free & ~occ, start)
+        cand = (dist > 0) & trav
+        if not cand.any():
+            return None, "start_blocked"
+        return _trace(parent, _argmin_where(cand, dist), start, info), "escape"
+
+    dist, parent = _bfs(trav, start)
+    reached = dist >= 0
+    if goal is not None:
+        gi, gj = info.cell(*goal)
+        d2 = (ii - gi) ** 2 + (jj - gj) ** 2
+        cand = reached & (d2 * info.res ** 2 <= goal_radius ** 2)
+        if cand.any():
+            return _trace(parent, _argmin_where(cand, d2), start, info), "goal"
+    frontier = frontier_cells(grid, reached) & (dist > 0.35 / info.res)
+    lab, n = ndimage.label(frontier)
+    if n:
+        sizes = ndimage.sum(frontier, lab, range(1, n + 1))
+        big = np.isin(lab, np.nonzero(sizes >= min_frontier)[0] + 1)
+        if big.any():
+            return _trace(parent, _argmin_where(big, dist), start, info), "explore"
+    return None, "no_frontier"
+
+
+def frontier_cells(grid, reached):
+    near_unknown = ndimage.binary_dilation(grid == -1, iterations=1)
+    return reached & near_unknown
+
+
+def exploration_state(grid, pose, info=DEFAULT_MAP, min_area_m2=2.0, min_open_frontier=8):
+    """Decide what 'no reachable frontier' means. Returns (state, reachable_area_m2, largest_open_frontier_cells):
+    - 'waiting'  : the known-free area connected to the robot is below `min_area_m2` (e.g. an all-unknown grid);
+    - 'stalled'  : that region touches the map edge, or still has a connected frontier (free cells bordering
+                   unknown space) of at least `min_open_frontier` cells, e.g. an unexplored doorway the planner
+                   cannot use (too narrow for the clearance, or too close);
+    - 'complete' : the region is closed by mapped obstacles (only isolated specks of unknown remain) and is at
+                   least `min_area_m2`. Coverage is judged on the room the robot can reach, not the whole grid."""
+    ci, cj = info.cell(pose[0], pose[1])
+    if not info.inside(ci, cj):
+        return "stalled", 0.0, 0
+    passable = (grid == 0)
+    passable[ci, cj] = grid[ci, cj] != 100
+    dist, _ = _bfs(passable, (ci, cj))
+    reached = dist >= 0
+    area = float(reached.sum()) * info.res ** 2
+    if area < min_area_m2:
+        return "waiting", area, 0
+    lab, n = ndimage.label(frontier_cells(grid, reached), structure=np.ones((3, 3)))
+    largest = int(ndimage.sum(np.ones_like(lab), lab, range(1, n + 1)).max()) if n else 0
+    edge = reached[0, :].any() or reached[-1, :].any() or reached[:, 0].any() or reached[:, -1].any()
+    if edge or largest >= min_open_frontier:
+        return "stalled", area, largest
+    return "complete", area, largest

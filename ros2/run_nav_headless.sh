@@ -1,17 +1,25 @@
 #!/usr/bin/env bash
-# run_nav_headless.sh [extra launch args] -- run the whole ROS 2 navigation demo without RViz and wait
-# for the referee's summary.   wsl -d Ubuntu-24.04 -- bash /mnt/c/dev/duckling_sim/ros2/run_nav_headless.sh
+# run_nav_headless.sh [sensors:=ideal|realistic] [other launch args] -- run the whole ROS 2 navigation demo
+# without RViz and wait for the referee's summary.
+#   wsl -d Ubuntu-24.04 -- bash /mnt/c/dev/duckling_sim/ros2/run_nav_headless.sh sensors:=realistic
+# Results are copied to <repo>/results/post_fix/ros2_nav_<sensors>[_<TAG>]/. Only the processes this script
+# launched are stopped (its own process group); other ROS processes on the machine are left alone.
+P=${DUCK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}
 source /opt/ros/jazzy/setup.bash; source ~/duck_ws/install/setup.bash
-OUT=${OUT:-$HOME/duck_ws/run}; rm -rf "$OUT"
-pkill -f "duck_nav/lib" 2>/dev/null; pkill -f robot_state_publisher 2>/dev/null; sleep 1
-ros2 launch duck_nav duck_nav.launch.py rviz:=false out_dir:="$OUT" "$@" > /tmp/duck_nav.log 2>&1 &
+SENSORS=ideal
+for a in "$@"; do case $a in sensors:=*) SENSORS=${a#sensors:=};; esac; done
+OUT=${OUT:-$HOME/duck_ws/run_$SENSORS}; rm -rf "$OUT"
+LOG=$(mktemp /tmp/duck_nav.XXXX.log)
+setsid ros2 launch duck_nav duck_nav.launch.py rviz:=false out_dir:="$OUT" "$@" > "$LOG" 2>&1 &
+PGID=$!
 for i in $(seq 1 ${WAIT:-420}); do
   [ -f "$OUT/summary.txt" ] && break
-  grep -q "process has died" /tmp/duck_nav.log && { echo "A NODE DIED"; break; }
+  grep -q "process has died" "$LOG" && { echo "A NODE DIED"; break; }
   sleep 5
 done
 sleep 2
-pkill -INT -f "ros2 launch duck_nav"; sleep 2; pkill -f "duck_nav/lib"; pkill -f robot_state_publisher
-grep -E "world_sim.*(sim [0-9]+ s|up:)|duck_nav\]|duck_slam\]|duck_yolo\]|died|Traceback|Error" /tmp/duck_nav.log | sed 's/\[INFO\] \[[0-9.]*\] //' | cut -c1-200 | tail -40
+kill -INT -- -$PGID 2>/dev/null; sleep 3; kill -TERM -- -$PGID 2>/dev/null; sleep 1; kill -KILL -- -$PGID 2>/dev/null
+grep -E "world_sim.*(sim [0-9]+ s|up )|expired|duck_nav\]|duck_slam\]|duck_yolo\]|died|Traceback|Error" "$LOG" | sed 's/\[INFO\] \[[0-9.]*\] //' | cut -c1-220 | tail -45
 echo "=== summary"; cat "$OUT/summary.txt" 2>/dev/null || echo "no summary written"
-mkdir -p /mnt/c/dev/duckling_sim/results/ros2_nav && cp "$OUT"/* /mnt/c/dev/duckling_sim/results/ros2_nav/ 2>/dev/null
+DEST=$P/results/post_fix/ros2_nav_${SENSORS}${TAG:+_$TAG}
+mkdir -p "$DEST" && cp "$OUT"/* "$DEST"/ 2>/dev/null; cp "$LOG" "$DEST/launch.log"

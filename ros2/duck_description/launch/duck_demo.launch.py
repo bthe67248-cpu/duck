@@ -16,9 +16,9 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument("rviz", default_value="true"),
         Node(package="robot_state_publisher", executable="robot_state_publisher",
-             parameters=[{"robot_description": urdf}]),
+             parameters=[{"robot_description": urdf, "use_sim_time": True}]),
         Node(package="duck_description", executable="duck_mujoco_sim", output="screen",
              parameters=[{"mjcf": os.path.join(share, "mjcf", "duck_v3_scene.xml")}]),
         Node(package="rviz2", executable="rviz2", condition=IfCondition(LaunchConfiguration("rviz")),
-             arguments=["-d", os.path.join(share, "rviz", "duck.rviz")]),
+             arguments=["-d", os.path.join(share, "rviz", "duck.rviz")], parameters=[{"use_sim_time": True}]),
     ])

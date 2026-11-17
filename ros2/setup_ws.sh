@@ -6,7 +6,8 @@ source /opt/ros/jazzy/setup.bash
 python3 -m pip install --user --break-system-packages -q mujoco     # MuJoCo for the sim node
 mkdir -p ~/duck_ws/src
 rm -rf ~/duck_ws/src/duck_description
-cp -r /mnt/c/dev/duckling_sim/ros2/duck_description ~/duck_ws/src/
+P=${DUCK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}   # repo root (override with DUCK_ROOT)
+cp -r $P/ros2/duck_description ~/duck_ws/src/
 cd ~/duck_ws
 colcon build --symlink-install
 grep -q "ros/jazzy/setup.bash" ~/.bashrc || echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc

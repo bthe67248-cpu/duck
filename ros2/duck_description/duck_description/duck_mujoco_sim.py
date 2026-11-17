@@ -1,6 +1,7 @@
 """duck_mujoco_sim -- MuJoCo simulation of the Duckling V3 as a ROS 2 node.
 
-Publishes  /joint_states (sensor_msgs/JointState), /imu (sensor_msgs/Imu),
+Publishes  /clock (MuJoCo simulation time: every stamp below is sim time; run consumers with use_sim_time),
+           /joint_states (sensor_msgs/JointState), /imu (sensor_msgs/Imu),
            /duck/pitch_deg (std_msgs/Float64), TF odom -> trunk_base
 Subscribes /duck/push (std_msgs/Float64): forward push in newtons, applied for 0.05 s
            /duck/balance (std_msgs/Bool): balance loop on/off
@@ -14,6 +15,7 @@ import numpy as np
 import rclpy
 from geometry_msgs.msg import TransformStamped
 from rclpy.node import Node
+from rosgraph_msgs.msg import Clock as ClockMsg
 from sensor_msgs.msg import Imu, JointState
 from std_msgs.msg import Bool, Empty, Float64
 from tf2_ros import TransformBroadcaster
@@ -38,6 +40,7 @@ class DuckSim(Node):
         self.alpha = 0.5 / (0.5 + self.dt)
         self.balance = True
         self.reset()
+        self.pub_clock = self.create_publisher(ClockMsg, "clock", 10)
         self.pub_js = self.create_publisher(JointState, "joint_states", 10)
         self.pub_imu = self.create_publisher(Imu, "imu", 10)
         self.pub_pitch = self.create_publisher(Float64, "duck/pitch_deg", 10)
@@ -79,8 +82,10 @@ class DuckSim(Node):
             d.ctrl[self.push_id] = self.push_force if self.push_steps > 0 else 0.0
             self.push_steps = max(0, self.push_steps - 1)
             mujoco.mj_step(m, d)
+        mujoco.mj_forward(m, d)          # sensors/transforms now describe the state just integrated
 
-        now = self.get_clock().now().to_msg()
+        now = rclpy.time.Time(nanoseconds=int(round(d.time * 1e9))).to_msg()
+        self.pub_clock.publish(ClockMsg(clock=now))
         js = JointState()
         js.header.stamp = now
         js.name = self.jnames
