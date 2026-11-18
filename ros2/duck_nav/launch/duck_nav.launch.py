@@ -37,7 +37,8 @@ def nodes(context):
         Node(package="duck_nav", executable="slam_node", output="screen",
              parameters=[{"scan_matching": ParameterValue(LaunchConfiguration("scan_matching"), value_type=bool),
                           "sensor_mode": "depth" if sensors == "ideal" else "tof",
-                          "target_radius": 0.04},                  # the sim beacon is a known 4 cm-radius cylinder
+                          "target_radius": 0.04,                    # the sim beacon is a known 4 cm-radius,
+                          "target_height": 0.28},                  # 28 cm tall cylinder
                          sim_time]),
         Node(package="duck_nav", executable="nav_node", output="screen",
              parameters=[{"autonomous": ParameterValue(LaunchConfiguration("autonomous"), value_type=bool)}, sim_time]),

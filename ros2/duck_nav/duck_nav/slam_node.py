@@ -84,6 +84,9 @@ class SlamNode(Node):
         self.declare_parameter("tof_fov_deg", 45.0)
         self.declare_parameter("tof_max_range", 2.0)
         self.declare_parameter("det_wait", 1.0)
+        self.declare_parameter("target_height", 0.0)          # m; known target height -> box-size depth (0 = off)
+        self.declare_parameter("size_agreement", 0.3)         # ToF depth must be within 30% of the box-size depth
+        self.declare_parameter("size_max_range", 2.5)         # m; beyond this a box-size-only range is not used
         self.declare_parameter("range_spread_max", 0.15)      # m; ToF zones in a box must agree this well
         self.declare_parameter("goal_confirmations", 2)       # consistent ranged sightings before /goal is published
         self.mode = str(self.get_parameter("sensor_mode").value)
@@ -247,7 +250,13 @@ class SlamNode(Node):
             # Build the initial reference while standing still. Rejected moving
             # scans must not reinforce a bad match by drawing duplicate walls.
             stationary_origin = np.linalg.norm(pose_acq[:2]) < 0.05 and abs(pose_acq[2]) < math.radians(3)
-            if accepted or (self.bootstrap and stationary_origin):
+            # New territory has nothing to match against yet, so requiring an accepted match for every map
+            # update froze the map at its first view (realistic run: "slam weak" most of the time). Extend the
+            # map while localisation is still healthy (two recent accepted matches, see LocalizationHealth),
+            # but never from a scan that contradicts the map or wanted a correction at the search edge.
+            healthy = (self.health.state(ns * 1e-9) == "ok"
+                       and self.slam.match_reason not in ("fresh_scan_disagrees", "search_boundary"))
+            if accepted or healthy or (self.bootstrap and stationary_origin):
                 self.slam.update_map(ang, r, hit)
             self.slam.pose = current + corr                    # ... and carry the correction to now
             if np.any(corr):                                   # later history entries get it too, so a frame acquired
@@ -376,18 +385,37 @@ class SlamNode(Node):
             return None, f"depth {z:.2f} m out of range"
         return ds.pixel_to_level(cx, cy, z, R_bc, t_bc, K), ""
 
+    def size_depth(self, cy, h):
+        """Camera-axis depth from the box height of a target of known height; None if unknown or cut off."""
+        H = float(self.get_parameter("target_height").value)
+        K = self.K
+        if H <= 0 or h < 8 or cy - h / 2 <= 1 or cy + h / 2 >= K.height - 1:
+            return None                                       # no known size, tiny box, or clipped by the image edge
+        return K.fy * H / h
+
     def range_tof(self, data, cx, cy, w, h, R_bc, t_bc):
+        """Depth from the ToF zones that project into the box, bearing from the camera.
+
+        The 8x8 zones are 5.6 deg apart, so the zone centres place the target up to ~3 deg off sideways; the
+        camera box centre is far more precise. So: camera ray through the box centre, at the ToF depth."""
         pts, rng = data
-        if len(pts) == 0:
-            return None, "no valid ToF zones"
-        u, v, z = ds.level_to_pixel(pts, R_bc, t_bc, self.K)
-        inside = (z > 0.05) & (np.abs(u - cx) <= w / 4 + 2) & (np.abs(v - cy) <= h / 4 + 2)
-        if not inside.any():
-            return None, "no valid ToF zone projects into the box"
-        r = rng[inside]
-        if r.max() - r.min() > self.get_parameter("range_spread_max").value:
-            return None, f"ToF zones in the box disagree ({r.min():.2f}-{r.max():.2f} m): object/background mix"
-        return np.median(pts[inside], axis=0), ""
+        zs = self.size_depth(cy, h)
+        if len(pts):
+            u, v, z = ds.level_to_pixel(pts, R_bc, t_bc, self.K)
+            inside = (z > 0.05) & (np.abs(u - cx) <= w / 4 + 2) & (np.abs(v - cy) <= h / 4 + 2)
+        else:
+            inside = np.zeros(0, bool)
+        if inside.any():
+            r = rng[inside]
+            if r.max() - r.min() > self.get_parameter("range_spread_max").value:
+                return None, f"ToF zones in the box disagree ({r.min():.2f}-{r.max():.2f} m): object/background mix"
+            zt = float(np.median(z[inside]))
+            if zs is not None and abs(zt - zs) > float(self.get_parameter("size_agreement").value) * zs:
+                return None, f"ToF depth {zt:.2f} m vs box-size depth {zs:.2f} m: ToF probably sees the background"
+            return ds.pixel_to_level(cx, cy, zt, R_bc, t_bc, self.K), ""
+        if zs is not None and 0.1 < zs < float(self.get_parameter("size_max_range").value):
+            return ds.pixel_to_level(cx, cy, zs, R_bc, t_bc, self.K), ""   # no ToF zone on it: size only
+        return None, "no valid ToF zone projects into the box" if len(pts) else "no valid ToF zones"
 
     def publish_map(self):
         info = self.slam.info

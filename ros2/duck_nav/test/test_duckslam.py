@@ -363,3 +363,30 @@ def test_localization_timing_and_motion_bounds_reject_invalid_configuration(valu
 def test_sweep_frame_limit_is_a_positive_integer(value):
     with pytest.raises(ValueError, match="positive integer"):
         ds.ScanWindow(max_frames=value)
+
+
+def test_vectorised_match_equals_reference_loop():
+    """The array search must pick exactly what the original nested loop picked."""
+    s = corner_reference(); rng = np.random.default_rng(3)
+    field = __import__("scipy.ndimage", fromlist=["x"]).gaussian_filter((s.logodds > 0.8).astype(np.float32), 1.6)
+    for _ in range(40):
+        a, r, h = corner_scan(np.sort(rng.uniform(-40, 110, 40)))
+        start = rng.normal(0, [0.04, 0.04, 0.05]); s.pose[:] = start
+        px, py = r * np.cos(a), r * np.sin(a)
+        best, best_s = None, -1.0
+        for dth in np.radians(np.arange(-6, 6.1, 1.5)):
+            c, sn = math.cos(start[2] + dth), math.sin(start[2] + dth); wx, wy = c * px - sn * py, sn * px + c * py
+            for dx in np.arange(-0.075, 0.076, 0.025):
+                for dy in np.arange(-0.075, 0.076, 0.025):
+                    ix = np.floor((start[0] + dx + wx - INFO.x0) / INFO.res).astype(int)
+                    iy = np.floor((start[1] + dy + wy - INFO.y0) / INFO.res).astype(int)
+                    ok = (ix >= 0) & (ix < INFO.nx) & (iy >= 0) & (iy < INFO.ny)
+                    sc = field[ix[ok], iy[ok]].sum() / len(px) - 0.02 * (abs(dx) + abs(dy)) / 0.075 \
+                        - 0.02 * abs(dth) / math.radians(6)
+                    if sc > best_s:
+                        best_s, best = sc, (dx, dy, dth)
+        accepted = s.match(a, r, h)
+        if accepted:
+            np.testing.assert_allclose(s.pose, start + 0.6 * np.array(best), atol=1e-12)
+        else:
+            assert np.array_equal(s.pose, start)
