@@ -3,7 +3,7 @@
 Usage:  .venv\\Scripts\\python.exe scripts\\stand_numbers.py model\\duck_v3_scene.xml
 Writes model/stand_numbers.json (read by matlab/duck_numbers.m).
 """
-import json, sys
+import hashlib, json, sys
 from pathlib import Path
 import mujoco
 import numpy as np
@@ -50,6 +50,17 @@ out = dict(
     home=home[:14].tolist(),
     actuators=[m.actuator(i).name for i in range(m.nu)],
 )
+# provenance (S9): which model revision these numbers describe and how provisional the printed masses are
+ledger_file = path.parent / "mass_ledger.json"
+out["model_scene"] = path.name
+out["model_scene_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()[:16]
+robot_xml = path.parent / path.name.replace("_scene", "")
+if robot_xml.exists():
+    out["model_robot_sha256"] = hashlib.sha256(robot_xml.read_bytes()).hexdigest()[:16]
+if ledger_file.exists():
+    led = json.loads(ledger_file.read_text())
+    out["mass_status"] = led["status"]
+    out["printed_part_mass_g"] = {k: v["mass_g"] for k, v in led["parts"].items() if not k.startswith("_")}
 out["d_knee"] = abs(out["knee_x"] - out["com"][0])
 for k, v in out.items():
     print(f"{k:18s} {v}")

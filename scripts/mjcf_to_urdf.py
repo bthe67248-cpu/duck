@@ -1,16 +1,22 @@
-"""mjcf_to_urdf.py -- convert model/duck_v3.xml (MJCF) to a URDF for ROS 2 / RViz.
+r"""mjcf_to_urdf.py -- convert model/duck_v3.xml (MJCF) to a URDF for ROS 2 / RViz.
 
-Usage:  .venv\\Scripts\\python.exe scripts\\mjcf_to_urdf.py
+Usage:  .venv\Scripts\python.exe scripts\mjcf_to_urdf.py [mjcf file] [output package dir]
 Writes ros2/duck_description/urdf/duck_v3.urdf and copies the STL meshes next to it.
 Only what RViz and robot_state_publisher need: links, inertias, visual meshes, hinge joints.
+Collision / self-collision geoms (S1 proxies) are not exported; they are not visuals.
+
+Materials (A1): every MJCF <material> becomes a named top-level URDF <material> (so black_pla is ONE definition
+that every printed link references). URDF has no specular/shininess; those stay MuJoCo-only.
+Roots come from this file's location; override with $DUCKLING_ROOT.
 """
-import math, shutil
+import math, os, shutil, sys
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
-ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "model" / "duck_v3.xml"
-PKG = ROOT / "ros2" / "duck_description"
+ROOT = Path(os.environ.get("DUCKLING_ROOT", Path(__file__).resolve().parents[1]))
+SRC = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "model" / "duck_v3.xml"
+PKG = Path(sys.argv[2]) if len(sys.argv) > 2 else ROOT / "ros2" / "duck_description"
+SKIP_CLASSES = {"collision", "self_collision_only"}
 
 
 def rpy(quat):
@@ -37,7 +43,13 @@ def main():
     (PKG / "meshes").mkdir(parents=True, exist_ok=True)
 
     robot = ET.Element("robot", name="duck_v3")
+    mats = {}                                   # material name -> rgba, written once at the top
     used = set()
+
+    def material(vis, name, color):
+        if name not in mats:
+            mats[name] = color
+        ET.SubElement(vis, "material", name=name)
 
     def add_body(body, parent_name):
         name = body.get("name")
@@ -53,7 +65,7 @@ def main():
                 xx, yy, zz = inert.get("diaginertia").split(); xy = xz = yz = "0"
             ET.SubElement(i, "inertia", ixx=xx, iyy=yy, izz=zz, ixy=xy, ixz=xz, iyz=yz)
         for k, g in enumerate(body.findall("geom")):
-            if g.get("class") == "collision":
+            if g.get("class") in SKIP_CLASSES or g.get("group") == "3":
                 continue
             vis = ET.SubElement(link, "visual")
             origin(vis, g)
@@ -62,13 +74,12 @@ def main():
                 f = mesh_file[g.get("mesh")]
                 used.add(f)
                 ET.SubElement(geo, "mesh", filename=f"package://duck_description/meshes/{f}")
-                color = g.get("rgba") or rgba.get(g.get("material"), "0.8 0.8 0.8 1")
-            else:                                             # V3 added parts are boxes
+                mname = g.get("material")
+                material(vis, mname if mname in rgba else f"{name}_m{k}", g.get("rgba") or rgba.get(mname, "0.8 0.8 0.8 1"))
+            else:                                             # primitives
                 sx, sy, sz = (2 * float(v) for v in g.get("size").split())
                 ET.SubElement(geo, "box", size=f"{sx} {sy} {sz}")
-                color = g.get("rgba", "0.1 0.1 0.1 1")
-            mat = ET.SubElement(vis, "material", name=f"{name}_m{k}")
-            ET.SubElement(mat, "color", rgba=color)
+                material(vis, f"{name}_m{k}", g.get("rgba", "0.1 0.1 0.1 1"))
         if parent_name is not None:
             j = body.find("joint")
             jn = j.get("name") if j is not None else f"{parent_name}_to_{name}"
@@ -84,13 +95,23 @@ def main():
             add_body(child, name)
 
     add_body(mj.find("worldbody").find("body"), None)
+    for k, (mname, color) in enumerate(mats.items()):         # global definitions first, as URDF recommends
+        mat = ET.Element("material", name=mname)
+        ET.SubElement(mat, "color", rgba=color)
+        robot.insert(k, mat)
+    # keep the material definitions' full colour on each reference too (some RViz versions ignore name-only refs)
+    for vis in robot.iter("visual"):
+        ref = vis.find("material")
+        ET.SubElement(ref, "color", rgba=mats[ref.get("name")])
     ET.indent(robot, "  ")
     ET.ElementTree(robot).write(PKG / "urdf" / "duck_v3.urdf", xml_declaration=True, encoding="utf-8")
     for f in used:
         shutil.copy2(ROOT / "model" / "assets" / f, PKG / "meshes" / f)
+    for stale in sorted(set(f.name for f in (PKG / "meshes").glob("*.stl")) - used):   # meshes only the old model used
+        (PKG / "meshes" / stale).unlink(); print("removed stale mesh", stale)
     n_rev = sum(1 for j in robot.findall("joint") if j.get("type") == "revolute")
     print(f"wrote {PKG / 'urdf' / 'duck_v3.urdf'}: {len(robot.findall('link'))} links, "
-          f"{n_rev} revolute joints, {len(used)} meshes")
+          f"{n_rev} revolute joints, {len(used)} meshes, {len(mats)} materials")
 
 
 if __name__ == "__main__":

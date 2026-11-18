@@ -1,17 +1,53 @@
 <?xml version='1.0' encoding='utf-8'?>
 <robot name="duck_v3">
+  <material name="seeed_bearing__configuration__22x16x4_material">
+    <color rgba="0.811765 0.858824 0.898039 1" />
+  </material>
+  <material name="black_pla">
+    <color rgba="0.025 0.025 0.025 1" />
+  </material>
+  <material name="xl330_material">
+    <color rgba="0.286275 0.286275 0.286275 1" />
+  </material>
+  <material name="np_f970_material">
+    <color rgba="0.301961 0.301961 0.301961 1" />
+  </material>
+  <material name="sole_left_material">
+    <color rgba="0.956863 0.686275 0.137255 1" />
+  </material>
+  <material name="seeed_bearing__configuration_default_material">
+    <color rgba="0.811765 0.858824 0.898039 1" />
+  </material>
+  <material name="lens_glass">
+    <color rgba="0.04 0.07 0.12 1" />
+  </material>
+  <material name="elec_rpi_robot_hat_pcb_material">
+    <color rgba="0.313725 0.486275 0.411765 1" />
+  </material>
+  <material name="m12_lens_holder_material">
+    <color rgba="0.262745 0.282353 0.301961 1" />
+  </material>
+  <material name="pcb__raspberry_pi_zero_2_w_material">
+    <color rgba="0.498039 0.498039 0.498039 1" />
+  </material>
+  <material name="speaker_material">
+    <color rgba="0.294118 0.290196 0.290196 1" />
+  </material>
+  <material name="sole_right_material">
+    <color rgba="0.956863 0.686275 0.137255 1" />
+  </material>
   <link name="trunk_base">
     <inertial>
-      <origin xyz="-0.0226332 -2.70828e-05 0.00280064" rpy="0 0 0" />
-      <mass value="0.199224" />
-      <inertia ixx="0.000123975" iyy="0.000145931" izz="0.000115351" ixy="7.1651e-08" ixz="-2.06915e-05" iyz="1.32429e-07" />
+      <origin xyz="-0.0271391 -2.33045e-05 0.00520013" rpy="0 0 0" />
+      <mass value="0.231524" />
+      <inertia ixx="0.000184062" iyy="0.000220584" izz="0.0001604" ixy="9.59627e-08" ixz="-5.25196e-06" iyz="1.19482e-07" />
     </inertial>
     <visual>
       <origin xyz="0.006 0.0175 -0.005" rpy="-0.000000 0.000000 0.000000" />
       <geometry>
         <mesh filename="package://duck_description/meshes/seeed_bearing__configuration__22x16x4.stl" />
       </geometry>
-      <material name="trunk_base_m0">
+      <material name="seeed_bearing__configuration__22x16x4_material">
         <color rgba="0.811765 0.858824 0.898039 1" />
       </material>
     </visual>
@@ -20,8 +56,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/right_shell.stl" />
       </geometry>
-      <material name="trunk_base_m1">
-        <color rgba="0.85098 0.85098 0.839216 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
     <visual>
@@ -29,8 +65,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/banana_pcb_locker.stl" />
       </geometry>
-      <material name="trunk_base_m2">
-        <color rgba="0.647059 0.647059 0.647059 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
     <visual>
@@ -38,8 +74,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/trunk_base.stl" />
       </geometry>
-      <material name="trunk_base_m3">
-        <color rgba="0.129412 0.152941 0.129412 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
     <visual>
@@ -47,7 +83,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/xl330.stl" />
       </geometry>
-      <material name="trunk_base_m4">
+      <material name="xl330_material">
         <color rgba="0.286275 0.286275 0.286275 1" />
       </material>
     </visual>
@@ -56,17 +92,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/power_support.stl" />
       </geometry>
-      <material name="trunk_base_m5">
-        <color rgba="0.67451 0.639216 0.603922 1" />
-      </material>
-    </visual>
-    <visual>
-      <origin xyz="0.004 -0 -0.0175215" rpy="-0.000000 0.000000 1.570796" />
-      <geometry>
-        <mesh filename="package://duck_description/meshes/power_support.stl" />
-      </geometry>
-      <material name="trunk_base_m6">
-        <color rgba="0.67451 0.639216 0.603922 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
     <visual>
@@ -74,7 +101,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/np_f970.stl" />
       </geometry>
-      <material name="trunk_base_m7">
+      <material name="np_f970_material">
         <color rgba="0.301961 0.301961 0.301961 1" />
       </material>
     </visual>
@@ -83,7 +110,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/xl330.stl" />
       </geometry>
-      <material name="trunk_base_m8">
+      <material name="xl330_material">
         <color rgba="0.286275 0.286275 0.286275 1" />
       </material>
     </visual>
@@ -92,8 +119,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/left_shell.stl" />
       </geometry>
-      <material name="trunk_base_m9">
-        <color rgba="0.8 0.8 0.8 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
     <visual>
@@ -101,7 +128,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/seeed_bearing__configuration__22x16x4.stl" />
       </geometry>
-      <material name="trunk_base_m10">
+      <material name="seeed_bearing__configuration__22x16x4_material">
         <color rgba="0.811765 0.858824 0.898039 1" />
       </material>
     </visual>
@@ -110,8 +137,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/hat_rear_shield_v3.stl" />
       </geometry>
-      <material name="trunk_base_m11">
-        <color rgba="0.22 0.23 0.25 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
   </link>
@@ -126,8 +153,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/yaw2roll.stl" />
       </geometry>
-      <material name="yaw2roll_m0">
-        <color rgba="0.129412 0.152941 0.129412 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
     <visual>
@@ -135,7 +162,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/xl330.stl" />
       </geometry>
-      <material name="yaw2roll_m1">
+      <material name="xl330_material">
         <color rgba="0.286275 0.286275 0.286275 1" />
       </material>
     </visual>
@@ -144,7 +171,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/seeed_bearing__configuration__22x16x4.stl" />
       </geometry>
-      <material name="yaw2roll_m2">
+      <material name="seeed_bearing__configuration__22x16x4_material">
         <color rgba="0.811765 0.858824 0.898039 1" />
       </material>
     </visual>
@@ -153,8 +180,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/bearing_roll.stl" />
       </geometry>
-      <material name="yaw2roll_m3">
-        <color rgba="0.129412 0.152941 0.129412 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
   </link>
@@ -176,7 +203,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/seeed_bearing__configuration__22x16x4.stl" />
       </geometry>
-      <material name="hip_l_m0">
+      <material name="seeed_bearing__configuration__22x16x4_material">
         <color rgba="0.811765 0.858824 0.898039 1" />
       </material>
     </visual>
@@ -185,8 +212,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/hip_l.stl" />
       </geometry>
-      <material name="hip_l_m1">
-        <color rgba="0.67451 0.639216 0.603922 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
   </link>
@@ -208,8 +235,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/upper_leg_left.stl" />
       </geometry>
-      <material name="upper_leg_left_m0">
-        <color rgba="0.85098 0.85098 0.839216 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
     <visual>
@@ -217,7 +244,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/xl330.stl" />
       </geometry>
-      <material name="upper_leg_left_m1">
+      <material name="xl330_material">
         <color rgba="0.286275 0.286275 0.286275 1" />
       </material>
     </visual>
@@ -226,8 +253,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/upper_leg_rigidity_plate.stl" />
       </geometry>
-      <material name="upper_leg_left_m2">
-        <color rgba="0.67451 0.639216 0.603922 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
     <visual>
@@ -235,7 +262,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/seeed_bearing__configuration__22x16x4.stl" />
       </geometry>
-      <material name="upper_leg_left_m3">
+      <material name="seeed_bearing__configuration__22x16x4_material">
         <color rgba="0.811765 0.858824 0.898039 1" />
       </material>
     </visual>
@@ -244,7 +271,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/xl330.stl" />
       </geometry>
-      <material name="upper_leg_left_m4">
+      <material name="xl330_material">
         <color rgba="0.286275 0.286275 0.286275 1" />
       </material>
     </visual>
@@ -267,17 +294,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/leg.stl" />
       </geometry>
-      <material name="leg_m0">
-        <color rgba="0.67451 0.639216 0.603922 1" />
-      </material>
-    </visual>
-    <visual>
-      <origin xyz="-0.022 0.0357771 0.0385" rpy="0.000000 1.570796 0.000000" />
-      <geometry>
-        <mesh filename="package://duck_description/meshes/leg.stl" />
-      </geometry>
-      <material name="leg_m1">
-        <color rgba="0.67451 0.639216 0.603922 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
     <visual>
@@ -285,7 +303,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/xl330.stl" />
       </geometry>
-      <material name="leg_m2">
+      <material name="xl330_material">
         <color rgba="0.286275 0.286275 0.286275 1" />
       </material>
     </visual>
@@ -308,7 +326,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/sole_left.stl" />
       </geometry>
-      <material name="ankle_left_m0">
+      <material name="sole_left_material">
         <color rgba="0.956863 0.686275 0.137255 1" />
       </material>
     </visual>
@@ -317,8 +335,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/foot_left.stl" />
       </geometry>
-      <material name="ankle_left_m2">
-        <color rgba="1 0.403922 0.121569 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
     <visual>
@@ -326,7 +344,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/seeed_bearing__configuration_default.stl" />
       </geometry>
-      <material name="ankle_left_m3">
+      <material name="seeed_bearing__configuration_default_material">
         <color rgba="0.811765 0.858824 0.898039 1" />
       </material>
     </visual>
@@ -335,8 +353,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/ankle_left.stl" />
       </geometry>
-      <material name="ankle_left_m4">
-        <color rgba="1 0.403922 0.121569 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
   </link>
@@ -358,8 +376,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/neck.stl" />
       </geometry>
-      <material name="neck_m0">
-        <color rgba="0.67451 0.639216 0.603922 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
     <visual>
@@ -367,7 +385,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/xl330.stl" />
       </geometry>
-      <material name="neck_m1">
+      <material name="xl330_material">
         <color rgba="0.286275 0.286275 0.286275 1" />
       </material>
     </visual>
@@ -376,7 +394,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/xl330.stl" />
       </geometry>
-      <material name="neck_m2">
+      <material name="xl330_material">
         <color rgba="0.286275 0.286275 0.286275 1" />
       </material>
     </visual>
@@ -385,8 +403,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/neck.stl" />
       </geometry>
-      <material name="neck_m3">
-        <color rgba="0.67451 0.639216 0.603922 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
   </link>
@@ -408,8 +426,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/neck_pitch.stl" />
       </geometry>
-      <material name="neck_pitch_m0">
-        <color rgba="0.34902 0.376471 0.4 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
     <visual>
@@ -417,7 +435,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/seeed_bearing__configuration__22x16x4.stl" />
       </geometry>
-      <material name="neck_pitch_m1">
+      <material name="seeed_bearing__configuration__22x16x4_material">
         <color rgba="0.811765 0.858824 0.898039 1" />
       </material>
     </visual>
@@ -440,8 +458,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/yaw_roll_motion.stl" />
       </geometry>
-      <material name="yaw_roll_motion_m0">
-        <color rgba="0.129412 0.152941 0.129412 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
     <visual>
@@ -449,7 +467,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/xl330.stl" />
       </geometry>
-      <material name="yaw_roll_motion_m1">
+      <material name="xl330_material">
         <color rgba="0.286275 0.286275 0.286275 1" />
       </material>
     </visual>
@@ -458,7 +476,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/seeed_bearing__configuration__22x16x4.stl" />
       </geometry>
-      <material name="yaw_roll_motion_m2">
+      <material name="seeed_bearing__configuration__22x16x4_material">
         <color rgba="0.811765 0.858824 0.898039 1" />
       </material>
     </visual>
@@ -467,7 +485,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/seeed_bearing__configuration__22x16x4.stl" />
       </geometry>
-      <material name="yaw_roll_motion_m3">
+      <material name="seeed_bearing__configuration__22x16x4_material">
         <color rgba="0.811765 0.858824 0.898039 1" />
       </material>
     </visual>
@@ -481,17 +499,17 @@
   </joint>
   <link name="jaw_soft">
     <inertial>
-      <origin xyz="0.00460523 0.00120047 -0.0324761" rpy="0 0 0" />
-      <mass value="0.188766" />
-      <inertia ixx="0.000320811" iyy="0.0002541" izz="0.000149882" ixy="-6.32293e-07" ixz="6.57153e-06" iyz="4.18477e-06" />
+      <origin xyz="0.0113205 0.00131486 -0.0292459" rpy="0 0 0" />
+      <mass value="0.178806" />
+      <inertia ixx="0.000603805" iyy="0.00042475" izz="0.000323145" ixy="1.4988e-06" ixz="1.69561e-05" iyz="6.08737e-06" />
     </inertial>
     <visual>
       <origin xyz="0.0155 -9.13778e-05 -0.05548" rpy="-1.570796 0.000000 -1.570796" />
       <geometry>
         <mesh filename="package://duck_description/meshes/lens.stl" />
       </geometry>
-      <material name="jaw_soft_m0">
-        <color rgba="0.262745 0.282353 0.301961 1" />
+      <material name="lens_glass">
+        <color rgba="0.04 0.07 0.12 1" />
       </material>
     </visual>
     <visual>
@@ -499,8 +517,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/face_part.stl" />
       </geometry>
-      <material name="jaw_soft_m1">
-        <color rgba="0.67451 0.639216 0.603922 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
     <visual>
@@ -508,17 +526,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/xl330.stl" />
       </geometry>
-      <material name="jaw_soft_m2">
+      <material name="xl330_material">
         <color rgba="0.286275 0.286275 0.286275 1" />
-      </material>
-    </visual>
-    <visual>
-      <origin xyz="-0.0046 0 -0.0179996" rpy="1.570796 0.000000 1.570796" />
-      <geometry>
-        <mesh filename="package://duck_description/meshes/jaw_soft.stl" />
-      </geometry>
-      <material name="jaw_soft_m3">
-        <color rgba="0.85098 0.756863 0.866667 1" />
       </material>
     </visual>
     <visual>
@@ -526,8 +535,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/motor_support.stl" />
       </geometry>
-      <material name="jaw_soft_m4">
-        <color rgba="0.129412 0.152941 0.129412 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
     <visual>
@@ -535,7 +544,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/xl330.stl" />
       </geometry>
-      <material name="jaw_soft_m5">
+      <material name="xl330_material">
         <color rgba="0.286275 0.286275 0.286275 1" />
       </material>
     </visual>
@@ -544,7 +553,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/seeed_bearing__configuration_default.stl" />
       </geometry>
-      <material name="jaw_soft_m6">
+      <material name="seeed_bearing__configuration_default_material">
         <color rgba="0.811765 0.858824 0.898039 1" />
       </material>
     </visual>
@@ -553,17 +562,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/elec_rpi_robot_hat_pcb.stl" />
       </geometry>
-      <material name="jaw_soft_m7">
+      <material name="elec_rpi_robot_hat_pcb_material">
         <color rgba="0.313725 0.486275 0.411765 1" />
-      </material>
-    </visual>
-    <visual>
-      <origin xyz="-0.00420071 1.7776e-08 -0.0180814" rpy="1.570796 0.000000 1.570796" />
-      <geometry>
-        <mesh filename="package://duck_description/meshes/soft_mouth_top.stl" />
-      </geometry>
-      <material name="jaw_soft_m8">
-        <color rgba="0.85098 0.756863 0.866667 1" />
       </material>
     </visual>
     <visual>
@@ -571,17 +571,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/noenoeil.stl" />
       </geometry>
-      <material name="jaw_soft_m9">
-        <color rgba="0.956863 0.686275 0.137255 1" />
-      </material>
-    </visual>
-    <visual>
-      <origin xyz="-0.0045 -0 -0.018" rpy="1.570796 0.000000 1.570796" />
-      <geometry>
-        <mesh filename="package://duck_description/meshes/jaw.stl" />
-      </geometry>
-      <material name="jaw_soft_m10">
-        <color rgba="1 0.403922 0.121569 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
     <visual>
@@ -589,7 +580,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/m12_lens_holder.stl" />
       </geometry>
-      <material name="jaw_soft_m11">
+      <material name="m12_lens_holder_material">
         <color rgba="0.262745 0.282353 0.301961 1" />
       </material>
     </visual>
@@ -598,7 +589,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/pcb__raspberry_pi_zero_2_w.stl" />
       </geometry>
-      <material name="jaw_soft_m12">
+      <material name="pcb__raspberry_pi_zero_2_w_material">
         <color rgba="0.498039 0.498039 0.498039 1" />
       </material>
     </visual>
@@ -607,7 +598,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/speaker.stl" />
       </geometry>
-      <material name="jaw_soft_m13">
+      <material name="speaker_material">
         <color rgba="0.294118 0.290196 0.290196 1" />
       </material>
     </visual>
@@ -616,8 +607,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/duck_head_upper_v3.stl" />
       </geometry>
-      <material name="jaw_soft_m14">
-        <color rgba="0.22 0.23 0.25 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
     <visual>
@@ -625,8 +616,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/duck_head_lower_v3.stl" />
       </geometry>
-      <material name="jaw_soft_m15">
-        <color rgba="0.22 0.23 0.25 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
   </link>
@@ -636,30 +627,6 @@
     <origin xyz="-0.0179 0 0.0145" rpy="0.000000 -1.570796 -0.000000" />
     <axis xyz="0 0 1" />
     <limit lower="-0.43633231299858327" upper="0.4363323129985815" effort="0.96" velocity="6.0" />
-  </joint>
-  <link name="v3_extra_duck_head_upper_v3">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="0.01717" />
-      <inertia ixx="2.575e-06" iyy="2.575e-06" izz="2.575e-06" ixy="0" ixz="0" iyz="0" />
-    </inertial>
-  </link>
-  <joint name="jaw_soft_to_v3_extra_duck_head_upper_v3" type="fixed">
-    <parent link="jaw_soft" />
-    <child link="v3_extra_duck_head_upper_v3" />
-    <origin xyz="0.03170 0.00001 -0.02646" rpy="0.000000 0.000000 0.000000" />
-  </joint>
-  <link name="v3_extra_duck_head_lower_v3">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="0.00571" />
-      <inertia ixx="8.569e-07" iyy="8.569e-07" izz="8.569e-07" ixy="0" ixz="0" iyz="0" />
-    </inertial>
-  </link>
-  <joint name="jaw_soft_to_v3_extra_duck_head_lower_v3" type="fixed">
-    <parent link="jaw_soft" />
-    <child link="v3_extra_duck_head_lower_v3" />
-    <origin xyz="-0.00779 -0.00106 -0.03780" rpy="0.000000 0.000000 0.000000" />
   </joint>
   <link name="bearing_roll">
     <inertial>
@@ -672,8 +639,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/yaw2roll.stl" />
       </geometry>
-      <material name="bearing_roll_m0">
-        <color rgba="0.129412 0.152941 0.129412 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
     <visual>
@@ -681,7 +648,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/xl330.stl" />
       </geometry>
-      <material name="bearing_roll_m1">
+      <material name="xl330_material">
         <color rgba="0.286275 0.286275 0.286275 1" />
       </material>
     </visual>
@@ -690,8 +657,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/bearing_roll.stl" />
       </geometry>
-      <material name="bearing_roll_m2">
-        <color rgba="0.129412 0.152941 0.129412 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
     <visual>
@@ -699,7 +666,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/seeed_bearing__configuration__22x16x4.stl" />
       </geometry>
-      <material name="bearing_roll_m3">
+      <material name="seeed_bearing__configuration__22x16x4_material">
         <color rgba="0.811765 0.858824 0.898039 1" />
       </material>
     </visual>
@@ -722,8 +689,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/hip_l.stl" />
       </geometry>
-      <material name="hip_l_2_m0">
-        <color rgba="0.67451 0.639216 0.603922 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
     <visual>
@@ -731,7 +698,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/seeed_bearing__configuration__22x16x4.stl" />
       </geometry>
-      <material name="hip_l_2_m1">
+      <material name="seeed_bearing__configuration__22x16x4_material">
         <color rgba="0.811765 0.858824 0.898039 1" />
       </material>
     </visual>
@@ -754,7 +721,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/xl330.stl" />
       </geometry>
-      <material name="upper_leg_right_m0">
+      <material name="xl330_material">
         <color rgba="0.286275 0.286275 0.286275 1" />
       </material>
     </visual>
@@ -763,7 +730,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/seeed_bearing__configuration__22x16x4.stl" />
       </geometry>
-      <material name="upper_leg_right_m1">
+      <material name="seeed_bearing__configuration__22x16x4_material">
         <color rgba="0.811765 0.858824 0.898039 1" />
       </material>
     </visual>
@@ -772,8 +739,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/upper_leg_rigidity_plate.stl" />
       </geometry>
-      <material name="upper_leg_right_m2">
-        <color rgba="0.67451 0.639216 0.603922 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
     <visual>
@@ -781,8 +748,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/upper_leg_right.stl" />
       </geometry>
-      <material name="upper_leg_right_m3">
-        <color rgba="0.85098 0.85098 0.839216 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
     <visual>
@@ -790,7 +757,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/xl330.stl" />
       </geometry>
-      <material name="upper_leg_right_m4">
+      <material name="xl330_material">
         <color rgba="0.286275 0.286275 0.286275 1" />
       </material>
     </visual>
@@ -813,7 +780,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/xl330.stl" />
       </geometry>
-      <material name="leg_2_m0">
+      <material name="xl330_material">
         <color rgba="0.286275 0.286275 0.286275 1" />
       </material>
     </visual>
@@ -822,17 +789,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/leg.stl" />
       </geometry>
-      <material name="leg_2_m1">
-        <color rgba="0.67451 0.639216 0.603922 1" />
-      </material>
-    </visual>
-    <visual>
-      <origin xyz="-0.0357771 -0.022 0.0385" rpy="0.000000 1.570796 0.000000" />
-      <geometry>
-        <mesh filename="package://duck_description/meshes/leg.stl" />
-      </geometry>
-      <material name="leg_2_m2">
-        <color rgba="0.67451 0.639216 0.603922 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
   </link>
@@ -854,8 +812,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/ankle_right.stl" />
       </geometry>
-      <material name="ankle_right_m0">
-        <color rgba="1 0.403922 0.121569 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
     <visual>
@@ -863,7 +821,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/sole_right.stl" />
       </geometry>
-      <material name="ankle_right_m1">
+      <material name="sole_right_material">
         <color rgba="0.956863 0.686275 0.137255 1" />
       </material>
     </visual>
@@ -872,7 +830,7 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/seeed_bearing__configuration_default.stl" />
       </geometry>
-      <material name="ankle_right_m3">
+      <material name="seeed_bearing__configuration_default_material">
         <color rgba="0.811765 0.858824 0.898039 1" />
       </material>
     </visual>
@@ -881,8 +839,8 @@
       <geometry>
         <mesh filename="package://duck_description/meshes/foot_right.stl" />
       </geometry>
-      <material name="ankle_right_m4">
-        <color rgba="1 0.403922 0.121569 1" />
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
       </material>
     </visual>
   </link>
@@ -892,17 +850,5 @@
     <origin xyz="-0.042 0 -0.026" rpy="-3.141593 0.000000 1.570796" />
     <axis xyz="0 0 1" />
     <limit lower="-1.5707963267949028" upper="1.5707963267948903" effort="0.96" velocity="6.0" />
-  </joint>
-  <link name="v3_shield">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="0.02909" />
-      <inertia ixx="1.746e-05" iyy="1.746e-05" izz="1.746e-05" ixy="0" ixz="0" iyz="0" />
-    </inertial>
-  </link>
-  <joint name="trunk_base_to_v3_shield" type="fixed">
-    <parent link="trunk_base" />
-    <child link="v3_shield" />
-    <origin xyz="-0.05493 -0.00000 0.02000" rpy="0.000000 0.000000 0.000000" />
   </joint>
 </robot>
