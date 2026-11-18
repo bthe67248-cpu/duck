@@ -41,6 +41,7 @@ from sensor_msgs_py import point_cloud2  # noqa: E402
 
 TOPICS = ["/imu", "/cmd_vel", "/tof/zones", "/tof/pose_level", "/ground_truth/pose", "/clock", "/slam/pose"]
 DEFAULT = dict(matcher="correlative", sweep=1.5, min_hits=12, map="gated", fresh=True, kw={})
+# {"min_hits": 8, "loc": {}} replays the current slam_node defaults through duckslam.FrameLocalizer
 
 
 def stamp(h):
@@ -123,6 +124,10 @@ def run(cfg):
     bootstrap = True
     errs, oks, n_frames, n_acc, match_s, reasons = [], [], 0, 0, [], {}
     slips = []
+    relocs = 0
+    loc = ds.FrameLocalizer(slam, **c["loc"]) if "loc" in c else None
+    if loc is not None:
+        health = loc.health
     next_err_t = 0.0
     for t, kind, data in events:
         if kind == 0:
@@ -155,7 +160,20 @@ def run(cfg):
         R, tt = sp
         ang, r, hit = slam.scan_from_tof(ranges, valid, rays, R, tt, "radial", fov_h_deg=45.0)
         n_frames += 1
-        if not len(ang):
+        if not len(ang):                                 # empty frames are not health observations (slam_node too)
+            continue
+        if loc is not None:                              # the shared node policy (duckslam.FrameLocalizer)
+            current = slam.pose.copy()
+            t0 = time.perf_counter()
+            accepted, corr = loc.step(ts, pose_acq, ang, r, hit)
+            match_s.append(time.perf_counter() - t0)
+            reasons[slam.match_reason] = reasons.get(slam.match_reason, 0) + 1
+            n_acc += bool(accepted); slips.append(slam.slip)
+            relocs += loc.relocalizing
+            slam.pose = current + corr
+            if np.any(corr):
+                for kk in hist_keys[bisect.bisect_right(hist_keys, ts):]:
+                    hist[kk] = hist[kk] + corr
             continue
         current = slam.pose.copy(); slam.pose = pose_acq.copy()
         if sweep is not None:
@@ -202,7 +220,7 @@ def run(cfg):
         print("   error per 20 s:", " ".join(f"{e[i:i + w].mean():.2f}" for i in range(0, len(e), w)))
     top = dict(sorted(reasons.items(), key=lambda kv: -kv[1])[:4])
     print(f"{json.dumps(cfg):70s} err mean {e.mean():.3f} med {np.median(e):.3f} max {e.max():.3f} | "
-          f"ok {100 * np.mean(oks):3.0f}% acc {n_acc:4d}/{n_frames} {1e3 * np.mean(match_s) if match_s else 0:4.1f} ms | {top}",
+          f"ok {100 * np.mean(oks):3.0f}% reloc {relocs} acc {n_acc:4d}/{n_frames} {1e3 * np.mean(match_s) if match_s else 0:4.1f} ms | {top}",
           flush=True)
     return e.mean()
 

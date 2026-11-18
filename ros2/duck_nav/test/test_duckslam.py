@@ -478,3 +478,26 @@ def test_slip_ignores_corrections_that_do_not_constrain_forward_motion():
         s.last_offset = np.array([-s._raw_fwd, 0.0, 0.0]); s.match_cov = np.diag([0.1 ** 2, 1e-4, 1e-4])
         s.observe_slip()
     assert s.slip == pytest.approx(1.0)
+
+
+def test_frame_localizer_keeps_mapping_until_localisation_is_healthy():
+    s = ds.DuckSLAM(min_hits=8); loc = ds.FrameLocalizer(s)
+    a, r, h = corner_scan(np.linspace(-30, 100, 160))    # enough rays to mark the matcher's 80 wall cells
+    for i in range(30):                                  # standing in a corner: bootstrap, then healthy
+        loc.step(i * 0.1, np.zeros(3), a, r, h)
+    assert not loc.bootstrap and loc.health.state(29 * 0.1) == "ok"
+    assert (s.logodds > 0.8).sum() >= 80
+
+
+def test_frame_localizer_widens_the_search_after_a_long_weak_spell():
+    s = corner_reference(); loc = ds.FrameLocalizer(s, relocalize_after=1.0, use_sweep=False)
+    a, r, h = corner_scan(np.linspace(-30, 100, 40))
+    for i in range(5):
+        loc.step(i * 0.1, np.zeros(3), a, r, h)
+    assert loc.health.state(0.4) == "ok"
+    off = np.array([0.5, -0.4, math.radians(15)])        # far outside the normal +-0.3 m / 12 deg search
+    pose = off.copy(); t = 0.5; ok = False
+    for _ in range(60):
+        acc, corr = loc.step(t, pose, a, r, h); pose = pose + corr; t += 0.1
+        ok = ok or loc.relocalizing
+    assert ok and np.hypot(*pose[:2]) < 0.05

@@ -517,6 +517,84 @@ class DuckSLAM:
         return g
 
 
+
+class FrameLocalizer:
+    """Per-frame scan-matching and mapping policy, shared by slam_node and tools/slam_replay.py.
+
+    `step` is called with the robot pose at the frame's acquisition time; it matches, decides whether to map,
+    and returns (accepted, correction). The caller carries the correction to the current pose.
+      - matching: the correlative matcher (default) or the old grid search, over a short sweep window
+      - relocalisation: after `relocalize_after` s without a healthy state, the search widens to
+        +-`reloc_window` m / +-`reloc_ang` rad with a weak prior (one bad step must not be permanent)
+      - mapping: while bootstrapping (until localisation is first healthy), while the map is too small to
+        match against, and afterwards on accepted/healthy frames only once the body has moved `map_move` m
+        or turned `map_turn` rad since the last map update (GMapping-style keyframes; standing still adds no
+        information and lets map and pose creep together)
+      - slip: online odometry scale from forward corrections (DuckSLAM.observe_slip)
+    """
+
+    def __init__(self, slam, matcher="correlative", sweep=1.0, gain=0.6, fresh=False, slip=True,
+                 relocalize_after=3.0, reloc_window=0.8, reloc_ang=math.radians(25), map_move=0.03,
+                 map_turn=math.radians(3), scan_timeout=0.75, match_timeout=1.5, use_sweep=True):
+        self.slam = slam
+        self.matcher, self.gain, self.fresh, self.slip = matcher, gain, fresh, slip
+        self.relocalize_after, self.reloc_window, self.reloc_ang = relocalize_after, reloc_window, reloc_ang
+        self.map_move, self.map_turn = map_move, map_turn
+        self.health = LocalizationHealth(scan_timeout, match_timeout)
+        self.sweep = ScanWindow(sweep) if use_sweep and sweep > 0 else None
+        self.bootstrap = True
+        self.last_ok = None              # last time the health state was "ok"
+        self.last_map_pose = None
+        self.relocalizing = False
+
+    def reset_after_fall(self):
+        self.health.invalidate()
+        if self.sweep is not None:
+            self.sweep.clear()
+
+    def step(self, ts, pose_acq, ang, r, hit, match=True):
+        slam = self.slam
+        slam.pose = pose_acq.copy()
+        if self.sweep is not None:
+            self.sweep.add(ts, pose_acq, ang, r, hit)
+            cons = self.sweep.scan(pose_acq)
+        else:
+            cons = (ang, r, hit)
+        accepted = False
+        slam.last_offset = None
+        if match:
+            fresh = (ang, r, hit) if self.fresh else None
+            since_ok = ts - (self.last_ok if self.last_ok is not None else ts)
+            self.relocalizing = not self.bootstrap and since_ok > self.relocalize_after
+            if self.matcher == "correlative":
+                kw = dict(window=self.reloc_window, ang_window=self.reloc_ang, prior_xy=1.0, prior_th=0.6) \
+                    if self.relocalizing else {}
+                accepted = slam.match_correlative(*cons, current_scan=fresh, gain=1.0 if self.relocalizing else self.gain,
+                                                  **kw)
+            else:
+                accepted = slam.match(*cons, current_scan=fresh)
+        corr = slam.pose - pose_acq
+        if accepted and self.sweep is not None:
+            self.sweep.correct(pose_acq, slam.pose)
+        healthy = self.health.state(ts) == "ok" and slam.match_reason not in (
+            "fresh_scan_disagrees", "search_boundary", "ambiguous", "ambiguous_heading")
+        moved = self.last_map_pose is None or (
+            math.hypot(*(slam.pose[:2] - self.last_map_pose[:2])) >= self.map_move
+            or abs((slam.pose[2] - self.last_map_pose[2] + math.pi) % (2 * math.pi) - math.pi) >= self.map_turn)
+        if self.bootstrap or slam.match_reason == "map_not_ready" or ((accepted or healthy) and moved):
+            slam.update_map(ang, r, hit)
+            self.last_map_pose = slam.pose.copy()
+        self.health.observe(ts, accepted)
+        if self.health.state(ts) == "ok":
+            self.last_ok = ts
+            self.bootstrap = False
+        elif self.last_ok is None and not self.bootstrap:
+            self.last_ok = ts
+        if self.slip:
+            slam.observe_slip()
+        return accepted, corr
+
+
 def world_yaw_rate(gyro_body, up_body):
     """World yaw rate from the body gyro and the world 'up' direction expressed in the body frame
     (from a filtered attitude estimate). Equals gyro z only when the body is level."""

@@ -82,6 +82,7 @@ class SlamNode(Node):
         self.declare_parameter("match_gain", 0.6)             # fraction of each correction applied (damps aliasing)
         self.declare_parameter("fresh_check", False)          # also require the newest frame alone to agree
         self.declare_parameter("slip_estimation", True)       # scale gait odometry by observed/modelled motion
+        self.declare_parameter("relocalize_after", 3.0)       # s without healthy localisation -> widen the search
         self.declare_parameter("fall_tilt_deg", 35.0)         # filtered tilt above this -> "recovering"
         self.declare_parameter("upright_tilt_deg", 15.0)      # ... back to "ok" after `upright_hold` s below this
         self.declare_parameter("upright_hold", 1.0)
@@ -107,10 +108,17 @@ class SlamNode(Node):
         else:
             self.slam = ds.DuckSLAM(gains)
         self.tilt = ds.TiltFilter()
-        self.health = ds.LocalizationHealth(float(self.get_parameter("scan_timeout").value),
-                                             float(self.get_parameter("match_timeout").value))
-        self.sweep = ds.ScanWindow(float(self.get_parameter("sweep_window").value))
-        self.last_frame_ns = -1; self.bootstrap = True
+        # matching / mapping / relocalisation / slip policy, shared with tools/slam_replay.py
+        self.loc = ds.FrameLocalizer(
+            self.slam, matcher=self.get_parameter("matcher").value,
+            sweep=float(self.get_parameter("sweep_window").value), use_sweep=self.mode == "tof",
+            gain=float(self.get_parameter("match_gain").value), fresh=bool(self.get_parameter("fresh_check").value),
+            slip=bool(self.get_parameter("slip_estimation").value),
+            relocalize_after=float(self.get_parameter("relocalize_after").value), map_move=0.0, map_turn=0.0,
+            scan_timeout=float(self.get_parameter("scan_timeout").value),
+            match_timeout=float(self.get_parameter("match_timeout").value))
+        self.health = self.loc.health
+        self.last_frame_ns = -1
         self.cmd = (0.0, 0.0); self.cmd_t = -1e9; self.last_imu_t = None
         self.state = "ok"; self.upright_since = None
         self.K = None
@@ -162,7 +170,7 @@ class SlamNode(Node):
         tilt = math.degrees(self.tilt.tilt())
         if self.state == "ok" and tilt > self.get_parameter("fall_tilt_deg").value:
             self.state = "recovering"; self.upright_since = None
-            self.health.invalidate(); self.sweep.clear(); self.bootstrap = False
+            self.loc.reset_after_fall()
             self.get_logger().warn(f"tilt {tilt:.0f} deg: fall/recovery, map and translation updates suspended")
         elif self.state == "recovering":
             if tilt < self.get_parameter("upright_tilt_deg").value:
@@ -244,42 +252,15 @@ class SlamNode(Node):
         accepted = False
         if len(ang):
             current = self.slam.pose.copy()
-            self.slam.pose = pose_acq.copy()                   # process at the acquisition pose ...
-            self.sweep.add(ns * 1e-9, pose_acq, ang, r, hit)
-            if self.get_parameter("scan_matching").value:
-                constraints = self.sweep.scan(pose_acq) if self.mode == "tof" else (ang, r, hit)
-                if self.get_parameter("matcher").value == "correlative":
-                    accepted = self.slam.match_correlative(
-                        *constraints, current_scan=(ang, r, hit) if self.get_parameter("fresh_check").value else None,
-                        gain=float(self.get_parameter("match_gain").value))
-                else:
-                    accepted = self.slam.match(*constraints, current_scan=(ang, r, hit))
-            corr = self.slam.pose - pose_acq
-            if accepted:
-                self.sweep.correct(pose_acq, self.slam.pose)
-            # Until the first accepted match there is nothing to match against, so every scan is mapped
-            # (requiring the duck to stand at the origin left the map empty whenever the walls were out of range).
-            # New territory has nothing to match against yet, so requiring an accepted match for every map
-            # update froze the map at its first view (realistic run: "slam weak" most of the time). Extend the
-            # map while localisation is still healthy (two recent accepted matches, see LocalizationHealth),
-            # but never from a scan that contradicts the map or wanted a correction at the search edge.
-            healthy = (self.health.state(ns * 1e-9) == "ok"
-                       and self.slam.match_reason not in ("fresh_scan_disagrees", "search_boundary", "ambiguous", "ambiguous_heading"))
-            # bootstrap ends only when localisation is healthy, and a map too small to match against is always
-            # extended: ending it at the first accepted match deadlocked (that frame's free-space update took the
-            # map back under the matcher's minimum, so nothing was ever accepted or mapped again)
-            if accepted or healthy or self.bootstrap or self.slam.match_reason == "map_not_ready":
-                self.slam.update_map(ang, r, hit)
+            accepted, corr = self.loc.step(ns * 1e-9, pose_acq, ang, r, hit,      # match + map at the acquisition pose
+                                           match=bool(self.get_parameter("scan_matching").value))
             self.slam.pose = current + corr                    # ... and carry the correction to now
             if np.any(corr):                                   # later history entries get it too, so a frame acquired
                 for k in [k for k in self.pose_hist.d if k > ns]:     # before this one was processed is not
                     self.pose_hist.d[k] = self.pose_hist.d[k] + corr  # corrected twice
             pose_acq = pose_acq + corr
-        self.health.observe(ns * 1e-9, accepted)
-        if self.bootstrap and self.health.state(ns * 1e-9) == "ok":
-            self.bootstrap = False
-        if len(ang) and self.get_parameter("slip_estimation").value:
-            self.slam.observe_slip()                           # stalls against obstacles: the gait walks, the duck does not
+        # an empty frame (no return within range) says nothing about localisation quality: not counted as a
+        # failed match (counting it reset the health streak, stopped map updates and diverged in replay)
         reason = self.slam.match_reason if len(ang) else "empty_scan"
         if not self.get_parameter("scan_matching").value:
             reason = "matching_disabled; navigation gated"
