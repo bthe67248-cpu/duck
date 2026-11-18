@@ -256,7 +256,6 @@ class SlamNode(Node):
                     accepted = self.slam.match(*constraints, current_scan=(ang, r, hit))
             corr = self.slam.pose - pose_acq
             if accepted:
-                self.bootstrap = False
                 self.sweep.correct(pose_acq, self.slam.pose)
             # Until the first accepted match there is nothing to match against, so every scan is mapped
             # (requiring the duck to stand at the origin left the map empty whenever the walls were out of range).
@@ -266,7 +265,10 @@ class SlamNode(Node):
             # but never from a scan that contradicts the map or wanted a correction at the search edge.
             healthy = (self.health.state(ns * 1e-9) == "ok"
                        and self.slam.match_reason not in ("fresh_scan_disagrees", "search_boundary", "ambiguous", "ambiguous_heading"))
-            if accepted or healthy or self.bootstrap:
+            # bootstrap ends only when localisation is healthy, and a map too small to match against is always
+            # extended: ending it at the first accepted match deadlocked (that frame's free-space update took the
+            # map back under the matcher's minimum, so nothing was ever accepted or mapped again)
+            if accepted or healthy or self.bootstrap or self.slam.match_reason == "map_not_ready":
                 self.slam.update_map(ang, r, hit)
             self.slam.pose = current + corr                    # ... and carry the correction to now
             if np.any(corr):                                   # later history entries get it too, so a frame acquired
@@ -274,6 +276,8 @@ class SlamNode(Node):
                     self.pose_hist.d[k] = self.pose_hist.d[k] + corr  # corrected twice
             pose_acq = pose_acq + corr
         self.health.observe(ns * 1e-9, accepted)
+        if self.bootstrap and self.health.state(ns * 1e-9) == "ok":
+            self.bootstrap = False
         if len(ang) and self.get_parameter("slip_estimation").value:
             self.slam.observe_slip()                           # stalls against obstacles: the gait walks, the duck does not
         reason = self.slam.match_reason if len(ang) else "empty_scan"

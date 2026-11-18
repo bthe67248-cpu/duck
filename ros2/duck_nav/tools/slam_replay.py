@@ -173,18 +173,23 @@ def run(cfg):
         reasons[slam.match_reason] = reasons.get(slam.match_reason, 0) + 1
         corr = slam.pose - pose_acq
         if accepted:
-            bootstrap = False; n_acc += 1
+            n_acc += 1
             if sweep is not None:
                 sweep.correct(pose_acq, slam.pose)
         healthy = health.state(ts) == "ok" and slam.match_reason not in (
             "fresh_scan_disagrees", "search_boundary", "ambiguous", "ambiguous_heading")
-        if c["map"] == "always" or accepted or healthy or bootstrap:
+        if c.get("debug") and n_frames % 300 == 0:
+            print(f"   t={ts:6.1f} occ={(slam.logodds > 0.8).sum():5d} hits={int(hit.sum())} cons={int(cons[2].sum())} "
+                  f"bootstrap={bootstrap} reason={slam.match_reason} pose={np.round(slam.pose, 2)}")
+        if c["map"] == "always" or accepted or healthy or bootstrap or slam.match_reason == "map_not_ready":
             slam.update_map(ang, r, hit)
         slam.pose = current + corr
         if np.any(corr):
             for kk in hist_keys[bisect.bisect_right(hist_keys, ts):]:
                 hist[kk] = hist[kk] + corr
         health.observe(ts, accepted)
+        if bootstrap and health.state(ts) == "ok":
+            bootstrap = False
         if c.get("slip"):
             slam.observe_slip(**c.get("slip_kw", {}))
             slips.append(slam.slip)
