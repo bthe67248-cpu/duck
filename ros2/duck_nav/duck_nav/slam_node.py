@@ -75,8 +75,13 @@ class SlamNode(Node):
         self.declare_parameter("scan_matching", True)
         self.declare_parameter("scan_timeout", 0.75)          # acquisition age, not publication/receipt age
         self.declare_parameter("match_timeout", 1.5)
-        self.declare_parameter("sweep_window", 1.5)           # short local constraints; NOT loop closure
+        self.declare_parameter("sweep_window", 1.0)           # short local constraints; NOT loop closure
         self.declare_parameter("matcher", "correlative")      # correlative (Olson 2009) | grid (old +-7.5 cm search)
+        # tuned offline on a recorded realistic run (tools/slam_replay.py); see results/slam_tuning/README.md
+        self.declare_parameter("tof_min_hits", 8)             # ToF hits in the sweep window needed to match
+        self.declare_parameter("match_gain", 0.6)             # fraction of each correction applied (damps aliasing)
+        self.declare_parameter("fresh_check", False)          # also require the newest frame alone to agree
+        self.declare_parameter("slip_estimation", True)       # scale gait odometry by observed/modelled motion
         self.declare_parameter("fall_tilt_deg", 35.0)         # filtered tilt above this -> "recovering"
         self.declare_parameter("upright_tilt_deg", 15.0)      # ... back to "ok" after `upright_hold` s below this
         self.declare_parameter("upright_hold", 1.0)
@@ -96,7 +101,7 @@ class SlamNode(Node):
         gains = ds.OdomGains(fwd=float(self.get_parameter("v_gain").value), rev=float(self.get_parameter("v_gain_rev").value),
                              lat=float(self.get_parameter("v_gain_lat").value))
         if self.mode == "tof":
-            self.slam = ds.DuckSLAM(gains, max_r=float(self.get_parameter("tof_max_range").value), min_hits=12)
+            self.slam = ds.DuckSLAM(gains, max_r=float(self.get_parameter("tof_max_range").value), min_hits=int(self.get_parameter("tof_min_hits").value))
             fov = float(self.get_parameter("tof_fov_deg").value)
             self.tof_rays = ds.tof_zone_rays(8, fov, fov)
         else:
@@ -244,23 +249,24 @@ class SlamNode(Node):
             if self.get_parameter("scan_matching").value:
                 constraints = self.sweep.scan(pose_acq) if self.mode == "tof" else (ang, r, hit)
                 if self.get_parameter("matcher").value == "correlative":
-                    accepted = self.slam.match_correlative(*constraints, current_scan=(ang, r, hit))
+                    accepted = self.slam.match_correlative(
+                        *constraints, current_scan=(ang, r, hit) if self.get_parameter("fresh_check").value else None,
+                        gain=float(self.get_parameter("match_gain").value))
                 else:
                     accepted = self.slam.match(*constraints, current_scan=(ang, r, hit))
             corr = self.slam.pose - pose_acq
             if accepted:
                 self.bootstrap = False
                 self.sweep.correct(pose_acq, self.slam.pose)
-            # Build the initial reference while standing still. Rejected moving
-            # scans must not reinforce a bad match by drawing duplicate walls.
-            stationary_origin = np.linalg.norm(pose_acq[:2]) < 0.05 and abs(pose_acq[2]) < math.radians(3)
+            # Until the first accepted match there is nothing to match against, so every scan is mapped
+            # (requiring the duck to stand at the origin left the map empty whenever the walls were out of range).
             # New territory has nothing to match against yet, so requiring an accepted match for every map
             # update froze the map at its first view (realistic run: "slam weak" most of the time). Extend the
             # map while localisation is still healthy (two recent accepted matches, see LocalizationHealth),
             # but never from a scan that contradicts the map or wanted a correction at the search edge.
             healthy = (self.health.state(ns * 1e-9) == "ok"
                        and self.slam.match_reason not in ("fresh_scan_disagrees", "search_boundary", "ambiguous", "ambiguous_heading"))
-            if accepted or healthy or (self.bootstrap and stationary_origin):
+            if accepted or healthy or self.bootstrap:
                 self.slam.update_map(ang, r, hit)
             self.slam.pose = current + corr                    # ... and carry the correction to now
             if np.any(corr):                                   # later history entries get it too, so a frame acquired
@@ -268,6 +274,8 @@ class SlamNode(Node):
                     self.pose_hist.d[k] = self.pose_hist.d[k] + corr  # corrected twice
             pose_acq = pose_acq + corr
         self.health.observe(ns * 1e-9, accepted)
+        if len(ang) and self.get_parameter("slip_estimation").value:
+            self.slam.observe_slip()                           # stalls against obstacles: the gait walks, the duck does not
         reason = self.slam.match_reason if len(ang) else "empty_scan"
         if not self.get_parameter("scan_matching").value:
             reason = "matching_disabled; navigation gated"

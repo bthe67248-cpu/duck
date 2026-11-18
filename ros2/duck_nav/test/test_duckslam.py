@@ -451,3 +451,30 @@ def test_likelihood_table_cache_follows_map_updates():
     assert s.likelihood_tables()[0] is t1
     s.update_map(np.array([0.0]), np.array([0.5]), np.array([True]))
     assert s.likelihood_tables()[0] is not t1
+
+
+def test_slip_estimate_follows_a_stall_and_recovers():
+    s = ds.DuckSLAM()
+    for _ in range(40):                       # commanded forward 0.4 (model 0.178 m/s), duck does not move
+        for _ in range(5):
+            s.predict(0.4, 0.0, 0.02)
+        s.last_offset = np.array([-s.slip * s._raw_fwd, 0.0, 0.0]); s.match_cov = np.eye(3) * 1e-4
+        s.pose[0] += s.last_offset[0]
+        s.observe_slip()
+    assert s.slip < 0.1
+    for _ in range(60):                       # walking normally again: matches agree with the model
+        for _ in range(5):
+            s.predict(0.4, 0.0, 0.02)
+        s.last_offset = np.array([(1 - s.slip) * s._raw_fwd, 0.0, 0.0]); s.match_cov = np.eye(3) * 1e-4
+        s.observe_slip()
+    assert s.slip > 0.9
+
+
+def test_slip_ignores_corrections_that_do_not_constrain_forward_motion():
+    s = ds.DuckSLAM()
+    for _ in range(40):
+        for _ in range(5):
+            s.predict(0.4, 0.0, 0.02)
+        s.last_offset = np.array([-s._raw_fwd, 0.0, 0.0]); s.match_cov = np.diag([0.1 ** 2, 1e-4, 1e-4])
+        s.observe_slip()
+    assert s.slip == pytest.approx(1.0)

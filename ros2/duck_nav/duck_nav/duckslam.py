@@ -221,6 +221,11 @@ class DuckSLAM:
         self.map_version = 0             # bumped by update_map; invalidates the cached likelihood tables
         self._tables = None
         self.match_cov = None            # 3x3 covariance of the last correlative match (x, y, theta)
+        self.last_offset = None          # measured (undamped) pose offset of the last applied match
+        # online odometry calibration: slip = observed / commanded-model forward motion, from scan corrections
+        self.slip = 1.0
+        self._slip_num = self._slip_den = 0.0
+        self._raw_fwd = 0.0              # model forward distance since the last slip update (unscaled, signed)
 
     def body_velocity(self, cmd_vx, cmd_vy):
         g = self.gains
@@ -233,8 +238,11 @@ class DuckSLAM:
         return vx, vy
 
     def predict(self, cmd_vx, yaw_rate, dt, cmd_vy=0.0):
-        """Dead-reckoning step. `yaw_rate` must be the WORLD yaw rate (see `world_yaw_rate`), not raw gyro z."""
+        """Dead-reckoning step. `yaw_rate` must be the WORLD yaw rate (see `world_yaw_rate`), not raw gyro z.
+        Translation is scaled by the online slip estimate (see `observe_slip`)."""
         vx, vy = self.body_velocity(cmd_vx, cmd_vy)
+        self._raw_fwd += vx * dt
+        vx, vy = self.slip * vx, self.slip * vy
         self.pose[2] = (self.pose[2] + yaw_rate * dt + math.pi) % (2 * math.pi) - math.pi
         c, s = math.cos(self.pose[2]), math.sin(self.pose[2])
         self.pose[0] += (c * vx - s * vy) * dt
@@ -342,6 +350,26 @@ class DuckSLAM:
         self.match_reason = "low_overlap"
         return False
 
+    def observe_slip(self, decay=0.9, min_den=0.05, lo=0.0, hi=1.3, relax=0.02, max_fwd_std=0.04, leak=0.0):
+        """Update the slip factor after a sensor frame. A walking robot that pushes against an obstacle keeps
+        stepping, so the gait command says it moves while it does not (the gait version of wheel slip). The
+        scan matcher then keeps pulling the pose back; the ratio of observed to modelled forward motion over
+        the last ~1 s (exponential window, `decay` per frame) becomes the scale applied in `predict`.
+        Call once per processed frame, after matching (uses last_offset when the match was applied)."""
+        u = np.array([math.cos(self.pose[2]), math.sin(self.pose[2])])
+        usable = self.last_offset is not None and (
+            self.match_cov is None or float(u @ self.match_cov[:2, :2] @ u) <= max_fwd_std ** 2)
+        if usable:                                       # only corrections that pin down the forward position
+            observed = self.slip * self._raw_fwd + float(self.last_offset[:2] @ u)
+            self._slip_num = decay * self._slip_num + observed * math.copysign(1.0, self._raw_fwd or 1.0)
+            self._slip_den = decay * self._slip_den + abs(self._raw_fwd)
+            self._raw_fwd = 0.0
+            if self._slip_den > min_den:
+                self.slip = float(np.clip(self._slip_num / self._slip_den, lo, hi))
+        if abs(self._raw_fwd) < 1e-4:                    # standing still: drift back toward the model
+            self.slip += relax * (1.0 - self.slip)
+        self.slip += leak * (1.0 - self.slip)            # optional constant pull toward the model
+
     # ---- correlative scan matching (Olson, "Real-Time Correlative Scan Matching", ICRA 2009) ----------------
     def likelihood_tables(self, sigma=0.05, block=4):
         """Log-likelihood table of a return landing in each cell: its distance to the nearest occupied cell,
@@ -362,7 +390,7 @@ class DuckSLAM:
 
     def match_correlative(self, ang, r, hit, current_scan=None, window=0.30, ang_window=math.radians(12),
                           ang_step=math.radians(1.0), sigma=0.05, prior_xy=0.20, prior_th=math.radians(8),
-                          max_std_xy=0.06, max_std_th=math.radians(3.0), min_overlap=0.6, neff_cap=40):
+                          max_std_xy=0.06, max_std_th=math.radians(3.0), min_overlap=0.6, neff_cap=40, gain=1.0):
         """Exhaustive correlative match over +-`window` m and +-`ang_window`, with an exact two-level bound,
         a Gaussian odometry prior, and the match covariance from the posterior over the local grid (Olson eq. 3).
 
@@ -370,7 +398,7 @@ class DuckSLAM:
         the well-constrained direction is corrected (reason "partial") and False is returned, so the motion
         gate stays conservative. Sets match_reason, match_overlap and match_cov."""
         info = self.info
-        self.match_overlap = 0.0; self.match_cov = None
+        self.match_overlap = 0.0; self.match_cov = None; self.last_offset = None
         if hit.sum() < self.min_hits:
             self.match_reason = "insufficient_hits"; return False
         if (self.logodds > 0.8).sum() < 80:
@@ -454,11 +482,12 @@ class DuckSLAM:
             self.match_reason = "ambiguous_heading"; return False
         evals, evecs = np.linalg.eigh(cov[:2, :2])
         if math.sqrt(evals[1]) <= max_std_xy:
-            self.pose += mean; self.n_match += 1
+            self.pose += gain * mean; self.n_match += 1; self.last_offset = mean
             self.match_reason = "accepted"; return True
         if math.sqrt(evals[0]) <= max_std_xy:            # e.g. along a wall: correct across it and heading only
             v = evecs[:, 0]
-            self.pose[:2] += v * (v @ mean[:2]); self.pose[2] += mean[2]
+            self.pose[:2] += gain * v * (v @ mean[:2]); self.pose[2] += gain * mean[2]
+            self.last_offset = np.array([*(v * (v @ mean[:2])), mean[2]])
             self.match_reason = "partial"; return False
         self.match_reason = "ambiguous"; return False
 
