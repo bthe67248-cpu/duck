@@ -93,6 +93,12 @@ class WorldSim(Node):
         self.declare_parameter("tof_zone_dropout", 0.03); self.declare_parameter("tof_frame_dropout", 0.02)
         self.declare_parameter("tof_latency", 0.06)          # s from acquisition to publication
         self.declare_parameter("tof_range_convention", "radial")   # what the published `range` means
+        # The model's `tof` site sits ~2 mm behind the head shell's visual front surface and inside the head's collision
+        # primitives (mj_ray does not report hits from inside a primitive, so that alone does not self-occlude here).
+        # The real sensor must look through an opening, so the simulated optical origin is put this far forward along
+        # the boresight: 12 mm is clear of the head and bill over 135 head poses (results/post_fix/fov_check.txt), and
+        # the bill's collision proxy still shows up if it ever enters the field of view. /tof/pose_level uses it too.
+        self.declare_parameter("tof_origin_offset", 0.012)
         self.declare_parameter("seed", 0)
         self.profile = str(self.get_parameter("sensor_profile").value)
         if self.profile not in ("ideal", "realistic"):
@@ -259,10 +265,14 @@ class WorldSim(Node):
         ci.p = [f, 0.0, self.W / 2, 0.0, 0.0, f, self.H / 2, 0.0, 0.0, 0.0, 1.0, 0.0]
         return ci
 
+    def tof_origin(self):
+        R = self.d.site_xmat[self.tof_site].reshape(3, 3)
+        return self.d.site_xpos[self.tof_site] + R[:, 0] * float(self.get_parameter("tof_origin_offset").value)
+
     def tof_frame(self, stamp):
         """Simulate one VL53L5CX acquisition at the current state: centre ray per zone, noise, dropouts, max range."""
         d, m = self.d, self.m
-        p0 = d.site_xpos[self.tof_site].copy(); R = d.site_xmat[self.tof_site].reshape(3, 3)
+        R = d.site_xmat[self.tof_site].reshape(3, 3); p0 = self.tof_origin()
         n = len(self.tof_rays)
         rng = np.full(n, np.nan, np.float32); status = np.ones(n, np.uint8)
         gid = np.zeros(1, np.int32)
@@ -363,7 +373,7 @@ class WorldSim(Node):
         if self.profile == "realistic":
             if self.k % self.tof_every == 0:
                 self.pub_tpose.publish(pose_msg(stamp, "base_level", Rz @ d.site_xmat[self.tof_site].reshape(3, 3),
-                                                Rz @ (d.site_xpos[self.tof_site] - origin)))
+                                                Rz @ (self.tof_origin() - origin)))
                 self.tof_queue.append((sim_t + float(self.get_parameter("tof_latency").value), self.tof_frame(stamp)))
             while self.tof_queue and self.tof_queue[0][0] <= sim_t + 1e-9:
                 self.pub_tof.publish(self.tof_queue.popleft()[1])
