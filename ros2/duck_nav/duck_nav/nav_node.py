@@ -21,6 +21,8 @@ import numpy as np
 import rclpy
 from geometry_msgs.msg import PointStamped, PoseStamped, Twist
 from nav_msgs.msg import OccupancyGrid, Path
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile
 from std_msgs.msg import Bool, Float64, String
@@ -55,8 +57,9 @@ class NavNode(Node):
         self.create_subscription(String, "slam/state", lambda m: setattr(self, "slam_state", m.data), 10)
         self.create_subscription(PointStamped, "goal", self.on_goal, 10)
         self.create_subscription(Bool, "nav/enable", self.on_enable, 10)
-        self.create_timer(1.0, self.replan)
-        self.create_timer(0.05, self.drive)
+        # planning runs in its own callback group so a slow plan never blocks the 20 Hz command stream
+        self.create_timer(1.0, self.replan, callback_group=MutuallyExclusiveCallbackGroup())
+        self.create_timer(0.05, self.drive, callback_group=MutuallyExclusiveCallbackGroup())
 
     def now(self):
         return self.get_clock().now().nanoseconds * 1e-9
@@ -185,14 +188,15 @@ class NavNode(Node):
         cmd = Twist()
         if t < self.unstick_until:
             cmd.angular.z = 1.2; self.pub_cmd.publish(cmd); return
+        path = self.path
         if self.progress_ref is None or math.hypot(self.pose[0] - self.progress_ref[0], self.pose[1] - self.progress_ref[1]) > 0.10:
             self.progress_ref = (self.pose[0], self.pose[1], t)
-        elif t - self.progress_ref[2] > 8.0 and self.path:
+        elif t - self.progress_ref[2] > 8.0 and path:
             self.unstick_until = t + 2.5; self.progress_ref = None
             self.get_logger().info("no progress for 8 s: turning in place and replanning")
-        if self.path:
-            ahead = [p for p in self.path if math.hypot(p[0] - self.pose[0], p[1] - self.pose[1]) > 0.22]
-            tgt = ahead[0] if ahead else self.path[-1]
+        if path:
+            ahead = [p for p in path if math.hypot(p[0] - self.pose[0], p[1] - self.pose[1]) > 0.22]
+            tgt = ahead[0] if ahead else path[-1]
             e = (math.atan2(tgt[1] - self.pose[1], tgt[0] - self.pose[0]) - self.pose[2] + math.pi) % (2 * math.pi) - math.pi
             if abs(e) > 0.6:
                 cmd.angular.z = 1.2 * float(np.sign(e))
@@ -206,13 +210,15 @@ class NavNode(Node):
 def main():
     rclpy.init()
     node = NavNode()
+    ex = MultiThreadedExecutor(num_threads=3); ex.add_node(node)
     try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
+        ex.spin()
+    except (KeyboardInterrupt, ExternalShutdownException):
         pass
+    except Exception:                                    # noqa: BLE001  executor torn down by a signal mid-wait
+        if rclpy.ok():
+            raise
     finally:
-        try:
+        if rclpy.ok():
             node.pub_cmd.publish(Twist())                # leave the robot commanded still
-        except Exception:                                # noqa: BLE001
-            pass
         node.destroy_node(); rclpy.try_shutdown()

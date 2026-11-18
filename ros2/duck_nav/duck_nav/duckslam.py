@@ -399,8 +399,9 @@ def exploration_state(grid, pose, info=DEFAULT_MAP, min_area_m2=2.0, min_open_fr
         return "stalled", 0.0, 0
     passable = (grid == 0)
     passable[ci, cj] = grid[ci, cj] != 100
-    dist, _ = _bfs(passable, (ci, cj))
-    reached = dist >= 0
+    lab, _ = ndimage.label(passable, structure=np.ones((3, 3)))     # connectivity only: fast, no path needed
+    reached = lab == lab[ci, cj] if lab[ci, cj] else np.zeros_like(passable)
+    reached[ci, cj] = passable[ci, cj]
     area = float(reached.sum()) * info.res ** 2
     if area < min_area_m2:
         return "waiting", area, 0

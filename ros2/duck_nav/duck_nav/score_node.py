@@ -17,6 +17,7 @@ import os
 
 import numpy as np
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from geometry_msgs.msg import PointStamped, PoseStamped
 from nav_msgs.msg import OccupancyGrid
 from rclpy.node import Node
@@ -174,7 +175,10 @@ def main():
     node = ScoreNode()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, ExternalShutdownException):
         pass
+    except Exception:                                    # noqa: BLE001  torn down by a signal mid-wait
+        if rclpy.ok():
+            raise
     finally:
         node.destroy_node(); rclpy.try_shutdown()

@@ -14,6 +14,7 @@ import time
 import numpy as np
 import onnxruntime as ort
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import Image
@@ -150,7 +151,10 @@ def main():
     node = YoloNode()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, ExternalShutdownException):
         pass
+    except Exception:                                    # noqa: BLE001  torn down by a signal mid-wait
+        if rclpy.ok():
+            raise
     finally:
         node.destroy_node(); rclpy.try_shutdown()

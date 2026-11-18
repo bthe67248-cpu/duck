@@ -38,6 +38,7 @@ import mujoco
 import numpy as np
 import onnxruntime as ort
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from geometry_msgs.msg import PoseStamped, TransformStamped, Twist
 from rclpy.clock import Clock, ClockType
 from rclpy.node import Node
@@ -375,7 +376,10 @@ def main():
     node = WorldSim()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, ExternalShutdownException):
         pass
+    except Exception:                                    # noqa: BLE001  torn down by a signal mid-wait
+        if rclpy.ok():
+            raise
     finally:
         node.destroy_node(); rclpy.try_shutdown()

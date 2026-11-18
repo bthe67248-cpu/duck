@@ -20,6 +20,7 @@ import time
 
 import numpy as np
 import rclpy
+from rclpy.executors import ExternalShutdownException
 import yaml
 from rclpy.node import Node
 from sensor_msgs.msg import CameraInfo, Image
@@ -126,7 +127,10 @@ def main():
     node = UsbCameraNode()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, ExternalShutdownException):
         pass
+    except Exception:                                    # noqa: BLE001  torn down by a signal mid-wait
+        if rclpy.ok():
+            raise
     finally:
         node.running = False; node.destroy_node(); rclpy.try_shutdown()

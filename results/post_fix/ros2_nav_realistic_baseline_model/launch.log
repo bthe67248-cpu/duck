@@ -1,0 +1,148 @@
+[INFO] [launch]: All log files can be found below /home/caide/.ros/log/2026-11-17-15-58-36-270209-DESKTOP-D7NMGD0-1050
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [world_sim-1]: process started with pid [1056]
+[INFO] [robot_state_publisher-2]: process started with pid [1057]
+[INFO] [yolo_node-3]: process started with pid [1058]
+[INFO] [slam_node-4]: process started with pid [1059]
+[INFO] [nav_node-5]: process started with pid [1060]
+[INFO] [score_node-6]: process started with pid [1061]
+[robot_state_publisher-2] [WARN] [1794959916.476583282] [kdl_parser]: The root link trunk_base has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
+[robot_state_publisher-2] [INFO] [1794959916.476707787] [robot_state_publisher]: Robot initialized
+[yolo_node-3] [INFO] [1794959917.282637159] [duck_yolo]: YOLO input 320x256, classes ['beacon', 'box']
+[world_sim-1] [INFO] [1794959918.649552365] [world_sim]: world_sim up (realistic sensors): 50 Hz policy, 200 Hz physics, camera 320x240 at 5 Hz, ToF 8x8 at 10 Hz, latency 0.06 s
+[nav_node-5] [INFO] [1794959919.623689661] [duck_nav]: [t=1.0 s] waiting for observations
+[nav_node-5] [INFO] [1794959920.594650739] [duck_nav]: [t=2.0 s] exploring
+[yolo_node-3] [INFO] [1794959948.555786356] [duck_yolo]: 149 frames, 50 ms/inference, detections so far: {'beacon': 0, 'box': 67}
+[world_sim-1] [INFO] [1794959948.596488476] [world_sim]: sim 30 s, wall 30 s, render 54 ms per camera frame
+[yolo_node-3] [INFO] [1794959980.034305400] [duck_yolo]: 299 frames, 36 ms/inference, detections so far: {'beacon': 0, 'box': 142}
+[world_sim-1] [INFO] [1794959980.093465795] [world_sim]: sim 60 s, wall 60 s, render 55 ms per camera frame
+[nav_node-5] [INFO] [1794959980.431109269] [duck_nav]: [t=60.4 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1794959981.284551722] [duck_nav]: [t=61.2 s] exploring
+[slam_node-4] [INFO] [1794960010.149904403] [duck_slam]: beacon located by YOLO + tof: (3.91, 1.45) in the map
+[nav_node-5] [INFO] [1794960010.875566058] [duck_nav]: [t=89.6 s] heading for the beacon
+[yolo_node-3] [INFO] [1794960011.248184141] [duck_yolo]: 449 frames, 16 ms/inference, detections so far: {'beacon': 45, 'box': 310}
+[world_sim-1] [INFO] [1794960011.281057335] [world_sim]: sim 90 s, wall 90 s, render 31 ms per camera frame
+[nav_node-5] [INFO] [1794960026.015350393] [duck_nav]: [t=103.0 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1794960036.770319837] [duck_nav]: [t=113.7 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1794960040.614068553] [duck_nav]: [t=117.6 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1794960041.630055884] [duck_nav]: [t=118.6 s] inside the clearance margin: backing out along known-free cells
+[yolo_node-3] [INFO] [1794960043.003453268] [duck_yolo]: 599 frames, 15 ms/inference, detections so far: {'beacon': 82, 'box': 449}
+[world_sim-1] [INFO] [1794960043.040266877] [world_sim]: sim 120 s, wall 120 s, render 28 ms per camera frame
+[nav_node-5] [INFO] [1794960045.735010353] [duck_nav]: [t=122.7 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1794960047.828590307] [duck_nav]: [t=124.8 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1794960048.453178616] [duck_nav]: [t=125.4 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1794960049.675961642] [duck_nav]: [t=126.7 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1794960052.075010944] [duck_nav]: [t=127.6 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1794960056.201814828] [duck_nav]: [t=131.8 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1794960059.067832378] [duck_nav]: [t=134.6 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1794960060.273511168] [duck_nav]: [t=135.8 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1794960064.062581727] [duck_nav]: [t=139.6 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1794960074.251979725] [duck_nav]: [t=149.8 s] inside the clearance margin: backing out along known-free cells
+[yolo_node-3] [INFO] [1794960074.434727968] [duck_yolo]: 749 frames, 19 ms/inference, detections so far: {'beacon': 83, 'box': 549}
+[world_sim-1] [INFO] [1794960074.475967139] [world_sim]: sim 150 s, wall 150 s, render 31 ms per camera frame
+[nav_node-5] [INFO] [1794960080.051594238] [duck_nav]: [t=155.6 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1794960082.314884481] [duck_nav]: [t=157.9 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1794960083.263113639] [duck_nav]: [t=158.8 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1794960085.898057856] [duck_nav]: [t=159.7 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1794960087.959591207] [duck_nav]: [t=161.7 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1794960090.017502077] [duck_nav]: [t=163.7 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1794960091.660754165] [duck_nav]: [t=165.4 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1794960093.177908644] [duck_nav]: [t=167.0 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1794960094.751761739] [duck_nav]: [t=168.5 s] beacon reached; exploring the rest of the room
+[yolo_node-3] [INFO] [1794960106.202876409] [duck_yolo]: 899 frames, 25 ms/inference, detections so far: {'beacon': 83, 'box': 607}
+[world_sim-1] [INFO] [1794960106.254192441] [world_sim]: sim 180 s, wall 180 s, render 36 ms per camera frame
+[nav_node-5] [INFO] [1794960107.998101907] [duck_nav]: [t=181.8 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1794960108.775394697] [duck_nav]: [t=182.5 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1794960116.859443959] [duck_nav]: [t=190.6 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1794960120.858086201] [duck_nav]: [t=193.0 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1794960122.109611473] [duck_nav]: [t=194.2 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1794960124.521609632] [duck_nav]: [t=196.6 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1794960137.791106618] [duck_nav]: [t=209.9 s] no reachable frontier
+[yolo_node-3] [INFO] [1794960137.885861309] [duck_yolo]: 1049 frames, 17 ms/inference, detections so far: {'beacon': 88, 'box': 754}
+[world_sim-1] [INFO] [1794960137.915153948] [world_sim]: sim 210 s, wall 210 s, render 27 ms per camera frame
+[nav_node-5] [INFO] [1794960140.682368736] [duck_nav]: [t=212.8 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1794960144.476748767] [duck_nav]: [t=216.6 s] no reachable frontier
+[nav_node-5] [INFO] [1794960148.823793449] [duck_nav]: [t=220.9 s] exploration stalled: no usable frontier but the room is not closed (18.1 m2 reachable, open frontier 210 cells)
+[score_node-6] [INFO] [1794960149.006865640] [duck_score]: RUN FINISHED
+[score_node-6] exploration         : exploration stalled: no usable frontier but the room is not closed (18.1 m2 reachable, open frontier 210 cells)
+[score_node-6] beacon              : reached at 100 s (true distance < 0.45 m)
+[score_node-6] beacon estimate     : [3.901, 1.462], true (4.0, 1.3), error 0.189 m
+[score_node-6] SLAM position error : mean 0.246 m, max 1.023 m, final 0.287 m (11007 stamp-matched samples)
+[score_node-6] path walked         : 33.6 m, falls 0
+[score_node-6] YOLO                : 1104 frames, detections {'box': 794, 'beacon': 88}
+[score_node-6] room coverage       : 90% of the room interior classified
+[score_node-6] events:
+[score_node-6]      1.1 s  waiting for observations
+[score_node-6]      2.0 s  exploring
+[score_node-6]     60.4 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]     61.2 s  exploring
+[score_node-6]     89.6 s  heading for the beacon
+[score_node-6]    100.4 s  beacon reached (true distance 0.45 m)
+[score_node-6]    103.0 s  beacon reached; exploring the rest of the room
+[score_node-6]    113.8 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    117.6 s  beacon reached; exploring the rest of the room
+[score_node-6]    118.6 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    122.7 s  beacon reached; exploring the rest of the room
+[score_node-6]    124.8 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    125.4 s  beacon reached; exploring the rest of the room
+[score_node-6]    126.7 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    127.6 s  beacon reached; exploring the rest of the room
+[score_node-6]    131.8 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    134.6 s  beacon reached; exploring the rest of the room
+[score_node-6]    135.8 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    139.6 s  beacon reached; exploring the rest of the room
+[score_node-6]    149.8 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    155.6 s  beacon reached; exploring the rest of the room
+[score_node-6]    157.9 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    158.8 s  beacon reached; exploring the rest of the room
+[score_node-6]    159.7 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    161.7 s  beacon reached; exploring the rest of the room
+[score_node-6]    163.8 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    165.5 s  beacon reached; exploring the rest of the room
+[score_node-6]    167.0 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    168.5 s  beacon reached; exploring the rest of the room
+[score_node-6]    181.8 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    182.6 s  beacon reached; exploring the rest of the room
+[score_node-6]    190.7 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    193.0 s  beacon reached; exploring the rest of the room
+[score_node-6]    194.2 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    196.6 s  beacon reached; exploring the rest of the room
+[score_node-6]    209.9 s  no reachable frontier
+[score_node-6]    212.8 s  beacon reached; exploring the rest of the room
+[score_node-6]    216.6 s  no reachable frontier
+[score_node-6]    220.9 s  exploration stalled: no usable frontier but the room is not closed (18.1 m2 reachable, open frontier 210 cells)
+[robot_state_publisher-2] [INFO] [1794960154.415312413] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[world_sim-1] Traceback (most recent call last):
+[world_sim-1]   File "/home/caide/duck_ws/install/duck_nav/lib/duck_nav/world_sim", line 33, in <module>
+[world_sim-1]     sys.exit(load_entry_point('duck-nav', 'console_scripts', 'world_sim')())
+[world_sim-1]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[world_sim-1]   File "/home/caide/duck_ws/build/duck_nav/duck_nav/world_sim.py", line 378, in main
+[world_sim-1]     rclpy.spin(node)
+[world_sim-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
+[world_sim-1]     executor.spin_once()
+[world_sim-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 934, in spin_once
+[world_sim-1]     self._spin_once_impl(timeout_sec)
+[world_sim-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 926, in _spin_once_impl
+[world_sim-1]     raise handler.exception()
+[world_sim-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/task.py", line 286, in _execute_coroutine_step
+[world_sim-1]     result = coro.send(None)
+[world_sim-1]              ^^^^^^^^^^^^^^^
+[world_sim-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 600, in handler
+[world_sim-1]     await call_coroutine()
+[world_sim-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 462, in _execute
+[world_sim-1]     await await_or_execute(tmr.callback)
+[world_sim-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 116, in await_or_execute
+[world_sim-1]     return callback(*args)
+[world_sim-1]            ^^^^^^^^^^^^^^^
+[world_sim-1]   File "/home/caide/duck_ws/build/duck_nav/duck_nav/world_sim.py", line 353, in step
+[world_sim-1]     im.data = rgb.tobytes(); self.pub_rgb.publish(im)
+[world_sim-1]                              ^^^^^^^^^^^^^^^^^^^^^^^^
+[world_sim-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/publisher.py", line 70, in publish
+[world_sim-1]     self.__publisher.publish(msg)
+[world_sim-1] rclpy._rclpy_pybind11.RCLError: Failed to publish: publisher's context is invalid, at ./src/rcl/publisher.c:423
+[INFO] [robot_state_publisher-2]: process has finished cleanly [pid 1057]
+[INFO] [score_node-6]: process has finished cleanly [pid 1061]
+[INFO] [yolo_node-3]: process has finished cleanly [pid 1058]
+[INFO] [nav_node-5]: process has finished cleanly [pid 1060]
+[INFO] [slam_node-4]: process has finished cleanly [pid 1059]
+[ERROR] [world_sim-1]: process has died [pid 1056, exit code 1, cmd '/home/caide/duck_ws/install/duck_nav/lib/duck_nav/world_sim --ros-args --params-file /tmp/launch_params_t_7cs0kq'].

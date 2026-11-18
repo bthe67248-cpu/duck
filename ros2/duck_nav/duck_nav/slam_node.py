@@ -6,7 +6,7 @@ Subscribes  /imu (gyro + accel -> complementary attitude filter), /cmd_vel (gait
                                                 /camera/pose_level + /camera/camera_info for detection association
             /yolo/detections (vision_msgs/Detection2DArray)
 Publishes   /map (OccupancyGrid, 1 Hz), TF map -> base_level, /slam/pose (PoseStamped),
-            /slam/state (String: "ok" | "recovering": large tilt/fall, map and odometry updates suspended),
+            /slam/state (String: "ok" | "recovering": large tilt/fall, map and translation updates suspended; heading still tracked),
             /goal (PointStamped): the beacon's map position, only when a detection has a trustworthy range,
             /slam/beacon (String): "ranged ..." / "unranged: ..." for every beacon detection (diagnostics)
 
@@ -19,6 +19,7 @@ from collections import deque
 
 import numpy as np
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from geometry_msgs.msg import PointStamped, PoseStamped, TransformStamped, Twist
 from nav_msgs.msg import OccupancyGrid
 from rclpy.node import Node
@@ -138,7 +139,7 @@ class SlamNode(Node):
         tilt = math.degrees(self.tilt.tilt())
         if self.state == "ok" and tilt > self.get_parameter("fall_tilt_deg").value:
             self.state = "recovering"; self.upright_since = None
-            self.get_logger().warn(f"tilt {tilt:.0f} deg: fall/recovery, map and odometry updates suspended")
+            self.get_logger().warn(f"tilt {tilt:.0f} deg: fall/recovery, map and translation updates suspended")
         elif self.state == "recovering":
             if tilt < self.get_parameter("upright_tilt_deg").value:
                 self.upright_since = self.upright_since or t
@@ -148,8 +149,10 @@ class SlamNode(Node):
             else:
                 self.upright_since = None
         self.pub_state.publish(String(data=self.state))
-        if 0 < dt < 0.2 and self.state == "ok":
-            fresh = t - self.cmd_t < self.get_parameter("cmd_timeout").value
+        if 0 < dt < 0.2:
+            # heading keeps integrating through a stumble (the tilt-corrected yaw rate stays valid); translation from
+            # the gait command and map updates are suspended while recovering
+            fresh = t - self.cmd_t < self.get_parameter("cmd_timeout").value and self.state == "ok"
             vx, vy = self.cmd if fresh else (0.0, 0.0)
             self.slam.predict(vx, ds.world_yaw_rate(gyro, up), dt, cmd_vy=vy)
         self.pose_hist.put(stamp_ns(msg.header), self.slam.pose.copy())
@@ -224,10 +227,10 @@ class SlamNode(Node):
     @staticmethod
     def read_tof(msg):
         from sensor_msgs_py import point_cloud2
-        rec = point_cloud2.read_points_numpy(msg, field_names=("range", "status", "zone"))
+        rec = point_cloud2.read_points(msg, field_names=("range", "status", "zone"), skip_nans=False)
         n = 64
         ranges = np.full(n, np.nan); valid = np.zeros(n, bool)
-        for r, s, z in rec:
+        for r, s, z in zip(rec["range"], rec["status"], rec["zone"]):
             z = int(z)
             if 0 <= z < n:
                 ranges[z] = r; valid[z] = int(s) == 0 and np.isfinite(r)
@@ -345,7 +348,10 @@ def main():
     node = SlamNode()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, ExternalShutdownException):
         pass
+    except Exception:                                    # noqa: BLE001  torn down by a signal mid-wait
+        if rclpy.ok():
+            raise
     finally:
         node.destroy_node(); rclpy.try_shutdown()
