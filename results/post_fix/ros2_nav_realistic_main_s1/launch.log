@@ -1,0 +1,139 @@
+[INFO] [launch]: All log files can be found below ~/.ros/log/2026-11-17-21-18-31-986991-DESKTOP-D7NMGD0-8021
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [world_sim-1]: process started with pid [8027]
+[INFO] [robot_state_publisher-2]: process started with pid [8028]
+[INFO] [yolo_node-3]: process started with pid [8029]
+[INFO] [slam_node-4]: process started with pid [8030]
+[INFO] [nav_node-5]: process started with pid [8031]
+[INFO] [score_node-6]: process started with pid [8032]
+[robot_state_publisher-2] [WARN] [1794979112.186187058] [kdl_parser]: The root link trunk_base has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
+[robot_state_publisher-2] [INFO] [1794979112.186303475] [robot_state_publisher]: Robot initialized
+[yolo_node-3] [INFO] [1794979112.828935682] [duck_yolo]: YOLO input 320x256, classes ['beacon', 'box']
+[world_sim-1] Dropped Escape call with ulEscapeCode : 0x03007703
+[world_sim-1] [INFO] [1794979114.151893158] [world_sim]: world_sim up (realistic sensors): 50 Hz policy, 200 Hz physics, camera 320x240 at 5 Hz, ToF 8x8 at 10 Hz, latency 0.06 s
+[nav_node-5] [INFO] [1794979115.115311177] [duck_nav]: [t=1.0 s] waiting for observations
+[nav_node-5] [INFO] [1794979119.420812964] [duck_nav]: [t=2.0 s] exploring
+[yolo_node-3] [INFO] [1794979147.375483385] [duck_yolo]: 149 frames, 19 ms/inference, detections so far: {'beacon': 0, 'box': 13}
+[world_sim-1] [INFO] [1794979147.421228061] [world_sim]: sim 30 s, wall 30 s, render 40 ms per camera frame
+[yolo_node-3] [INFO] [1794979180.812329488] [duck_yolo]: 299 frames, 21 ms/inference, detections so far: {'beacon': 0, 'box': 77}
+[world_sim-1] [INFO] [1794979180.855070241] [world_sim]: sim 60 s, wall 60 s, render 41 ms per camera frame
+[nav_node-5] [INFO] [1794979182.132701073] [duck_nav]: [t=61.3 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1794979184.083064433] [duck_nav]: [t=63.2 s] exploring
+[nav_node-5] [INFO] [1794979184.833118705] [duck_nav]: [t=64.0 s] robot cell is mapped occupied or boxed in: stopping
+[nav_node-5] [INFO] [1794979186.109980601] [duck_nav]: [t=65.3 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1794979190.481452768] [duck_nav]: [t=66.2 s] exploring
+[nav_node-5] [INFO] [1794979205.612690977] [duck_nav]: [t=81.3 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1794979207.612804872] [duck_nav]: [t=83.3 s] exploring
+[nav_node-5] [INFO] [1794979210.589959039] [duck_nav]: [t=86.3 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1794979211.595582652] [duck_nav]: [t=87.3 s] exploring
+[yolo_node-3] [INFO] [1794979214.279494344] [duck_yolo]: 449 frames, 22 ms/inference, detections so far: {'beacon': 0, 'box': 127}
+[world_sim-1] [INFO] [1794979214.340122083] [world_sim]: sim 90 s, wall 90 s, render 43 ms per camera frame
+[yolo_node-3] [INFO] [1794979247.737595419] [duck_yolo]: 599 frames, 21 ms/inference, detections so far: {'beacon': 0, 'box': 242}
+[world_sim-1] [INFO] [1794979247.779926581] [world_sim]: sim 120 s, wall 120 s, render 43 ms per camera frame
+[slam_node-4] [INFO] [1794979268.260722753] [duck_slam]: beacon located by YOLO + tof: (5.10, 0.05) in the map
+[nav_node-5] [INFO] [1794979268.380142096] [duck_nav]: [t=137.1 s] goal rejected: (5.10, 0.05) is outside the map
+[nav_node-5] [INFO] [1794979268.717899637] [duck_nav]: [t=137.5 s] exploring
+[nav_node-5] [INFO] [1794979268.829296721] [duck_nav]: [t=137.7 s] goal rejected: (5.10, 0.05) is outside the map
+[nav_node-5] [INFO] [1794979269.256694865] [duck_nav]: [t=138.1 s] goal rejected: (5.10, 0.07) is outside the map
+[nav_node-5] [INFO] [1794979269.690357009] [duck_nav]: [t=138.5 s] exploring
+[yolo_node-3] [INFO] [1794979281.146533065] [duck_yolo]: 749 frames, 23 ms/inference, detections so far: {'beacon': 18, 'box': 343}
+[world_sim-1] [INFO] [1794979281.194925070] [world_sim]: sim 150 s, wall 150 s, render 49 ms per camera frame
+[nav_node-5] [INFO] [1794979289.360324071] [duck_nav]: [t=158.1 s] goal rejected: (5.10, 0.07) is outside the map
+[nav_node-5] [INFO] [1794979289.765509505] [duck_nav]: [t=158.6 s] exploring
+[nav_node-5] [INFO] [1794979292.858302957] [duck_nav]: [t=161.7 s] heading for the beacon
+[nav_node-5] [INFO] [1794979298.252862212] [duck_nav]: [t=163.6 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1794979304.262581587] [duck_nav]: [t=169.6 s] heading for the beacon
+[nav_node-5] [INFO] [1794979306.393184301] [duck_nav]: [t=171.8 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1794979309.334308681] [duck_nav]: [t=174.7 s] heading for the beacon
+[yolo_node-3] [INFO] [1794979314.604476970] [duck_yolo]: 899 frames, 22 ms/inference, detections so far: {'beacon': 45, 'box': 468}
+[world_sim-1] [INFO] [1794979314.645414414] [world_sim]: sim 180 s, wall 180 s, render 42 ms per camera frame
+[nav_node-5] [INFO] [1794979315.613778720] [duck_nav]: [t=181.0 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1794979318.484648504] [duck_nav]: [t=183.9 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1794979319.143218816] [duck_nav]: [t=184.5 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1794979321.238596145] [duck_nav]: [t=186.6 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1794979323.160805259] [duck_nav]: [t=188.5 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1794979336.593670963] [duck_nav]: [t=198.8 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1794979340.458842296] [duck_nav]: [t=202.7 s] beacon reached; exploring the rest of the room
+[yolo_node-3] [INFO] [1794979347.766697414] [duck_yolo]: 1049 frames, 20 ms/inference, detections so far: {'beacon': 52, 'box': 588}
+[world_sim-1] [INFO] [1794979347.809553440] [world_sim]: sim 210 s, wall 210 s, render 41 ms per camera frame
+[nav_node-5] [INFO] [1794979372.211842740] [duck_nav]: [t=231.0 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1794979372.855423666] [duck_nav]: [t=231.7 s] beacon reached; exploring the rest of the room
+[slam_node-4] [WARN] [1794979378.481152597] [duck_slam]: tilt 37 deg: fall/recovery, map and translation updates suspended
+[nav_node-5] [INFO] [1794979379.180832423] [duck_nav]: [t=238.0 s] slam recovering
+[yolo_node-3] [INFO] [1794979381.180228858] [duck_yolo]: 1199 frames, 21 ms/inference, detections so far: {'beacon': 59, 'box': 693}
+[world_sim-1] [INFO] [1794979381.223177258] [world_sim]: sim 240 s, wall 240 s, render 41 ms per camera frame
+[yolo_node-3] [INFO] [1794979414.150040145] [duck_yolo]: 1349 frames, 19 ms/inference, detections so far: {'beacon': 59, 'box': 693}
+[world_sim-1] [INFO] [1794979414.194398285] [world_sim]: sim 270 s, wall 270 s, render 41 ms per camera frame
+[yolo_node-3] [INFO] [1794979447.704914488] [duck_yolo]: 1499 frames, 21 ms/inference, detections so far: {'beacon': 59, 'box': 693}
+[world_sim-1] [INFO] [1794979447.750046514] [world_sim]: sim 300 s, wall 300 s, render 42 ms per camera frame
+[yolo_node-3] [INFO] [1794979480.541979976] [duck_yolo]: 1649 frames, 20 ms/inference, detections so far: {'beacon': 59, 'box': 693}
+[world_sim-1] [INFO] [1794979480.586721731] [world_sim]: sim 330 s, wall 330 s, render 41 ms per camera frame
+[yolo_node-3] [INFO] [1794979514.023883528] [duck_yolo]: 1799 frames, 19 ms/inference, detections so far: {'beacon': 59, 'box': 693}
+[world_sim-1] [INFO] [1794979514.066613500] [world_sim]: sim 360 s, wall 360 s, render 41 ms per camera frame
+[yolo_node-3] [INFO] [1794979547.364800704] [duck_yolo]: 1949 frames, 20 ms/inference, detections so far: {'beacon': 59, 'box': 693}
+[world_sim-1] [INFO] [1794979547.411594384] [world_sim]: sim 390 s, wall 390 s, render 40 ms per camera frame
+[yolo_node-3] [INFO] [1794979577.365394883] [duck_yolo]: 2099 frames, 19 ms/inference, detections so far: {'beacon': 59, 'box': 693}
+[world_sim-1] [INFO] [1794979577.407015937] [world_sim]: sim 420 s, wall 420 s, render 40 ms per camera frame
+[yolo_node-3] [INFO] [1794979610.763404416] [duck_yolo]: 2249 frames, 19 ms/inference, detections so far: {'beacon': 59, 'box': 693}
+[world_sim-1] [INFO] [1794979610.805841372] [world_sim]: sim 450 s, wall 450 s, render 39 ms per camera frame
+[yolo_node-3] [INFO] [1794979644.941038295] [duck_yolo]: 2399 frames, 22 ms/inference, detections so far: {'beacon': 59, 'box': 693}
+[world_sim-1] [INFO] [1794979644.990252788] [world_sim]: sim 480 s, wall 480 s, render 43 ms per camera frame
+[yolo_node-3] [INFO] [1794979673.295679528] [duck_yolo]: 2549 frames, 19 ms/inference, detections so far: {'beacon': 59, 'box': 693}
+[world_sim-1] [INFO] [1794979673.339415645] [world_sim]: sim 510 s, wall 510 s, render 41 ms per camera frame
+[yolo_node-3] [INFO] [1794979704.675567937] [duck_yolo]: 2699 frames, 14 ms/inference, detections so far: {'beacon': 59, 'box': 693}
+[world_sim-1] [INFO] [1794979704.713397097] [world_sim]: sim 540 s, wall 540 s, render 35 ms per camera frame
+[yolo_node-3] [INFO] [1794979736.971837069] [duck_yolo]: 2849 frames, 15 ms/inference, detections so far: {'beacon': 59, 'box': 693}
+[world_sim-1] [INFO] [1794979737.011556106] [world_sim]: sim 570 s, wall 570 s, render 35 ms per camera frame
+[yolo_node-3] [INFO] [1794979769.172217456] [duck_yolo]: 2999 frames, 14 ms/inference, detections so far: {'beacon': 59, 'box': 693}
+[world_sim-1] [INFO] [1794979769.209316694] [world_sim]: sim 600 s, wall 600 s, render 33 ms per camera frame
+[score_node-6] [INFO] [1794979769.752824805] [duck_score]: RUN FINISHED
+[score_node-6] exploration         : TIMEOUT at 600 s (not complete)
+[score_node-6] beacon              : reached at 180 s (true distance < 0.45 m)
+[score_node-6] beacon estimate     : [4.691, 0.176], true (4.0, 1.3), error 1.32 m
+[score_node-6] SLAM position error : mean 1.058 m, max 1.433 m, final 1.236 m (29983 stamp-matched samples)
+[score_node-6] path walked         : 36.6 m, falls 1
+[score_node-6] YOLO                : 3002 frames, detections {'box': 693, 'beacon': 59}
+[score_node-6] room coverage       : 86% of the room interior classified
+[score_node-6] events:
+[score_node-6]      1.0 s  waiting for observations
+[score_node-6]      2.0 s  exploring
+[score_node-6]     61.3 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]     63.3 s  exploring
+[score_node-6]     64.0 s  robot cell is mapped occupied or boxed in: stopping
+[score_node-6]     65.3 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]     66.2 s  exploring
+[score_node-6]     81.3 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]     83.3 s  exploring
+[score_node-6]     86.3 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]     87.3 s  exploring
+[score_node-6]    137.2 s  goal rejected: (5.10, 0.05) is outside the map
+[score_node-6]    137.6 s  exploring
+[score_node-6]    137.7 s  goal rejected: (5.10, 0.05) is outside the map
+[score_node-6]    138.1 s  goal rejected: (5.10, 0.07) is outside the map
+[score_node-6]    138.5 s  exploring
+[score_node-6]    158.2 s  goal rejected: (5.10, 0.07) is outside the map
+[score_node-6]    158.6 s  exploring
+[score_node-6]    161.7 s  heading for the beacon
+[score_node-6]    163.6 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    169.6 s  heading for the beacon
+[score_node-6]    171.8 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    174.7 s  heading for the beacon
+[score_node-6]    179.6 s  beacon reached (true distance 0.45 m)
+[score_node-6]    181.0 s  beacon reached; exploring the rest of the room
+[score_node-6]    183.9 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    184.5 s  beacon reached; exploring the rest of the room
+[score_node-6]    186.6 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    188.5 s  beacon reached; exploring the rest of the room
+[score_node-6]    198.8 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    202.7 s  beacon reached; exploring the rest of the room
+[score_node-6]    231.0 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    231.7 s  beacon reached; exploring the rest of the room
+[score_node-6]    237.3 s  FALL (true pose)
+[score_node-6]    238.0 s  slam recovering
+[robot_state_publisher-2] [INFO] [1794979774.158964049] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[INFO] [robot_state_publisher-2]: process has finished cleanly [pid 8028]
+[INFO] [yolo_node-3]: process has finished cleanly [pid 8029]
+[INFO] [nav_node-5]: process has finished cleanly [pid 8031]
+[INFO] [score_node-6]: process has finished cleanly [pid 8032]
+[INFO] [slam_node-4]: process has finished cleanly [pid 8030]
+[INFO] [world_sim-1]: process has finished cleanly [pid 8027]

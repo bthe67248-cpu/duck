@@ -6,6 +6,16 @@ The numerical/model toolchain uses Python 3.12 and `requirements-test.txt`;
 upstream model assets were checked out at
 `pollen-robotics/microduck_rl@0daab160d3fb1c2cbaba16a4a19052f36709dd9e`.
 
+> **Localisation update (18 Nov 2026, branch `depth-camera-opt`).** In closed-loop room trials the patch's
+> strict localisation rules (2-D geometry, overlap, current-frame agreement and search-boundary checks on a
+> ±7.5 cm grid search) rejected almost every match and stopped exploration (30% of the room covered, 6.4 m
+> walked). They were replaced by a correlative scan matcher (Olson 2009) with online slip estimation,
+> relocalisation and a bootstrap fix; the per-frame policy is `duck_nav/duckslam.py: FrameLocalizer`, shared
+> by `slam_node` and the offline replay tool. The navigation gate below (drive only while `/slam/state` is
+> `ok`, two accepted constraints after a failure) is unchanged. Rationale, measurements and closed-loop
+> results: [`results/slam_tuning/README.md`](../slam_tuning/README.md). Rows and paragraphs below that
+> describe the old rules are marked.
+
 ## Can this run the actual duck?
 
 **Not as a complete robot controller.** This update makes measured model inputs,
@@ -24,7 +34,7 @@ were invented. Existing historical reports are preserved.
 | Tagged model bookkeeping | Correct ledger selected by scene tag; robot XML hash rejects stale ledgers; optional 5% whole-robot mass gate | Supply actual measurements, then regenerate and rerun |
 | Servo delay | Recorded and passed to the MATLAB delay check | Delay is **not** automatically inserted into the actuator dynamics; configure/validate the delay experiments separately |
 | Rear shield | Contact checker now fails on operating-envelope clashes; counts distinct poses, records seed and compiled-model hash | Measure mount, change placement/CAD and verify full mechanical clearance and get-up |
-| Sparse ToF localization | Bounded 1.5 s sweep constraints, 2-D geometry/overlap/current-frame agreement and search-boundary checks | Full room trials, measured noise/extrinsics, better odometry and loop closure/global relocalization |
+| Sparse ToF localization | *Patch:* bounded 1.5 s sweep constraints, 2-D geometry/overlap/current-frame agreement and search-boundary checks. *Now:* correlative matcher over a 1.0 s sweep (±30 cm / ±12°, odometry prior, score-based covariance), online slip scale, local relocalisation (±0.8 m / ±25° after 3 s unhealthy); the agreement check is off by default (`fresh_check`) | Measured noise/extrinsics, better odometry, loop closure; relocalisation is local, not global |
 | Weak/stale localization | Forward drive is stopped; head keeps sweeping; recovery needs two fresh accepted constraints | ROS transport/executor and real command-owner/MCU watchdog tests |
 | Walls/corner cutting | Commanded forward arc checked against footprint clearance and known-free cells; escape cannot reduce clearance; target selection no longer chases an old path start | Measure the speed bound and turning footprint; tight corners may intentionally stall |
 | ToF hardware software | `duck_tof` acquisition wrapper, explicit backend contract, offline JSONL replay and invalid-zone rejection | Actual VL53L5CX bus/firmware adapter, status normalization, clock synchronization and zone-direction tests |
@@ -143,12 +153,15 @@ clock. `HARDWARE_SENSORS.md` pins the inspected source commit and records the
 exact ABI/timing changes needed before connecting it to this SLAM interface.
 
 SLAM publishes `initializing`, `weak`, `stale`, `recovering` or `ok` on
-`/slam/state`, and the match reason/overlap on `/slam/match`. `ok` means these
-local consistency checks passed; it is not a position-error bound. A featureless
-wall or weak view can leave the duck standing still. `scan_matching:=false` is
-now diagnostic-only and cannot release autonomous motion. After a fall the
-system still lacks global relocalization; standing upright is not proof that
-its map position is correct.
+`/slam/state`, and the match reason/overlap on `/slam/match`. `ok` means two
+recent matches were accepted; it is not a position-error bound. A featureless
+wall constrains only the across-wall position; a weak view can leave the duck
+standing still. Frames with no ToF return are not counted as failed matches.
+`scan_matching:=false` is diagnostic-only and cannot release autonomous motion;
+`matcher:=grid` selects the old ±7.5 cm search. After 3 s without healthy
+localisation (for example after a fall) the matcher widens its window to
+±0.8 m / ±25°; this is local relocalisation, not global, so a larger error
+than that is not recovered.
 
 `speed_bound_mps` is the conservative SI forward-speed bound used by the local
 arc guard. Calibrate it with the real gait; a gait command value is not a speed
@@ -157,8 +170,9 @@ braking, noncircular body motion or floor slip.
 
 ## Verification and limits
 
-**94 tests passed, with no skips** in this environment; the captured aggregate
-result is in `tests.txt`. Both Sol agents reviewed adjacent work; fixes from
+**94 tests passed, with no skips** in this environment when the patch was
+delivered; the captured aggregate result is in `tests.txt`. On `depth-camera-opt`
+106 pass, and the GitHub workflow runs them on every push. Both Sol agents reviewed adjacent work; fixes from
 review include sensor-outage recovery streaks, stale ledger attribution and
 contact-count/provenance reporting.
 
@@ -173,7 +187,7 @@ provenance, sparse matching and stale/weak navigation stopping. Node safety
 tests use message/ROS shims and execute actual node methods; constructors,
 executors, DDS and devices are not exercised.
 
-The stationary synthetic corner replay uses eight horizontal rays, a ±0.9 rad
+*(Patch-era check, kept for the record.)* The stationary synthetic corner replay uses eight horizontal rays, a ±0.9 rad
 head sweep with a 4 s period, 10 Hz acquisitions, 1 cm Gaussian noise and 10%
 independent dropouts. Seeds 0/7/42 accept 47/46/45 of 100 scans; the motion gate
 is `ok` for 43/43/41 acquisitions. This verifies that bootstrap can succeed
@@ -194,7 +208,8 @@ older environment. No walking change was made and no improvement is claimed.
 The short stand is not the 60 s hardware gate, not a new backward-push margin,
 and not validation of measured Feetech dynamics. Full ROS room trials,
 Simulink/MATLAB, UNO Q execution, physical sensors and real servos were not run
-in this environment. Existing ideal/realistic room accuracy numbers are historical.
+in this environment. Existing ideal/realistic room accuracy numbers are historical; full ROS room trials
+of the current localisation are in `results/slam_tuning/README.md` (simulation only).
 
 ## Next physical work
 
@@ -238,4 +253,5 @@ python -m pytest tests ros2/duck_nav/test -q
 
 Without upstream assets the four model integration tests skip explicitly;
 clone the pinned upstream commit to exercise them too. The GitHub workflow does
-that automatically when uploaded. It has been added, not executed on GitHub.
+that automatically when uploaded. *(Since then it runs on GitHub; its pip cache needed
+`cache-dependency-path: requirements-test.txt`.)*

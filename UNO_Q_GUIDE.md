@@ -2,7 +2,7 @@
 
 This is the plan for moving what now runs in simulation (`C:\dev\duckling_sim`) onto the duck's own board. **None of it has been run on hardware.** Updated for the V3 handoff revision (17 Nov 2026): chosen camera and ToF, black PLA at 30% infill, and the corrected-model test results. Board facts come from the UNO Q datasheet and Arduino pages; anything I could not confirm is marked *check*.
 
-**Software update:** [`results/hardware_readiness/HANDOFF.md`](results/hardware_readiness/HANDOFF.md) records the new measured-input JSON workflow and software verification. `duck_tof` and `sensor_pose_node` now exist as acquisition/TF interfaces (see [`ros2/duck_nav/HARDWARE_SENSORS.md`](ros2/duck_nav/HARDWARE_SENSORS.md)); the actual sensor bus adapter and calibrated hardware TF remain unwritten. These interfaces do not make the robot hardware-ready. Use the perception-only launch for sensor bring-up.
+**Software update:** [`results/hardware_readiness/HANDOFF.md`](results/hardware_readiness/HANDOFF.md) records the new measured-input JSON workflow and software verification. `duck_tof` and `sensor_pose_node` now exist as acquisition/TF interfaces (see [`ros2/duck_nav/HARDWARE_SENSORS.md`](ros2/duck_nav/HARDWARE_SENSORS.md)); the actual sensor bus adapter and calibrated hardware TF remain unwritten. These interfaces do not make the robot hardware-ready. Use the perception-only launch for sensor bring-up. Localisation now uses a correlative ToF scan matcher with slip estimation and local relocalisation instead of the patch's strict acceptance rules; see [`results/slam_tuning/README.md`](results/slam_tuning/README.md).
 
 ## The board, in the numbers that matter here
 
@@ -116,7 +116,7 @@ docker run -it --net=host --privileged -v ~/duck_ws:/duck_ws ros:jazzy-ros-base
 
 **Decision (handoff, 17 Nov 2026): option B.** Main camera: **Arducam B0385**, OV9782 colour global shutter, USB 2.0 UVC board with a low-distortion M12 lens (alternative: Arducam B0196, IMX219 UVC; do not use a Pi CSI ribbon camera). Range: **ST VL53L5CX on a Pololu #3417 carrier**, 8×8 zones over I²C, start at 10 Hz (15 Hz is the 8×8 ceiling). Neither is bought or tested yet.
 
-In simulation this is `sensors:=realistic` (README Part F). It works, but it is clearly weaker than the ideal depth camera: the map drifts and doubles walls, and runs vary a lot. For reference, the options that were considered:
+In simulation this is `sensors:=realistic` (README Part F). With the correlative matcher it explores the room and finds the beacon, but it is still weaker than the ideal depth camera: without loop closure the pose drifts in long runs, and runs vary a lot between seeds ([`results/slam_tuning/README.md`](results/slam_tuning/README.md)). For reference, the options that were considered:
 
 | Option | What changes | Trade-off |
 |-|-|-|
@@ -156,7 +156,7 @@ In WSL everything ran in real time on a desktop CPU. On the QRB2210, measure and
 |-|-|-|-|
 | Policy (`duck_hw`) | 50 Hz | 50 Hz, never lower | Give it its own core (`taskset`) |
 | `yolo_node` | 5 Hz | 2 Hz | Smaller input, or an int8-quantised model |
-| `slam_node` scan matching | 5 Hz | 2 Hz, search window ±5 cm | Port the triple loop in `match` to NumPy broadcasting or C++ |
+| `slam_node` scan matching | 10 Hz (ToF), ~8 ms per correlative match | 10 Hz; expect 40 to 80 ms per match on an A53 core | Narrow the window (`window`/`ang_window` in `match_correlative`) or port the branch-and-bound search to C++ |
 | `nav_node` planner | 1 Hz | 0.5 Hz | The wavefront is a Python loop over about 30,000 cells: port to C++ or use a coarser grid (5 cm cells) |
 | Map publishing | 1 Hz | 0.5 Hz | Publish only to the PC when RViz is connected |
 
