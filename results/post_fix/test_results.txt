@@ -1,0 +1,38 @@
+Duckling V3 Simulink+MuJoCo tests (POST-FIX model), 17-Nov-2026 16:06:02
+model: cf0f51b1d2bf0aff
+gains: ankle = 2.34*pitch + 0.186*rate
+criteria: tilt<=10 deg, height>=87%, drift<=0.1 m, settle band 1 deg by 5 s, joint margin>=0.02 rad, saturation run<=1 s
+
+1. Hold pose, loop OFF, 10 s : FELL (tips over at t = 1.28 s)
+   knee sag at t = 0.25 s: 4.6 deg (hand calc 6.0 deg)
+   [PASS] 1 open loop tips over (expected)
+2. Stand, loop ON, 60 s      : stands | pitch mean -0.20 deg, band +/- 0.75 deg around it (after 2 s)
+   tilt max 0.87 deg | min height 99 mm (start 101) | drift 0.001 m | knee/ankle margin 1.064 rad | longest saturation 0.00 s | settled by 0.7 s
+   [PASS] 2a no fall
+   [PASS] 2b tilt max 0.87 <= 10 deg
+   [PASS] 2c min height 99 mm >= 88 mm
+   [PASS] 2d drift 0.001 <= 0.1 m
+   [PASS] 2e settled within 1 deg by 0.7 s <= 5 s
+   [PASS] 2f joint margin 1.064 >= 0.02 rad (knee, ankle only: the only logged joints)
+   [PASS] 2g longest ankle saturation 0.00 <= 1 s
+3. Push 2 N x 0.05 s (0.10 N.s): stands | peak pitch 2.1 deg, back within 1 deg after 0.33 s, tilt max 2.7 deg, saturation run 0.00 s
+   [PASS] 3a no fall
+   [PASS] 3b tilt max 2.7 <= 10 deg
+   [PASS] 3c recovered within 1 deg after 0.33 s <= 2 s
+   [PASS] 3d saturation run 0.00 <= 1 s
+4. Push limit forward       : survives 6.0 N, falls at 6.5 N -> 0.300..0.325 N.s (hand calc 0.227 N.s)
+   [PASS] 4 forward survived impulse 0.300 >= 50% of hand calc 0.227 N.s
+4. Push limit backward      : survives 1.0 N, falls at 1.5 N -> 0.050..0.075 N.s (hand calc 0.090 N.s)
+   [PASS] 4 backward survived impulse 0.050 >= 50% of hand calc 0.090 N.s
+5. +1 sample delay, 2 N push  : stands | peak pitch 2.3 deg, band 0.26 deg, tilt max 2.7 deg
+   [PASS] 5 +1 sample delay: no fall, tilt 2.7 <= 10 deg
+5. +2 sample delay, 2 N push  : stands | peak pitch 2.5 deg, band 0.33 deg, tilt max 3.1 deg
+   [PASS] 5 +2 sample delay: no fall, tilt 3.1 <= 10 deg
+5. +3 sample delay, 2 N push  : stands | peak pitch 2.5 deg, band 0.34 deg, tilt max 3.0 deg
+   [PASS] 5 +3 sample delay: no fall, tilt 3.0 <= 10 deg
+6. Torso mass mplus          : stand stands (band 0.68 deg, tilt max 0.7), 2 N push stands (peak 2.0 deg, tilt max 2.3)
+   [PASS] 6 mplus: stands and survives the 2 N push
+6. Torso mass mminus         : stand stands (band 0.17 deg, tilt max 1.0), 2 N push stands (peak 2.1 deg, tilt max 2.8)
+   [PASS] 6 mminus: stands and survives the 2 N push
+
+0 assertion(s) FAILED

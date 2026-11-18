@@ -1,0 +1,9 @@
+balance     PASS         tilt max 0.4 <= 10.0 deg; min height 116 mm >= 101 mm; drift 0.000 <= 0.1 m; settled within 3.0 deg by 0.0 s (<= 4.0); joint margin 0.294 >= 0.02 rad; longest actuator saturation 0.00 <= 1.0 s; no fall
+walk        FAIL         command 0.3 m/s for 8 s = 2.4 m commanded, 0.074 m/s achieved; FAILED: travel 0.59 m >= 0.8; FAILED: lateral drift 0.63 <= 0.3 m; FAILED: heading change 107 <= 45 deg; no fall during run (min up-axis 1.00, min height 113 mm); ends upright
+obstacles   FAIL         cleared 5/5 planks (heights mm: 3, 5, 8, 10, 12) in 13.0 s, reached x = 1.70 m, upright, FELL at 14.0 s (torso below 0.07 m); self-contact steps: leg/geom35~shield_side_l_collisionx15, leg_2/geom83~shield_side_r_collisionx10, head_upper_skirt_collision~right_foot_collisionx8
+fall_getup  FAIL         forward: fell at 12 N (tilt>60deg) and did NOT get up in 12 s; backward: fell at 12 N (tilt>60deg) and did NOT get up in 12 s
+sitstand    PASS         torso height stand 0.117 -> sit 0.060 -> stand 0.117 m
+roulade     PASS         went fully over (min up-axis -0.72), moved -0.03 m, ends upright
+pick        PASS         bill tip (mouth_tip site) came down to 9 mm above the floor (need < 30); bill proxy touched the floor for 0 control steps; no fall; ends upright
+dance       PASS         20 s routine: body roll up to 8 deg, pitch up to 7 deg, turned 469 deg in total, no fall, ends upright
+exit 1

@@ -1,5 +1,5 @@
 %% build_blockset.m -- download MuJoCo + GLFW and compile the Simulink Blockset for MuJoCo
-% Run once:  matlab -batch "run('C:/dev/duckling_sim/matlab/build_blockset.m')"
+% Run once:  matlab -batch "run('<repo>/matlab/build_blockset.m')"
 % Replaces the repo's "install; setupBuild; build" (which needs gmake) with direct mex calls.
 repo = 'C:\dev\duckling_sim\mujoco-simulink-blockset';
 cd(repo);

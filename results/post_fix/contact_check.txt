@@ -1,0 +1,41 @@
+proxy geoms (contype/conaffinity/body): bill_collision(1/1/jaw_soft), head_dome_collision(1/1/jaw_soft), head_lower_collision(1/1/jaw_soft), head_upper_skirt_collision(1/1/jaw_soft), shield_back_collision(1/1/trunk_base), shield_side_l_collision(1/1/trunk_base), shield_side_r_collision(1/1/trunk_base)
+
+1. STAND pose contacts (floor contacts listed, anything else is a defect):
+
+2a. 6000 random poses inside the operating envelope (head {'neck_pitch': 0.4, 'head_pitch': 0.6, 'head_yaw': 1.2, 'head_roll': 0.44} about STAND, legs +-0.3 rad): self-contacts with head/shield proxies
+   head_lower_collision <-> shield_side_r_collision: 1277 poses (21.3%)  <== DESIGN FINDING (real clash, contact kept enabled)
+   head_lower_collision <-> shield_side_l_collision: 1269 poses (21.1%)  <== DESIGN FINDING (real clash, contact kept enabled)
+   head_lower_collision <-> shield_back_collision: 1186 poses (19.8%)  <== DESIGN FINDING (real clash, contact kept enabled)
+   head_upper_skirt_collision <-> shield_back_collision: 585 poses (9.8%)  <== DESIGN FINDING (real clash, contact kept enabled)
+   head_upper_skirt_collision <-> shield_side_l_collision: 258 poses (4.3%)  <== DESIGN FINDING (real clash, contact kept enabled)
+   head_upper_skirt_collision <-> shield_side_r_collision: 255 poses (4.2%)  <== DESIGN FINDING (real clash, contact kept enabled)
+   head_dome_collision <-> shield_back_collision: 156 poses (2.6%)  <== DESIGN FINDING (real clash, contact kept enabled)
+   head_dome_collision <-> shield_side_l_collision: 46 poses (0.8%)  <== DESIGN FINDING (real clash, contact kept enabled)
+   head_dome_collision <-> shield_side_r_collision: 44 poses (0.7%)  <== DESIGN FINDING (real clash, contact kept enabled)
+   leg_2/geom78 <-> shield_side_r_collision: 9 poses (0.1%)  <== DESIGN FINDING (real clash, contact kept enabled)
+   leg/geom30 <-> shield_side_l_collision: 7 poses (0.1%)  <== DESIGN FINDING (real clash, contact kept enabled)
+   head_lower_collision <-> trunk_base/geom9: 1 poses (0.0%)  <== DESIGN FINDING (real clash, contact kept enabled)
+
+2b. INFORMATIONAL, 6000 random poses over the FULL head joint limits and legs +-0.5 rad: real geometric clashes of the V3 head/shield with neck/torso/legs (kept enabled; keep head commands out of them on hardware)
+   head_lower_collision <-> shield_side_l_collision: 2162 poses (36.0%)
+   head_upper_skirt_collision <-> shield_back_collision: 2155 poses (35.9%)
+   head_upper_skirt_collision <-> shield_side_r_collision: 2132 poses (35.5%)
+   head_upper_skirt_collision <-> shield_side_l_collision: 2111 poses (35.2%)
+   head_lower_collision <-> shield_side_r_collision: 2101 poses (35.0%)
+   head_lower_collision <-> trunk_base/geom9: 1468 poses (24.5%)
+   head_lower_collision <-> shield_back_collision: 1429 poses (23.8%)
+   head_upper_skirt_collision <-> trunk_base/geom9: 1058 poses (17.6%)
+   head_dome_collision <-> shield_back_collision: 1030 poses (17.2%)
+   head_dome_collision <-> shield_side_r_collision: 938 poses (15.6%)
+   head_dome_collision <-> shield_side_l_collision: 933 poses (15.6%)
+   head_dome_collision <-> trunk_base/geom9: 379 poses (6.3%)
+   ... 29 distinct pairs in total
+
+3. Drops (robot placed 0.25 m high in the given attitude, settled 1.5 s): geoms touching the floor
+   on its front      : bill_collision, left_foot_collision, right_foot_collision
+   on its back       : shield_back_collision, shield_side_l_collision, shield_side_r_collision
+   on its left side  : head_dome_collision, head_lower_collision, hip_l_2/geom69, right_foot_collision
+   on its right side : head_dome_collision, head_lower_collision, hip_l/geom23, left_foot_collision
+   upside down       : shield_back_collision, shield_side_l_collision, shield_side_r_collision
+
+STAND-pose self contacts (defects): 0; operating-envelope clash pairs (design findings, not failures): 12

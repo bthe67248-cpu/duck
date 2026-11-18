@@ -5,6 +5,17 @@
 if ~exist('DUCK_PROJ','var'), startup_duck; end
 S  = jsondecode(fileread(fullfile(DUCK_PROJ,'model','stand_numbers.json')));
 
+if isfield(S,'model_scene_sha256')
+    MODEL_REV = S.model_scene_sha256;      % which generated scene these numbers describe (scripts/stand_numbers.py)
+else
+    MODEL_REV = 'unknown (stand_numbers.json predates provenance fields)';
+end
+if isfield(S,'mass_status'), MASS_STATUS = S.mass_status; else, MASS_STATUS = 'unknown'; end
+disp(['model ' MODEL_REV ' | ' MASS_STATUS]);
+if isfield(S,'printed_part_mass_g')
+    fprintf(['printed parts (g): upper head %.1f, lower head %.1f, rear shield %.1f  [replace with slicer/scale values]' newline], ...
+            S.printed_part_mass_g.duck_head_upper_v3, S.printed_part_mass_g.duck_head_lower_v3, S.printed_part_mass_g.hat_rear_shield_v3);
+end
 m  = S.mass;        % kg   whole robot
 h  = S.h;           % m    centre of mass above the ankle pivot, standing
 a  = S.a_toe;       % m    centre of mass to the front edge of the sole
@@ -79,6 +90,8 @@ ALPHA       = 0.5/(0.5+DT_CTRL);
 SAT_ANKLE   = 0.25;            % rad
 IDX_L_ANKLE = 5;  IDX_R_ANKLE = 14;   % 1-based actuator indices
 balance_on  = 1;               % 0 = hold pose only
+ANKLE_MAP  = zeros(14,1);  ANKLE_MAP(IDX_L_ANKLE) = 1;  ANKLE_MAP(IDX_R_ANKLE) = -1;   % used by duck_sim.slx (also saved here so re-running this script never drops it)
 push_F      = 0;               % N, push along +x (forward) at t = 1 s for 0.05 s
 save(fullfile(DUCK_PROJ,'matlab','duck_params.mat'), 'HOME','DT_CTRL','DT_PLANT','ALPHA', ...
-     'SAT_ANKLE','K_TH','K_D','balance_on','push_F','J_max_fwd','J_max_bwd','sag_knee_deg','K_lqr');
+     'SAT_ANKLE','K_TH','K_D','balance_on','push_F','J_max_fwd','J_max_bwd','sag_knee_deg','K_lqr', ...
+     'MODEL_REV','MASS_STATUS','ANKLE_MAP');
