@@ -1,4 +1,4 @@
-[INFO] [launch]: All log files can be found below /home/caide/.ros/log/2026-11-17-15-58-36-270209-DESKTOP-D7NMGD0-1050
+[INFO] [launch]: All log files can be found below ~/.ros/log/2026-11-17-15-58-36-270209-DESKTOP-D7NMGD0-1050
 [INFO] [launch]: Default logging verbosity is set to INFO
 [INFO] [world_sim-1]: process started with pid [1056]
 [INFO] [robot_state_publisher-2]: process started with pid [1057]
@@ -113,10 +113,10 @@
 [score_node-6]    220.9 s  exploration stalled: no usable frontier but the room is not closed (18.1 m2 reachable, open frontier 210 cells)
 [robot_state_publisher-2] [INFO] [1794960154.415312413] [rclcpp]: signal_handler(SIGINT/SIGTERM)
 [world_sim-1] Traceback (most recent call last):
-[world_sim-1]   File "/home/caide/duck_ws/install/duck_nav/lib/duck_nav/world_sim", line 33, in <module>
+[world_sim-1]   File "~/duck_ws/install/duck_nav/lib/duck_nav/world_sim", line 33, in <module>
 [world_sim-1]     sys.exit(load_entry_point('duck-nav', 'console_scripts', 'world_sim')())
 [world_sim-1]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-[world_sim-1]   File "/home/caide/duck_ws/build/duck_nav/duck_nav/world_sim.py", line 378, in main
+[world_sim-1]   File "~/duck_ws/build/duck_nav/duck_nav/world_sim.py", line 378, in main
 [world_sim-1]     rclpy.spin(node)
 [world_sim-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
 [world_sim-1]     executor.spin_once()
@@ -134,7 +134,7 @@
 [world_sim-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 116, in await_or_execute
 [world_sim-1]     return callback(*args)
 [world_sim-1]            ^^^^^^^^^^^^^^^
-[world_sim-1]   File "/home/caide/duck_ws/build/duck_nav/duck_nav/world_sim.py", line 353, in step
+[world_sim-1]   File "~/duck_ws/build/duck_nav/duck_nav/world_sim.py", line 353, in step
 [world_sim-1]     im.data = rgb.tobytes(); self.pub_rgb.publish(im)
 [world_sim-1]                              ^^^^^^^^^^^^^^^^^^^^^^^^
 [world_sim-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/publisher.py", line 70, in publish
@@ -145,4 +145,4 @@
 [INFO] [yolo_node-3]: process has finished cleanly [pid 1058]
 [INFO] [nav_node-5]: process has finished cleanly [pid 1060]
 [INFO] [slam_node-4]: process has finished cleanly [pid 1059]
-[ERROR] [world_sim-1]: process has died [pid 1056, exit code 1, cmd '/home/caide/duck_ws/install/duck_nav/lib/duck_nav/world_sim --ros-args --params-file /tmp/launch_params_t_7cs0kq'].
+[ERROR] [world_sim-1]: process has died [pid 1056, exit code 1, cmd '~/duck_ws/install/duck_nav/lib/duck_nav/world_sim --ros-args --params-file /tmp/launch_params_t_7cs0kq'].

@@ -23,6 +23,8 @@ Everything lives in one folder, kept off OneDrive so the Python venv and build f
 | `ros2\` | ROS 2 install script, `duck_description` and `duck_nav` packages, build/run/smoke scripts |
 | `policies\` | Official pretrained Microduck ONNX policies (downloaded) |
 | `results\` | `pre_fix\` (old results, kept for comparison), `post_fix\` (current), `geometry_v3\` (renders), reports and reviews |
+| `TODO.md`, `UNO_Q_GUIDE.md` | What is left, in order, and the step-by-step plan for the Arduino UNO Q |
+| `ros2\parked_commands\` | Word-command layer for the ROS 2 stack. Written, never installed or tested |
 
 Before building anything, check that every file the pipeline needs is there:
 

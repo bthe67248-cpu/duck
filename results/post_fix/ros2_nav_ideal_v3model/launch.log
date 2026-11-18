@@ -1,4 +1,4 @@
-[INFO] [launch]: All log files can be found below /home/caide/.ros/log/2026-11-17-15-57-47-847635-DESKTOP-D7NMGD0-514
+[INFO] [launch]: All log files can be found below ~/.ros/log/2026-11-17-15-57-47-847635-DESKTOP-D7NMGD0-514
 [INFO] [launch]: Default logging verbosity is set to INFO
 [INFO] [world_sim-1]: process started with pid [537]
 [INFO] [robot_state_publisher-2]: process started with pid [538]
@@ -53,10 +53,10 @@
 [score_node-6]    103.8 s  exploration stalled: no usable frontier but the room is not closed (19.1 m2 reachable, open frontier 30 cells)
 [robot_state_publisher-2] [INFO] [1794959981.210331886] [rclcpp]: signal_handler(SIGINT/SIGTERM)
 [nav_node-5] Traceback (most recent call last):
-[nav_node-5]   File "/home/caide/duck_ws/install/duck_nav/lib/duck_nav/nav_node", line 33, in <module>
+[nav_node-5]   File "~/duck_ws/install/duck_nav/lib/duck_nav/nav_node", line 33, in <module>
 [nav_node-5]     sys.exit(load_entry_point('duck-nav', 'console_scripts', 'nav_node')())
 [nav_node-5]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-[nav_node-5]   File "/home/caide/duck_ws/build/duck_nav/duck_nav/nav_node.py", line 215, in main
+[nav_node-5]   File "~/duck_ws/build/duck_nav/duck_nav/nav_node.py", line 215, in main
 [nav_node-5]     ex.spin()
 [nav_node-5]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 367, in spin
 [nav_node-5]     self._spin_once_impl()
@@ -71,10 +71,10 @@
 [nav_node-5]                ^^^^^^^^^^^^^^^
 [nav_node-5] rclpy._rclpy_pybind11.RCLError: failed to initialize wait set: the given context is not valid, either rcl_init() was not called or rcl_shutdown() was called., at ./src/rcl/wait.c:130
 [world_sim-1] Traceback (most recent call last):
-[world_sim-1]   File "/home/caide/duck_ws/install/duck_nav/lib/duck_nav/world_sim", line 33, in <module>
+[world_sim-1]   File "~/duck_ws/install/duck_nav/lib/duck_nav/world_sim", line 33, in <module>
 [world_sim-1]     sys.exit(load_entry_point('duck-nav', 'console_scripts', 'world_sim')())
 [world_sim-1]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-[world_sim-1]   File "/home/caide/duck_ws/build/duck_nav/duck_nav/world_sim.py", line 378, in main
+[world_sim-1]   File "~/duck_ws/build/duck_nav/duck_nav/world_sim.py", line 378, in main
 [world_sim-1]     rclpy.spin(node)
 [world_sim-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
 [world_sim-1]     executor.spin_once()
@@ -94,5 +94,5 @@
 [INFO] [score_node-6]: process has finished cleanly [pid 542]
 [INFO] [slam_node-4]: process has finished cleanly [pid 540]
 [INFO] [yolo_node-3]: process has finished cleanly [pid 539]
-[ERROR] [nav_node-5]: process has died [pid 541, exit code 1, cmd '/home/caide/duck_ws/install/duck_nav/lib/duck_nav/nav_node --ros-args --params-file /tmp/launch_params_3atm6rr6 --params-file /tmp/launch_params_nldzkuyn'].
-[ERROR] [world_sim-1]: process has died [pid 537, exit code 1, cmd '/home/caide/duck_ws/install/duck_nav/lib/duck_nav/world_sim --ros-args --params-file /tmp/launch_params_ub1wn6sc'].
+[ERROR] [nav_node-5]: process has died [pid 541, exit code 1, cmd '~/duck_ws/install/duck_nav/lib/duck_nav/nav_node --ros-args --params-file /tmp/launch_params_3atm6rr6 --params-file /tmp/launch_params_nldzkuyn'].
+[ERROR] [world_sim-1]: process has died [pid 537, exit code 1, cmd '~/duck_ws/install/duck_nav/lib/duck_nav/world_sim --ros-args --params-file /tmp/launch_params_ub1wn6sc'].
