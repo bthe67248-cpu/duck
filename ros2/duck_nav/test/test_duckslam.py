@@ -390,3 +390,64 @@ def test_vectorised_match_equals_reference_loop():
             np.testing.assert_allclose(s.pose, start + 0.6 * np.array(best), atol=1e-12)
         else:
             assert np.array_equal(s.pose, start)
+
+
+# ---- Correlative matcher (Olson 2009) -------------------------------------------------------------------
+def test_correlative_recovers_errors_far_outside_the_old_search_window():
+    rng = np.random.default_rng(5)
+    for _ in range(25):
+        s = corner_reference()
+        e0 = np.array([rng.uniform(-0.2, 0.2), rng.uniform(-0.2, 0.2), math.radians(rng.uniform(-8, 8))])
+        s.pose[:] = e0
+        a, r, h = corner_scan(np.sort(rng.uniform(-40, 110, 60)))
+        assert s.match_correlative(a, r, h, current_scan=(a, r, h)), s.match_reason
+        assert np.hypot(*s.pose[:2]) < 0.035 and abs(s.pose[2]) < math.radians(1.5)
+
+
+def test_correlative_branch_and_bound_returns_the_brute_force_optimum():
+    s = corner_reference(); rng = np.random.default_rng(9)
+    for _ in range(10):
+        start = np.array([rng.uniform(-0.15, 0.15), rng.uniform(-0.15, 0.15), math.radians(rng.uniform(-6, 6))])
+        a, r, h = corner_scan(np.sort(rng.uniform(-40, 110, 30)))
+        r = r + rng.normal(0, 0.02, len(r))
+        s.pose[:] = start
+        s.match_correlative(a, r, h)
+        # brute force over the identical fine grid, prior included
+        L, _, _ = s.likelihood_tables(0.05)
+        res = INFO.res; W = 12; dth = np.arange(-math.radians(12), math.radians(12) + 1e-9, math.radians(1))
+        px, py = r * np.cos(a), r * np.sin(a)
+        best, arg = -np.inf, None
+        for k, d in enumerate(dth):
+            c, sn = math.cos(start[2] + d), math.sin(start[2] + d)
+            ix0 = np.floor((start[0] + c * px - sn * py - INFO.x0) / res).astype(int)
+            iy0 = np.floor((start[1] + sn * px + c * py - INFO.y0) / res).astype(int)
+            for ox in range(-W, W):
+                for oy in range(-W, W):
+                    v = L[ix0 + ox, iy0 + oy].sum() - 0.5 * (((ox * res) ** 2 + (oy * res) ** 2) / 0.2 ** 2
+                                                              + (d / math.radians(8)) ** 2)
+                    if v > best:
+                        best, arg = v, (ox, oy, k)
+        assert s.match_reason not in ("search_boundary", "insufficient_hits", "map_not_ready")
+        # the posterior mean sits within a cell of the brute-force optimum
+        moved = s.pose - start if s.match_reason == "accepted" else None
+        if moved is not None:
+            assert abs(moved[0] - arg[0] * res) <= 1.5 * res and abs(moved[1] - arg[1] * res) <= 1.5 * res
+
+
+def test_correlative_wall_corrects_across_only_and_does_not_release_motion():
+    s = ds.DuckSLAM(min_hits=12)
+    for y in np.arange(-2, 2.01, INFO.res):
+        s.logodds[INFO.cell(1.0, y)] = 3; s.logodds[INFO.cell(1.025, y)] = 3
+    s.pose[:] = (0.1, 0.1, 0.0)
+    a = np.radians(np.linspace(-25, 25, 40)); r = 1 / np.cos(a)
+    assert not s.match_correlative(a, r, np.ones(40, bool))
+    assert s.match_reason == "partial"
+    assert abs(s.pose[0]) < 0.03 and s.pose[1] == pytest.approx(0.1, abs=0.01)   # x fixed, y untouched
+
+
+def test_likelihood_table_cache_follows_map_updates():
+    s = corner_reference()
+    t1 = s.likelihood_tables()[0]
+    assert s.likelihood_tables()[0] is t1
+    s.update_map(np.array([0.0]), np.array([0.5]), np.array([True]))
+    assert s.likelihood_tables()[0] is not t1

@@ -218,6 +218,9 @@ class DuckSLAM:
         self.n_match = 0
         self.match_reason = "initializing"
         self.match_overlap = 0.0
+        self.map_version = 0             # bumped by update_map; invalidates the cached likelihood tables
+        self._tables = None
+        self.match_cov = None            # 3x3 covariance of the last correlative match (x, y, theta)
 
     def body_velocity(self, cmd_vx, cmd_vy):
         g = self.gains
@@ -339,7 +342,128 @@ class DuckSLAM:
         self.match_reason = "low_overlap"
         return False
 
+    # ---- correlative scan matching (Olson, "Real-Time Correlative Scan Matching", ICRA 2009) ----------------
+    def likelihood_tables(self, sigma=0.05, block=4):
+        """Log-likelihood table of a return landing in each cell: its distance to the nearest occupied cell,
+        blurred by sensor noise `sigma` and clamped at 2.5 sigma so one stray point cannot dominate. Also the
+        block-max table, Lb[i, j] = max(L[i:i+block, j:j+block]), which upper-bounds the score of every fine
+        translation inside a coarse block, so the coarse-to-fine search returns the brute-force optimum.
+        Cached until the map changes."""
+        key = (self.map_version, sigma, block)
+        if self._tables is not None and self._tables[0] == key:
+            return self._tables[1:]
+        occ = self.logodds > 0.8
+        d = ndimage.distance_transform_edt(~occ) * self.info.res if occ.any() else np.full(occ.shape, 1e3)
+        L = (-0.5 * np.minimum(d / sigma, 2.5) ** 2).astype(np.float32)
+        pad = np.pad(L, ((0, block - 1), (0, block - 1)), constant_values=L.min())
+        Lb = np.lib.stride_tricks.sliding_window_view(pad, (block, block)).max(axis=(-1, -2))
+        self._tables = (key, L, Lb, d)
+        return L, Lb, d
+
+    def match_correlative(self, ang, r, hit, current_scan=None, window=0.30, ang_window=math.radians(12),
+                          ang_step=math.radians(1.0), sigma=0.05, prior_xy=0.20, prior_th=math.radians(8),
+                          max_std_xy=0.06, max_std_th=math.radians(3.0), min_overlap=0.6, neff_cap=40):
+        """Exhaustive correlative match over +-`window` m and +-`ang_window`, with an exact two-level bound,
+        a Gaussian odometry prior, and the match covariance from the posterior over the local grid (Olson eq. 3).
+
+        True: constrained in every direction, pose moved to the posterior mean. Along a featureless wall only
+        the well-constrained direction is corrected (reason "partial") and False is returned, so the motion
+        gate stays conservative. Sets match_reason, match_overlap and match_cov."""
+        info = self.info
+        self.match_overlap = 0.0; self.match_cov = None
+        if hit.sum() < self.min_hits:
+            self.match_reason = "insufficient_hits"; return False
+        if (self.logodds > 0.8).sum() < 80:
+            self.match_reason = "map_not_ready"; return False
+        L, Lb, dist = self.likelihood_tables(sigma)
+        px, py = r[hit] * np.cos(ang[hit]), r[hit] * np.sin(ang[hit])
+        n = len(px); w_pt = min(n, neff_cap) / n        # sweep repeats are correlated: cap the effective count
+        res, B = info.res, 4
+        W = int(round(window / res)); W += (-W) % B      # fine offsets -W..W-1 cells, in coarse blocks of B
+        dth = np.arange(-ang_window, ang_window + 1e-9, ang_step)
+        th = self.pose[2] + dth
+        T = len(th)
+        cx = (self.pose[0] + np.cos(th)[:, None] * px - np.sin(th)[:, None] * py - info.x0) / res
+        cy = (self.pose[1] + np.sin(th)[:, None] * px + np.cos(th)[:, None] * py - info.y0) / res
+        ix0, iy0 = np.floor(cx).astype(int), np.floor(cy).astype(int)            # (T, N)
+        lo_val = float(L.min())
+
+        def score(table, i, j):
+            ok = (i >= 0) & (i < info.nx) & (j >= 0) & (j < info.ny)
+            return np.where(ok, table[np.clip(i, 0, info.nx - 1), np.clip(j, 0, info.ny - 1)], lo_val).sum(-1) * w_pt
+
+        def prior(ox, oy, d_th):
+            return -0.5 * (((ox * res) ** 2 + (oy * res) ** 2) / prior_xy ** 2 + (d_th / prior_th) ** 2)
+
+        # 1. coarse upper bound for every (theta, block x, block y)
+        blocks = np.arange(-W, W, B)
+        nb = len(blocks)
+        ub = score(Lb, ix0[:, None, None, :] + blocks[None, :, None, None],
+                   iy0[:, None, None, :] + blocks[None, None, :, None])                # (T, nb, nb)
+        near = np.where(blocks < 0, np.minimum(blocks + B - 1, 0), blocks)               # offset closest to 0
+        ub = ub + prior(near[None, :, None], near[None, None, :], dth[:, None, None])
+        # 2. branch and bound: refine blocks in bound order until no block can beat the best fine score
+        order = np.argsort(ub, axis=None)[::-1]
+        best_s, best = -np.inf, None
+        fine = np.arange(B)
+        for flat in order:
+            if ub.flat[flat] <= best_s:
+                break
+            t_i, bx, by = np.unravel_index(flat, ub.shape)
+            ox = blocks[bx] + fine; oy = blocks[by] + fine
+            v = score(L, ix0[t_i][None, None, :] + ox[:, None, None], iy0[t_i][None, None, :] + oy[None, :, None])
+            v = v + prior(ox[:, None], oy[None, :], dth[t_i])
+            k = np.unravel_index(np.argmax(v), v.shape)
+            if v[k] > best_s:
+                best_s, best = float(v[k]), (int(ox[k[0]]), int(oy[k[1]]), int(t_i))
+        bx_, by_, bt = best
+        if abs(bx_) >= W - 1 or by_ <= -W + 1 or by_ >= W - 1 or bt in (0, T - 1):
+            self.match_reason = "search_boundary"; return False
+        # 3. posterior over a local fine grid around the optimum -> mean and covariance
+        lo = np.arange(-4, 5)
+        ts = np.arange(max(bt - 3, 0), min(bt + 4, T))
+        S = score(L, ix0[ts][:, None, None, :] + (bx_ + lo)[None, :, None, None],
+                  iy0[ts][:, None, None, :] + (by_ + lo)[None, None, :, None])
+        S = S + prior((bx_ + lo)[None, :, None], (by_ + lo)[None, None, :], dth[ts][:, None, None])
+        p = np.exp(S - S.max()); p /= p.sum()
+        X = np.stack(np.broadcast_arrays(dth[ts][:, None, None] * 0 + (bx_ + lo)[None, :, None] * res,
+                                         dth[ts][:, None, None] * 0 + (by_ + lo)[None, None, :] * res,
+                                         dth[ts][:, None, None] + 0 * lo[None, :, None]), -1).reshape(-1, 3)
+        pf = p.reshape(-1)
+        mean = pf @ X
+        cov = (X - mean).T @ ((X - mean) * pf[:, None]) + np.diag([res ** 2 / 12, res ** 2 / 12, ang_step ** 2 / 12])
+        self.match_cov = cov
+        # fit quality at the optimum: fraction of points within 7.5 cm of a mapped wall
+        c, s_ = math.cos(th[bt]), math.sin(th[bt])
+
+        def overlap(xx, yy):
+            gx = self.pose[0] + bx_ * res + c * xx - s_ * yy; gy = self.pose[1] + by_ * res + s_ * xx + c * yy
+            gi = np.floor((gx - info.x0) / res).astype(int); gj = np.floor((gy - info.y0) / res).astype(int)
+            ok = (gi >= 0) & (gi < info.nx) & (gj >= 0) & (gj < info.ny)
+            return float((dist[gi[ok], gj[ok]] < 0.075).sum() / max(len(xx), 1))
+
+        self.match_overlap = overlap(px, py)
+        if self.match_overlap < min_overlap:
+            self.match_reason = "low_overlap"; return False
+        if current_scan is not None:                     # the newest frame alone must agree with the map too
+            aa, rr, hh = current_scan
+            xx, yy = rr[hh] * np.cos(aa[hh]), rr[hh] * np.sin(aa[hh])
+            if len(xx) < 3 or overlap(xx, yy) < 0.6:
+                self.match_reason = "fresh_scan_disagrees"; return False
+        if math.sqrt(cov[2, 2]) > max_std_th:
+            self.match_reason = "ambiguous_heading"; return False
+        evals, evecs = np.linalg.eigh(cov[:2, :2])
+        if math.sqrt(evals[1]) <= max_std_xy:
+            self.pose += mean; self.n_match += 1
+            self.match_reason = "accepted"; return True
+        if math.sqrt(evals[0]) <= max_std_xy:            # e.g. along a wall: correct across it and heading only
+            v = evecs[:, 0]
+            self.pose[:2] += v * (v @ mean[:2]); self.pose[2] += mean[2]
+            self.match_reason = "partial"; return False
+        self.match_reason = "ambiguous"; return False
+
     def update_map(self, ang, r, hit, free_weight=0.35, hit_weight=1.2):
+        self.map_version += 1
         info = self.info
         x, y, th = self.pose
         steps = np.arange(info.res, self.max_r, info.res)

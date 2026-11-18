@@ -76,6 +76,7 @@ class SlamNode(Node):
         self.declare_parameter("scan_timeout", 0.75)          # acquisition age, not publication/receipt age
         self.declare_parameter("match_timeout", 1.5)
         self.declare_parameter("sweep_window", 1.5)           # short local constraints; NOT loop closure
+        self.declare_parameter("matcher", "correlative")      # correlative (Olson 2009) | grid (old +-7.5 cm search)
         self.declare_parameter("fall_tilt_deg", 35.0)         # filtered tilt above this -> "recovering"
         self.declare_parameter("upright_tilt_deg", 15.0)      # ... back to "ok" after `upright_hold` s below this
         self.declare_parameter("upright_hold", 1.0)
@@ -242,7 +243,10 @@ class SlamNode(Node):
             self.sweep.add(ns * 1e-9, pose_acq, ang, r, hit)
             if self.get_parameter("scan_matching").value:
                 constraints = self.sweep.scan(pose_acq) if self.mode == "tof" else (ang, r, hit)
-                accepted = self.slam.match(*constraints, current_scan=(ang, r, hit))
+                if self.get_parameter("matcher").value == "correlative":
+                    accepted = self.slam.match_correlative(*constraints, current_scan=(ang, r, hit))
+                else:
+                    accepted = self.slam.match(*constraints, current_scan=(ang, r, hit))
             corr = self.slam.pose - pose_acq
             if accepted:
                 self.bootstrap = False
@@ -255,7 +259,7 @@ class SlamNode(Node):
             # map while localisation is still healthy (two recent accepted matches, see LocalizationHealth),
             # but never from a scan that contradicts the map or wanted a correction at the search edge.
             healthy = (self.health.state(ns * 1e-9) == "ok"
-                       and self.slam.match_reason not in ("fresh_scan_disagrees", "search_boundary"))
+                       and self.slam.match_reason not in ("fresh_scan_disagrees", "search_boundary", "ambiguous", "ambiguous_heading"))
             if accepted or healthy or (self.bootstrap and stationary_origin):
                 self.slam.update_map(ang, r, hit)
             self.slam.pose = current + corr                    # ... and carry the correction to now
