@@ -76,6 +76,10 @@ class SlamNode(Node):
         self.declare_parameter("scan_timeout", 0.75)          # acquisition age, not publication/receipt age
         self.declare_parameter("match_timeout", 1.5)
         self.declare_parameter("sweep_window", 1.0)           # short local constraints; NOT loop closure
+        # depth mode matches over the sweep window too: single narrow camera frames let the +-30 cm correlative
+        # search lock onto wrong alignments (ideal trial: 0.68 m mean error without the window, 0.09 m with it),
+        # and the grid matcher rejects most single-wall frames as degenerate geometry
+        self.declare_parameter("depth_sweep", True)
         self.declare_parameter("matcher", "correlative")      # correlative (Olson 2009) | grid (old +-7.5 cm search)
         # tuned offline on a recorded realistic run (tools/slam_replay.py); see results/slam_tuning/README.md
         self.declare_parameter("tof_min_hits", 8)             # ToF hits in the sweep window needed to match
@@ -110,8 +114,9 @@ class SlamNode(Node):
         self.tilt = ds.TiltFilter()
         # matching / mapping / relocalisation / slip policy, shared with tools/slam_replay.py
         self.loc = ds.FrameLocalizer(
-            self.slam, matcher=self.get_parameter("matcher").value,
-            sweep=float(self.get_parameter("sweep_window").value), use_sweep=self.mode == "tof",
+            self.slam, matcher=self.matcher_name(),
+            sweep=float(self.get_parameter("sweep_window").value),
+            use_sweep=self.mode == "tof" or bool(self.get_parameter("depth_sweep").value),
             gain=float(self.get_parameter("match_gain").value), fresh=bool(self.get_parameter("fresh_check").value),
             slip=bool(self.get_parameter("slip_estimation").value),
             relocalize_after=float(self.get_parameter("relocalize_after").value), map_move=0.0, map_turn=0.0,
@@ -267,6 +272,12 @@ class SlamNode(Node):
         self.pub_match.publish(String(data=f"{reason}; overlap={self.slam.match_overlap:.2f}"))
         self.publish_state()
         self.frames.put(ns, (data, pose_acq.copy()))
+
+    def matcher_name(self):
+        m = self.get_parameter("matcher").value
+        if m not in ("correlative", "grid"):
+            raise ValueError("matcher must be 'correlative' or 'grid'")
+        return m
 
     @staticmethod
     def read_tof(msg):

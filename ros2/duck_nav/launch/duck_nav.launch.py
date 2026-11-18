@@ -1,5 +1,6 @@
 """ros2 launch duck_nav duck_nav.launch.py [sensors:=ideal|realistic] [rviz:=false] [autonomous:=false]
-                                          [scan_matching:=false] [timeout:=600.0] [out_dir:=...] [seed:=0]
+                                          [scan_matching:=false] [matcher:=correlative|grid] [depth_sweep:=true]
+                                          [real_time:=false] [rt_factor:=1.0] [timeout:=600.0] [out_dir:=...] [seed:=0]
 sensors:=ideal      perfect 320x240 RGB-D camera (the original simulation; an upper bound, not the real robot)
 sensors:=realistic  noisy RGB camera + simulated VL53L5CX 8x8 ToF (45 x 45 deg, 10 Hz, 2 m usable, dropouts,
                     60 ms latency). SLAM maps from the 64 ToF zones and ranges YOLO boxes with them.
@@ -29,7 +30,9 @@ def nodes(context):
              parameters=[{"mjcf": os.path.join(share, "mjcf", "duck_v3_gc_world.xml"),
                           "policy": os.path.join(share, "models", "velstand.onnx"),
                           "world_json": os.path.join(share, "mjcf", "world.json"),
-                          "sensor_profile": sensors, "seed": seed}]),
+                          "sensor_profile": sensors, "seed": seed,
+                          "real_time": ParameterValue(LaunchConfiguration("real_time"), value_type=bool),
+                          "rt_factor": ParameterValue(LaunchConfiguration("rt_factor"), value_type=float)}]),
         Node(package="robot_state_publisher", executable="robot_state_publisher",
              parameters=[{"robot_description": urdf}, sim_time]),
         Node(package="duck_nav", executable="yolo_node", output="screen",
@@ -37,6 +40,8 @@ def nodes(context):
         Node(package="duck_nav", executable="slam_node", output="screen",
              parameters=[{"scan_matching": ParameterValue(LaunchConfiguration("scan_matching"), value_type=bool),
                           "sensor_mode": "depth" if sensors == "ideal" else "tof",
+                          "matcher": LaunchConfiguration("matcher"),  # correlative | grid
+                          "depth_sweep": ParameterValue(LaunchConfiguration("depth_sweep"), value_type=bool),
                           "target_radius": 0.04,                    # the sim beacon is a known 4 cm-radius,
                           "target_height": 0.28},                  # 28 cm tall cylinder
                          sim_time]),
@@ -55,6 +60,10 @@ def generate_launch_description():
         DeclareLaunchArgument("sensors", default_value="ideal"),
         DeclareLaunchArgument("rviz", default_value="true"),
         DeclareLaunchArgument("scan_matching", default_value="true"),
+        DeclareLaunchArgument("matcher", default_value="correlative"),
+        DeclareLaunchArgument("real_time", default_value="true"),   # false: as fast as the simulator can step
+        DeclareLaunchArgument("rt_factor", default_value="1.0"),
+        DeclareLaunchArgument("depth_sweep", default_value="true"),
         DeclareLaunchArgument("autonomous", default_value="true"),
         DeclareLaunchArgument("timeout", default_value="600.0"),
         DeclareLaunchArgument("seed", default_value="0"),

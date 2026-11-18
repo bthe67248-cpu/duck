@@ -78,6 +78,7 @@ class WorldSim(Node):
         for name in ("mjcf", "policy", "world_json"):
             self.declare_parameter(name, "")
         self.declare_parameter("real_time", True)
+        self.declare_parameter("rt_factor", 1.0)             # with real_time: run at most this many times real time
         self.declare_parameter("sensor_profile", "ideal")    # "ideal" (perfect RGB-D) | "realistic" (USB RGB + ToF)
         self.declare_parameter("cmd_timeout", 0.5)           # s sim time
         self.declare_parameter("cmd_wall_timeout", 1.0)      # s steady clock (host-stall guard)
@@ -317,8 +318,9 @@ class WorldSim(Node):
 
     # ---- main loop -------------------------------------------------------------------------------
     def step(self):
-        if self.get_parameter("real_time").value and self.sim_t() > time.monotonic() - self.t0:
-            return                                                       # do not run faster than real time
+        if self.get_parameter("real_time").value and \
+                self.sim_t() > (time.monotonic() - self.t0) * self.get_parameter("rt_factor").value:
+            return                                                       # at most rt_factor x real time
         d, m = self.d, self.m
         self.expire_command()
         q = d.xquat[self.trunk]

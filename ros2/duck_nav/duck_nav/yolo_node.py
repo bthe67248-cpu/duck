@@ -9,6 +9,7 @@ For the 320x240 sim camera and the shipped 256x320 model this is exactly the old
 The shipped model was fine-tuned on MuJoCo renders only (scripts/yolo_dataset.py, yolo_train.py); it must be
 re-trained / validated on images from the real camera before its detections mean anything on hardware.
 """
+import os
 import time
 
 import numpy as np
@@ -94,13 +95,26 @@ def image_to_rgb(msg):
     return np.ascontiguousarray(img)
 
 
+def ort_options():
+    """ONNX Runtime session options. DUCK_ORT_THREADS=N caps inference at N threads without spin-waiting
+    (ORT's default takes every core, which starves the simulator when several trials share a machine;
+    detections are unchanged). Unset or 0 keeps ORT's default."""
+    so = ort.SessionOptions()
+    n = int(os.environ.get("DUCK_ORT_THREADS", "0") or 0)
+    if n > 0:
+        so.intra_op_num_threads = n; so.inter_op_num_threads = 1
+        so.add_session_config_entry("session.intra_op.allow_spinning", "0")
+    return so
+
+
 class YoloNode(Node):
     def __init__(self):
         super().__init__("duck_yolo")
         self.declare_parameter("model", ""); self.declare_parameter("conf", 0.5); self.declare_parameter("iou", 0.5)
         self.declare_parameter("class_names", ["beacon", "box"])
         self.declare_parameter("imgsz", [256, 320])          # [H, W], used only if the ONNX input is dynamic
-        self.session = ort.InferenceSession(self.get_parameter("model").value, providers=["CPUExecutionProvider"])
+        self.session = ort.InferenceSession(self.get_parameter("model").value, sess_options=ort_options(),
+                                            providers=["CPUExecutionProvider"])
         self.names = list(self.get_parameter("class_names").value)
         self.in_hw = model_input_size(self.session, tuple(int(v) for v in self.get_parameter("imgsz").value))
         nout = self.session.get_outputs()[0].shape[1]
