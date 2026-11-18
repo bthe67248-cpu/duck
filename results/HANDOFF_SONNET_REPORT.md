@@ -75,7 +75,7 @@ Shield mesh unchanged (rebuild skipped: no manifold3d). Orientation used by the 
   `--ros` installed package assets, sha256 checksums in `model/checksums.json` via `--write-checksums`) and `scripts/sync_ros2_assets.py` (replaces the manual cp in setup_nav.sh for the model files).
   Current preflight: 0 errors, 4 warnings (PROVISIONAL mass, 3 optional policies not downloaded: roller, roller_crouch, ball_kick_right).
 * The checksums were taken from the files already on this machine; they are NOT verified against an upstream signature.
-* Process cleanup: the ROS shell scripts had already been narrowed by Opus (own process group); I did not touch them. I removed no hard-coded `C:\dev` from `matlab/build_blockset.m` comment and README (README text left for Opus).
+* Process cleanup: the ROS shell scripts had already been narrowed by Opus (own process group); I did not touch them. The hard-coded path in the `matlab/build_blockset.m` comment is now `<repo>`; README still has `C:\dev` text (left for Opus).
 * Open: missing original head meshes are located via `design/original_parts` or env only (upstream commit not pinned); Python/ROS dependency pinning and package manifests; fresh-workspace build not tested.
 
 ### S9 mass - done (as PROVISIONAL), whole-robot numbers regenerated
