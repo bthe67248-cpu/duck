@@ -8,7 +8,8 @@ P=${DUCK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}
 source /opt/ros/jazzy/setup.bash; source ~/duck_ws/install/setup.bash
 SENSORS=ideal
 for a in "$@"; do case $a in sensors:=*) SENSORS=${a#sensors:=};; esac; done
-OUT=${OUT:-$HOME/duck_ws/run_$SENSORS}; rm -rf "$OUT"
+OUT=${OUT:-$HOME/duck_ws/run_$SENSORS}
+case "$OUT" in "$HOME"/duck_ws/run*) rm -rf "$OUT";; *) [ -e "$OUT/summary.txt" ] && { echo "OUT=$OUT has an old summary; remove it yourself"; exit 1; };; esac
 LOG=$(mktemp /tmp/duck_nav.XXXX.log)
 setsid ros2 launch duck_nav duck_nav.launch.py rviz:=false out_dir:="$OUT" "$@" > "$LOG" 2>&1 &
 PGID=$!

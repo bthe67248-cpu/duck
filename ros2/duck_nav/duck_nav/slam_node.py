@@ -222,6 +222,9 @@ class SlamNode(Node):
             corr = self.slam.pose - pose_acq
             self.slam.update_map(ang, r, hit)
             self.slam.pose = current + corr                    # ... and carry the correction to now
+            if np.any(corr):                                   # later history entries get it too, so a frame acquired
+                for k in [k for k in self.pose_hist.d if k > ns]:     # before this one was processed is not
+                    self.pose_hist.d[k] = self.pose_hist.d[k] + corr  # corrected twice
         self.frames.put(ns, (data, pose_acq.copy()))
 
     @staticmethod
@@ -275,6 +278,12 @@ class SlamNode(Node):
             return False
         data, pose = fr
         R_bc, t_bc = cam
+        if self.mode == "tof":
+            _, pose_cam = self.pose_hist.nearest(ns, 30_000_000)
+            if pose_cam is None:
+                return False
+            data = (self.shift_level(data[0], pose, pose_cam), data[1])   # ToF points into the camera-time body frame
+            pose = pose_cam
         for det in msg.detections:
             if not det.results or det.results[0].hypothesis.class_id != "beacon":
                 continue
@@ -308,6 +317,17 @@ class SlamNode(Node):
         if len(self.candidates) >= int(self.get_parameter("goal_confirmations").value):
             self.goal = np.mean(self.candidates, axis=0); self.goal_n = len(self.candidates)
             self.get_logger().info(f"beacon located by YOLO + {self.mode}: ({self.goal[0]:.2f}, {self.goal[1]:.2f}) in the map")
+
+    @staticmethod
+    def shift_level(pts, pose_from, pose_to):
+        """Level-frame points seen at SLAM pose `pose_from` -> level frame at `pose_to` (planar motion between)."""
+        if len(pts) == 0:
+            return pts
+        c, s = math.cos(pose_from[2]), math.sin(pose_from[2])
+        wx = pose_from[0] + c * pts[:, 0] - s * pts[:, 1]; wy = pose_from[1] + s * pts[:, 0] + c * pts[:, 1]
+        dx, dy = wx - pose_to[0], wy - pose_to[1]
+        c, s = math.cos(pose_to[2]), math.sin(pose_to[2])
+        return np.stack([c * dx + s * dy, -s * dx + c * dy, pts[:, 2]], 1)
 
     def range_depth(self, depth, cx, cy, w, h, R_bc, t_bc):
         K = self.K

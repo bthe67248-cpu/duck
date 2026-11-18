@@ -16,6 +16,7 @@ stale pose | stale map | slam recovering | robot is outside the map | goal rejec
 exploration complete. Reaching the beacon is reported separately from exploration completion (/nav/result).
 """
 import math
+import threading
 
 import numpy as np
 import rclpy
@@ -42,6 +43,7 @@ class NavNode(Node):
         self.declare_parameter("no_frontier_plans", 5)   # consecutive no-frontier plans before judging
         self.declare_parameter("goal_reached_m", 0.36)
         self.enabled = bool(self.get_parameter("autonomous").value)
+        self.lock = threading.RLock()                    # replan / drive / callbacks run on different threads
         self.grid = None; self.info = None; self.map_t = None
         self.pose = None; self.pose_t = None; self.slam_state = "ok"; self.goal = None
         self.path = None; self.mode = "explore"; self.visited_goal = False; self.finished = False
@@ -76,10 +78,11 @@ class NavNode(Node):
         if abs(q.x) + abs(q.y) + abs(q.z) > 1e-6:
             self.get_logger().warn("map rejected: rotated map origins are not supported")
             return
-        self.info = ds.MapInfo(res=float(i.resolution), x0=float(i.origin.position.x), y0=float(i.origin.position.y),
-                               nx=int(i.width), ny=int(i.height))
-        self.grid = ds.grid_from_msg_data(msg.data, i.width, i.height)
-        self.map_t = self.now()
+        info = ds.MapInfo(res=float(i.resolution), x0=float(i.origin.position.x), y0=float(i.origin.position.y),
+                          nx=int(i.width), ny=int(i.height))
+        grid = ds.grid_from_msg_data(msg.data, i.width, i.height)
+        with self.lock:
+            self.info, self.grid, self.map_t = info, grid, self.now()
 
     def on_pose(self, msg):
         if msg.header.frame_id != "map":
@@ -97,6 +100,10 @@ class NavNode(Node):
         self.goal = g
 
     def on_enable(self, msg):
+        with self.lock:
+            self.set_enabled(msg)
+
+    def set_enabled(self, msg):
         if msg.data == self.enabled:
             return
         self.enabled = msg.data; self.path = None; self.progress_ref = None
@@ -114,7 +121,8 @@ class NavNode(Node):
         self.pub_status.publish(String(data=text))
 
     def stop(self, why=None):
-        self.pub_cmd.publish(Twist()); self.path = None
+        self.pub_cmd.publish(Twist()); self.pub_head.publish(Float64(data=0.0)); self.path = None
+        self.unstick_until = 0.0; self.progress_ref = None
         if why:
             self.say(why)
 
@@ -138,28 +146,40 @@ class NavNode(Node):
 
     # ---- planning -----------------------------------------------------------------------------
     def replan(self):
-        if self.finished or not self.enabled:
-            return
-        f = self.fault()
-        if f:
-            self.path = None; self.say(f); return
-        goal = None if self.visited_goal else self.goal
-        if goal is not None and math.hypot(goal[0] - self.pose[0], goal[1] - self.pose[1]) < self.get_parameter("goal_reached_m").value:
-            self.visited_goal = True; goal = None
-            self.say("beacon reached; exploring the rest of the room")
-        self.path, self.mode = ds.plan(self.grid, self.pose, goal, info=self.info,
-                                       clearance=float(self.get_parameter("clearance").value))
-        if self.mode != "no_frontier":
+        with self.lock:
+            if self.finished or not self.enabled:
+                return
+            f = self.fault()
+            if f:
+                self.path = None; self.say(f); return
+            grid, info, pose = self.grid, self.info, self.pose
+            goal = None if self.visited_goal else self.goal
+            if goal is not None and math.hypot(goal[0] - pose[0], goal[1] - pose[1]) < self.get_parameter("goal_reached_m").value:
+                self.visited_goal = True; goal = None
+                self.say("beacon reached; exploring the rest of the room")
+        # the expensive part runs without the lock, on a consistent snapshot of grid/info/pose
+        clearance = float(self.get_parameter("clearance").value)
+        path, mode = ds.plan(grid, pose, goal, info=info, clearance=clearance)
+        state = None
+        if mode == "no_frontier":
+            state = ds.exploration_state(grid, pose, info, min_area_m2=float(self.get_parameter("min_explored_m2").value))
+        with self.lock:
+            if self.finished or not self.enabled:
+                return                                   # disabled while planning: do not resurrect a path
+            self.apply_plan(path, mode, state)
+
+    def apply_plan(self, path, mode, state):
+        self.path, self.mode = path, mode
+        if mode != "no_frontier":
             self.no_frontier = 0
-        if self.path is None:
-            if self.mode == "no_frontier":
+        if path is None:
+            if mode == "no_frontier":
                 self.no_frontier += 1
-                state, area, open_f = ds.exploration_state(self.grid, self.pose, self.info,
-                                                           min_area_m2=float(self.get_parameter("min_explored_m2").value))
+                st, area, open_f = state
                 if self.no_frontier >= int(self.get_parameter("no_frontier_plans").value):
-                    if state == "complete":
+                    if st == "complete":
                         self.finish(f"exploration complete ({area:.1f} m2 reachable, closed)")
-                    elif state == "stalled":
+                    elif st == "stalled":
                         self.finish(f"exploration stalled: no usable frontier but the room is not closed "
                                     f"({area:.1f} m2 reachable, open frontier {open_f} cells)")
                     else:
@@ -167,18 +187,22 @@ class NavNode(Node):
                 else:
                     self.say(ds.STATUS_TEXT["no_frontier"])
             else:
-                self.say(ds.STATUS_TEXT[self.mode])     # out_of_map / start_blocked: drive() stops
+                self.say(ds.STATUS_TEXT[mode])          # out_of_map / start_blocked: drive() stops
             return
-        self.say(ds.STATUS_TEXT[self.mode] if self.mode != "explore" or not self.visited_goal
+        self.say(ds.STATUS_TEXT[mode] if mode != "explore" or not self.visited_goal
                  else "beacon reached; exploring the rest of the room")
-        p = Path(); p.header.frame_id = "map"; p.header.stamp = self.get_clock().now().to_msg()
-        for x, y in self.path[::3] + [self.path[-1]]:
-            ps = PoseStamped(); ps.header = p.header; ps.pose.position.x, ps.pose.position.y = x, y; ps.pose.orientation.w = 1.0
-            p.poses.append(ps)
-        self.pub_plan.publish(p)
+        msg = Path(); msg.header.frame_id = "map"; msg.header.stamp = self.get_clock().now().to_msg()
+        for x, y in path[::3] + [path[-1]]:
+            ps = PoseStamped(); ps.header = msg.header; ps.pose.position.x, ps.pose.position.y = x, y; ps.pose.orientation.w = 1.0
+            msg.poses.append(ps)
+        self.pub_plan.publish(msg)
 
     # ---- driving ------------------------------------------------------------------------------
     def drive(self):
+        with self.lock:                                  # enable/finish cannot slip in between check and publish
+            self.drive_step()
+
+    def drive_step(self):
         if not self.enabled or self.finished:
             return                      # someone else owns /cmd_vel, or we are done; a zero was sent on the transition
         t = self.now()

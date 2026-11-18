@@ -129,6 +129,7 @@ class WorldSim(Node):
         self.mode = "walk"; self.mode_left = 0.0; self.phase = 0.0
         self.twist = np.zeros(3, np.float32); self.head_yaw = 0.0; self.pose_cmd = np.zeros(10, np.float32)
         self.cmd_sim_t = -1e9; self.cmd_wall_t = -1e9; self.cmd_expired = True
+        self.head_t = -1e9; self.posecmd_t = -1e9
         self.last = np.zeros(14, np.float32); self.cmd = np.zeros(13, np.float32)
 
         self.W, self.H = int(self.get_parameter("cam_width").value), int(self.get_parameter("cam_height").value)
@@ -136,7 +137,10 @@ class WorldSim(Node):
         self.rgb_r = mujoco.Renderer(self.m, self.H, self.W)
         if self.profile == "ideal":
             self.dep_r = mujoco.Renderer(self.m, self.H, self.W); self.dep_r.enable_depth_rendering()
-        self.opt = mujoco.MjvOption(); self.opt.geomgroup[2] = 0          # camera does not render the duck's visuals
+        self.opt = mujoco.MjvOption()
+        # ideal profile: the duck's own visuals are hidden from the camera (as the original sim and the YOLO training
+        # renders did); realistic: rendered, so any part of the head/bill inside the field of view appears in images
+        self.opt.geomgroup[2] = 0 if self.profile == "ideal" else 1
         n = int(self.get_parameter("tof_zones").value)
         self.tof_rays = tof_zone_rays(n, float(self.get_parameter("tof_fov_deg").value), float(self.get_parameter("tof_fov_deg").value))
         self.tof_every = max(1, round(1.0 / (float(self.get_parameter("tof_rate_hz").value) * POLICY_DT)))
@@ -181,11 +185,11 @@ class WorldSim(Node):
             self.cmd_expired = False
 
     def on_head(self, msg):
-        self.head_yaw = msg.data
+        self.head_yaw = msg.data; self.head_t = self.sim_t()
 
     def on_pose_cmd(self, msg):
         if len(msg.data) == 10:
-            self.pose_cmd[:] = msg.data
+            self.pose_cmd[:] = msg.data; self.posecmd_t = self.sim_t()
 
     def on_behavior(self, msg):
         want = msg.data.strip().lower()
@@ -211,6 +215,12 @@ class WorldSim(Node):
             self.twist[:] = 0.0; self.cmd_expired = True
         elif stale:
             self.twist[:] = 0.0
+        # head pan and posture commands expire the same way (head back to centre, posture to neutral)
+        timeout = self.get_parameter("cmd_timeout").value
+        if self.sim_t() - self.head_t > timeout:
+            self.head_yaw = 0.0
+        if self.sim_t() - self.posecmd_t > timeout:
+            self.pose_cmd[:] = 0.0
 
     def command_vector(self):
         """13-D policy command for the current mode; also advances timed behaviours (called at 50 Hz)."""

@@ -7,7 +7,8 @@ Writes      <out_dir>/summary.txt, <out_dir>/result.json and <out_dir>/map.png w
 
 Scoring notes / limits
 - SLAM error pairs each estimate with the ground-truth pose of the SAME stamp (bounded history), not the latest one.
-- A fall = trunk tilt > 45 deg or trunk height < `fall_height` (from the true pose); counted on the transition.
+- A fall = trunk tilt > 45 deg or trunk height < `fall_height` (from the true pose); counted on the transition,
+  except while /duck/mode is a deliberate posture (sit, rise, roll, pick).
 - Exploration outcome and beacon outcome are reported separately; "beacon reached" uses the TRUE distance.
 - Coverage is the classified fraction of the true room interior (from world.json walls if given), not of the grid.
 """
@@ -53,6 +54,8 @@ class ScoreNode(Node):
         latched = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
         self.create_subscription(String, "nav/result", self.on_result, latched)
         self.create_subscription(Detection2DArray, "yolo/detections", self.on_det, 5)
+        self.mode = "walk"
+        self.create_subscription(String, "duck/mode", lambda m: setattr(self, "mode", m.data), 10)
         self.create_timer(0.5, self.check_done)
 
     def now(self):
@@ -67,6 +70,8 @@ class ScoreNode(Node):
                 del self.gt_hist[k]
         up_z = 1 - 2 * (q.x * q.x + q.y * q.y)                 # body z-axis . world z
         up = p.z > self.get_parameter("fall_height").value and up_z > math.cos(math.radians(45))
+        if self.mode in ("sit", "rise", "roll", "pick"):
+            up = True                                           # deliberate low postures are not falls
         if self.was_up and not up:
             self.falls += 1; self.events.append(f"{self.now():6.1f} s  FALL (true pose)")
         self.was_up = up

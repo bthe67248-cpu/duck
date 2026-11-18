@@ -372,7 +372,7 @@ def plan(grid, pose, goal=None, goal_radius=0.34, info=DEFAULT_MAP, clearance=RO
         if cand.any():
             return _trace(parent, _argmin_where(cand, d2), start, info), "goal"
     frontier = frontier_cells(grid, reached) & (dist > 0.35 / info.res)
-    lab, n = ndimage.label(frontier)
+    lab, n = ndimage.label(frontier, structure=np.ones((3, 3)))        # same connectivity as exploration_state
     if n:
         sizes = ndimage.sum(frontier, lab, range(1, n + 1))
         big = np.isin(lab, np.nonzero(sizes >= min_frontier)[0] + 1)
