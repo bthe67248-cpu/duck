@@ -178,3 +178,188 @@ def test_level_to_pixel_roundtrip():
     p = ds.pixel_to_level(200.0, 90.0, 1.3, R, t, K)
     u, v, z = ds.level_to_pixel(p, R, t, K)
     assert (u[0], v[0], z[0]) == pytest.approx((200.0, 90.0, 1.3))
+
+
+# ---- Localization confidence and sparse head-sweep constraints -------------------------------
+def corner_reference():
+    s = ds.DuckSLAM(min_hits=12)
+    for y in np.arange(-1.0, 1.01, INFO.res):
+        s.logodds[INFO.cell(1.0, y)] = 3
+    for x in np.arange(-1.0, 1.01, INFO.res):
+        s.logodds[INFO.cell(x, 1.0)] = 3
+    return s
+
+
+def corner_scan(degrees):
+    ang = np.radians(degrees)
+    with np.errstate(divide="ignore"):
+        rx = np.where(np.cos(ang) > 0, 1 / np.cos(ang), 100)
+        ry = np.where(np.sin(ang) > 0, 1 / np.sin(ang), 100)
+    return ang, np.minimum(rx, ry), np.ones(len(ang), bool)
+
+
+def test_localization_health_requires_constraints_and_expires_independently_of_pose():
+    h = ds.LocalizationHealth()
+    assert h.state(0.0) == "initializing"
+    h.observe(0.0, True)
+    assert h.state(0.0) == "weak"  # a single lucky match cannot release the drive
+    h.observe(0.1, True)
+    assert h.state(0.2) == "ok"
+    assert h.state(1.0) == "stale"  # even if an IMU keeps publishing predicted poses
+    h.observe(1.0, False)
+    assert h.state(1.0) == "weak"
+    h.observe(0.5, True)  # late packet cannot undo a more recent failure
+    assert h.state(1.0) == "weak"
+    h.observe(1.1, True); h.observe(1.2, True)
+    assert h.state(1.2) == "ok"
+    h.invalidate()  # fall: previous good localization is no longer a reason to walk
+    assert h.state(1.2) == "weak"
+    assert h.state(-1) == "stale"  # clock reset fails closed
+
+
+def test_straight_wall_repeats_are_not_full_localization_constraints():
+    s = corner_reference()
+    scan = corner_scan(np.linspace(-20, 20, 80))
+    before = s.pose.copy()
+    assert not s.match(*scan)
+    assert s.match_reason == "degenerate_geometry"
+    assert np.array_equal(before, s.pose)
+
+
+def test_sparse_sweep_combines_eight_zone_frames_and_matches_corner():
+    s = corner_reference(); window = ds.ScanWindow()
+    for i, bearing in enumerate((-15, 15, 45, 75)):
+        scan = corner_scan(np.linspace(bearing - 15, bearing + 15, 8))
+        assert not s.match(*scan)  # an individual 8-column ToF frame is insufficient
+        window.add(i * 0.1, s.pose, *scan)
+    assert s.match(*window.scan(s.pose), current_scan=scan)
+    assert s.match_reason == "accepted"
+    assert s.match_overlap > 0.95
+    assert np.linalg.norm(s.pose[:2]) < 0.02
+
+
+def test_old_sweep_cannot_conceal_current_scan_disagreement():
+    s = corner_reference()
+    scan = corner_scan(np.linspace(-30, 100, 40))
+    a, r, hit = corner_scan(np.linspace(55, 85, 8))
+    assert not s.match(*scan, current_scan=(a, r * 0.5, hit))
+    assert s.match_reason == "fresh_scan_disagrees"
+    assert np.array_equal(s.pose, np.zeros(3))
+
+
+def test_sweep_compensates_motion_and_drops_expired_constraints():
+    w = ds.ScanWindow(seconds=0.5)
+    w.add(0.0, np.zeros(3), np.array([0.0]), np.array([1.0]), np.array([True]))
+    a, r, _ = w.scan(np.array([0.2, 0.0, math.pi / 2]))
+    assert a[0] == pytest.approx(-math.pi / 2)
+    assert r[0] == pytest.approx(0.8)
+    w.correct(np.zeros(3), np.array([0.1, 0.2, math.pi / 2]))
+    a, r, _ = w.scan(np.array([0.1, 0.2, math.pi / 2]))
+    assert a[0] == pytest.approx(0.0)
+    assert r[0] == pytest.approx(1.0)
+    w.add(1.0, np.zeros(3), np.array([0.0]), np.array([2.0]), np.array([True]))
+    assert len(w.scan(np.zeros(3))[0]) == 1
+
+
+# ---- Local driving guard ---------------------------------------------------------------------
+def test_path_target_does_not_turn_back_toward_old_path_start():
+    path = [(x, 0.0) for x in np.linspace(0, 2, 81)]
+    assert ds.path_target(path, (1.0, 0, 0))[0] >= 1.2
+
+
+def test_command_arc_checks_clearance_before_cutting_corner():
+    g = empty(0)
+    # Forward is clear, but a left arc intrudes into a wall's footprint margin.
+    i0, j0 = INFO.cell(0.18, 0.14); i1, j1 = INFO.cell(0.50, 0.18)
+    g[i0:i1 + 1, j0:j1 + 1] = 100
+    assert ds.motion_clear(g, (0, 0, 0), 0.35, 0.0)
+    assert not ds.motion_clear(g, (0, 0, 0), 0.35, 1.0)
+
+
+def test_escape_command_never_reduces_clearance_or_drives_into_unknown():
+    g = walled_room()
+    pose = (-0.95, 0.0, 0.0)
+    assert ds.motion_clear(g, pose, 0.2, 0.0, escape=True)
+    assert not ds.motion_clear(g, (*pose[:2], math.pi), 0.2, 0.0, escape=True)
+    assert not ds.motion_clear(g, pose, 0.2, 0.0, escape=False)
+    assert not ds.motion_clear(empty(-1), (0, 0, 0), 0.2, 0.0)
+
+
+def test_sensor_outage_requires_two_new_accepted_constraints():
+    h = ds.LocalizationHealth()
+    h.observe(0.0, True); h.observe(0.1, True)
+    assert h.state(0.1) == "ok"
+    h.observe(4.0, True)
+    assert h.state(4.0) == "weak"
+    h.observe(4.1, True)
+    assert h.state(4.1) == "ok"
+
+
+def test_local_corner_constraints_reduce_small_prediction_error():
+    s = corner_reference()
+    s.pose[:] = (0.03, -0.02, math.radians(1.5))
+    before = np.linalg.norm(s.pose)
+    assert s.match(*corner_scan(np.linspace(-30, 100, 40)))
+    assert np.linalg.norm(s.pose) < before
+
+
+def test_match_at_search_edge_is_rejected_instead_of_claiming_relocalization():
+    s = corner_reference()
+    s.pose[:] = (0.2, 0.0, 0.0)
+    before = s.pose.copy()
+    assert not s.match(*corner_scan(np.linspace(-30, 100, 40)))
+    assert s.match_reason in ("search_boundary", "low_overlap")
+    assert np.array_equal(s.pose, before)
+
+
+@pytest.mark.parametrize("seed", [0, 7, 42])
+def test_noisy_stationary_sparse_sweep_bootstraps_without_motion(seed):
+    """Numerical fixture only: point rays, static corner, not a hardware noise/accuracy model.
+
+    Unlike the reference-map tests this starts with an empty map and exercises
+    bootstrap-to-constraint acceptance. Run with -s to see accepted/gated counts.
+    """
+    rng = np.random.default_rng(seed)
+    s = ds.DuckSLAM(max_r=2.0, min_hits=12)
+    w = ds.ScanWindow(); h = ds.LocalizationHealth()
+    bootstrap = True; accepted = 0; allowed = 0
+    for i in range(100):
+        t = i * 0.1
+        head_yaw = 0.9 * math.sin(2 * math.pi * t / 4)
+        ang, ranges, _ = corner_scan(np.linspace(-19.6875, 19.6875, 8) + math.degrees(head_yaw))
+        valid = (ranges < s.max_r) & (rng.random(8) > 0.1)
+        ang = ang[valid]
+        ranges = ranges[valid] + rng.normal(0.0, 0.01, valid.sum())
+        hit = np.ones(len(ranges), bool)
+        before = s.pose.copy()
+        w.add(t, before, ang, ranges, hit)
+        good = s.match(*w.scan(before), current_scan=(ang, ranges, hit))
+        if good:
+            w.correct(before, s.pose)
+            bootstrap = False; accepted += 1
+        if bootstrap or good:
+            s.update_map(ang, ranges, hit)
+        h.observe(t, good)
+        allowed += h.state(t) == "ok"
+    print(f"static corner seed={seed}: accepted={accepted}/100, motion_gate_ok={allowed}/100")
+    assert accepted >= 10 and 0 < allowed < 100
+    assert not bootstrap
+    assert np.linalg.norm(s.pose[:2]) < 0.03
+    # Loss of observations closes the gate regardless of the last accepted count.
+    assert h.state(11.0) == "stale"
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), -1.0, 0.0, True])
+def test_localization_timing_and_motion_bounds_reject_invalid_configuration(value):
+    for make in (lambda: ds.LocalizationHealth(scan_timeout=value),
+                 lambda: ds.LocalizationHealth(match_timeout=value),
+                 lambda: ds.ScanWindow(seconds=value),
+                 lambda: ds.motion_clear(empty(0), (0, 0, 0), value, 0.0)):
+        with pytest.raises(ValueError, match="finite and positive"):
+            make()
+
+
+@pytest.mark.parametrize("value", [0, -1, 1.5, True])
+def test_sweep_frame_limit_is_a_positive_integer(value):
+    with pytest.raises(ValueError, match="positive integer"):
+        ds.ScanWindow(max_frames=value)

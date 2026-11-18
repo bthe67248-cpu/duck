@@ -24,5 +24,7 @@ setup(
         "nav_node = duck_nav.nav_node:main",
         "score_node = duck_nav.score_node:main",
         "usb_camera_node = duck_nav.usb_camera_node:main",
+        "duck_tof = duck_nav.tof_node:main",
+        "sensor_pose_node = duck_nav.sensor_pose_node:main",
     ]},
 )

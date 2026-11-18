@@ -3,15 +3,22 @@
 Usage:  .venv\\Scripts\\python.exe scripts\\stand_numbers.py model\\duck_v3_scene.xml
 Writes model/stand_numbers.json (read by matlab/duck_numbers.m).
 """
-import hashlib, json, sys
+import argparse, hashlib, json, sys
 from pathlib import Path
 import mujoco
 import numpy as np
 
-path = Path(sys.argv[1])
+ap = argparse.ArgumentParser(description=__doc__)
+ap.add_argument("scene", type=Path)
+ap.add_argument("--output", type=Path, help="default: model/stand_numbers.json alongside the input scene")
+ap.add_argument("--strict-mass", action="store_true", help="fail unless a supplied whole-robot weighing agrees within 5%%")
+args = ap.parse_args()
+path = args.scene
 m = mujoco.MjModel.from_xml_path(str(path))
 d = mujoco.MjData(m)
 kid = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_KEY, "STAND")
+if kid < 0:
+    raise SystemExit("scene has no STAND keyframe")
 mujoco.mj_resetDataKeyframe(m, d, kid)
 home = m.key_ctrl[kid].copy()
 mujoco.mj_forward(m, d)                   # nominal STAND pose, before anything sags
@@ -51,7 +58,8 @@ out = dict(
     actuators=[m.actuator(i).name for i in range(m.nu)],
 )
 # provenance (S9): which model revision these numbers describe and how provisional the printed masses are
-ledger_file = path.parent / "mass_ledger.json"
+tag = path.stem.removeprefix("duck_v3").removesuffix("_scene")
+ledger_file = path.parent / f"mass_ledger{tag}.json"
 out["model_scene"] = path.name
 out["model_scene_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()[:16]
 robot_xml = path.parent / path.name.replace("_scene", "")
@@ -59,9 +67,24 @@ if robot_xml.exists():
     out["model_robot_sha256"] = hashlib.sha256(robot_xml.read_bytes()).hexdigest()[:16]
 if ledger_file.exists():
     led = json.loads(ledger_file.read_text())
+    ledger_hash = led.get("model_robot_sha256")
+    if ledger_hash and (not robot_xml.exists() or hashlib.sha256(robot_xml.read_bytes()).hexdigest() != ledger_hash):
+        raise SystemExit(f"{ledger_file.name} does not match {robot_xml.name}; regenerate the model and ledger together")
     out["mass_status"] = led["status"]
     out["printed_part_mass_g"] = {k: v["mass_g"] for k, v in led["parts"].items() if not k.startswith("_")}
+    out["servo_delay_s"] = led.get("servo_delay_s")
+    out["calibration_sha256"] = led.get("calibration_sha256")
+    out["mass_ledger_sha256"] = hashlib.sha256(ledger_file.read_bytes()).hexdigest()
+    measured = led.get("whole_robot_mass_kg")
+    if measured is not None:
+        out["measured_robot_mass_kg"] = measured
+        out["mass_error_fraction"] = abs(mass - measured) / measured
+        out["mass_within_5_percent"] = out["mass_error_fraction"] <= 0.05
 out["d_knee"] = abs(out["knee_x"] - out["com"][0])
 for k, v in out.items():
     print(f"{k:18s} {v}")
-(path.parent / "stand_numbers.json").write_text(json.dumps(out, indent=1))
+destination = args.output or path.parent / "stand_numbers.json"
+destination.parent.mkdir(parents=True, exist_ok=True)
+destination.write_text(json.dumps(out, indent=1))
+if args.strict_mass and not out.get("mass_within_5_percent", False):
+    raise SystemExit("mass gate FAIL: supply a whole_robot_mass_kg measurement and get model error <= 5%")

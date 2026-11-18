@@ -21,6 +21,7 @@ import time
 import numpy as np
 import rclpy
 from rclpy.executors import ExternalShutdownException
+from rclpy.duration import Duration
 import yaml
 from rclpy.node import Node
 from sensor_msgs.msg import CameraInfo, Image
@@ -59,7 +60,7 @@ class UsbCameraNode(Node):
         self.pub_info = self.create_publisher(CameraInfo, "camera/camera_info", 1)
         self.pub_status = self.create_publisher(String, "camera/status", 1)
         self.latest = None; self.lock = threading.Lock(); self.last_frame = 0.0; self.cap = None
-        self.running = True; self.reopen = False
+        self.running = True; self.reopen = False; self.calibration_mismatch = False
         threading.Thread(target=self.capture_loop, daemon=True).start()
         self.create_timer(0.005, self.publish_latest)
         self.create_timer(0.5, self.watchdog)
@@ -80,7 +81,7 @@ class UsbCameraNode(Node):
         w, h = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.get_logger().info(f"opened {self.get_parameter('device').value}: {w}x{h} @ {cap.get(cv2.CAP_PROP_FPS):.0f} fps")
         if self.info is not None and (w, h) != (self.info.width, self.info.height):
-            self.get_logger().error(f"capture {w}x{h} does not match calibration {self.info.width}x{self.info.height}")
+            self.get_logger().error(f"capture {w}x{h} does not match calibration {self.info.width}x{self.info.height}; images and CameraInfo withheld")
         return cap
 
     def capture_loop(self):
@@ -106,17 +107,21 @@ class UsbCameraNode(Node):
             return
         t, bgr = item
         lat = float(self.get_parameter("latency").value)
-        stamp = (t - rclpy.duration.Duration(seconds=lat)).to_msg() if lat > 0 else t.to_msg()
+        stamp = (t - Duration(seconds=lat)).to_msg() if lat > 0 else t.to_msg()
         rgb = np.ascontiguousarray(bgr[..., ::-1])
         im = Image(); im.header.stamp = stamp; im.header.frame_id = self.get_parameter("frame_id").value
         im.height, im.width = rgb.shape[:2]; im.encoding = "rgb8"; im.step = 3 * rgb.shape[1]; im.data = rgb.tobytes()
+        self.calibration_mismatch = self.info is not None and (im.width, im.height) != (self.info.width, self.info.height)
+        if self.calibration_mismatch:
+            return  # old CameraInfo may be cached downstream: withhold images too
         self.pub.publish(im)
         if self.info is not None:
             self.info.header = im.header; self.pub_info.publish(self.info)
 
     def watchdog(self):
         stale = time.monotonic() - self.last_frame > float(self.get_parameter("stale_after").value)
-        self.pub_status.publish(String(data="stale" if stale else "ok"))
+        self.pub_status.publish(String(data="stale" if stale else
+                                      "calibration_mismatch" if self.calibration_mismatch else "ok"))
         if stale and self.cap is not None and not self.reopen:
             self.get_logger().warn("no frames: reopening camera", throttle_duration_sec=5.0)
             self.reopen = True                               # the capture thread owns the device handle

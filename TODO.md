@@ -2,6 +2,8 @@
 
 Everything in this repo runs in simulation on estimated numbers. These steps make it match the real robot. Do them in order. The carrier board is at [bthe67248-cpu/UNO_Q_HAT_IMU_SERVOS_XT60](https://github.com/bthe67248-cpu/UNO_Q_HAT_IMU_SERVOS_XT60). The step-by-step board plan is [UNO_Q_GUIDE.md](UNO_Q_GUIDE.md).
 
+**Software progress:** [hardware-readiness handoff](results/hardware_readiness/HANDOFF.md). Measurement JSON input and strict contact checking are implemented. Sensor acquisition interfaces and TF pose lookup are implemented, with offline tests; the actual VL53L5CX bus adapter and hardware encoder/IMU TF remain missing. Local scan constraints and weak/stale stopping are implemented; original room trials, loop closure and hardware localization remain open.
+
 ## 1. Board bring-up (UNO_Q_HAT_IMU_SERVOS_XT60)
 
 - [ ] Order the board with 2 oz outer copper (gerbers: `fabrication/UNOQ_HAT_gerbers_2026-11-13.zip` in the HAT repo)
@@ -41,7 +43,8 @@ Everything in this repo runs in simulation on estimated numbers. These steps mak
 - [ ] Check the drawings, mass, current and V4L2 modes; check USB streaming on the UNO Q (hub or not)
 - [ ] ToF at 3.3 V logic; zone order and range convention; a rigid shared bracket; a clear optical opening
 - [ ] Calibrate camera intrinsics, then camera and ToF extrinsics
-- [ ] Write the `duck_tof` node and the hardware `/camera/pose_level` + `/tof/pose_level` publisher
+- [x] Write `duck_tof` acquisition wrapper and exact-stamp TF pose publisher, with offline contract tests
+- [ ] Supply the actual VL53L5CX backend, synchronized hardware acquisition stamps, measured extrinsics and encoder/IMU TF; validate nodes on ROS and hardware
 
 ## 6. On the UNO Q (see UNO_Q_GUIDE.md)
 

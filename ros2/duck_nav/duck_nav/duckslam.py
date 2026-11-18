@@ -123,6 +123,88 @@ class OdomGains:
     rev_deadband: float = 0.4   # reverse |command| below this: the policy stands still
 
 
+def positive_finite(value, name):
+    """Validate timing/speed bounds shared by the pure helpers and ROS nodes."""
+    if isinstance(value, (bool, np.bool_)) or not math.isfinite(float(value)) or float(value) <= 0:
+        raise ValueError(f"{name} must be finite and positive")
+    return float(value)
+
+
+class LocalizationHealth:
+    """Acquisition-time health, independent of the rate of predicted pose publication.
+
+    This is a conservative gate, not an accuracy estimate. Two accepted constraints
+    are required after a failure; an old success cannot keep navigation enabled.
+    """
+
+    def __init__(self, scan_timeout=0.75, match_timeout=1.5):
+        self.scan_timeout = positive_finite(scan_timeout, "scan_timeout")
+        self.match_timeout = positive_finite(match_timeout, "match_timeout")
+        self.last_scan = None; self.last_match = None; self.streak = 0
+
+    def observe(self, stamp, accepted):
+        if self.last_scan is not None and stamp <= self.last_scan:
+            return
+        if self.last_scan is not None and stamp - self.last_scan > self.scan_timeout:
+            self.streak = 0
+        self.last_scan = stamp
+        self.streak = self.streak + 1 if accepted else 0
+        if accepted:
+            self.last_match = stamp
+
+    def invalidate(self):
+        self.last_match = None; self.streak = 0
+
+    def state(self, now):
+        if self.last_scan is None:
+            return "initializing"
+        if not 0 <= now - self.last_scan <= self.scan_timeout:
+            return "stale"
+        if self.last_match is None or not 0 <= now - self.last_match <= self.match_timeout or self.streak < 2:
+            return "weak"
+        return "ok"
+
+
+class ScanWindow:
+    """Short, odometry-compensated head sweep; never a loop closure or global relocalizer.
+
+    Store endpoints in the prediction frame and re-express them at the newest pose.
+    Bounded duration limits command-odometry error. Clear after a correction/fall.
+    """
+
+    def __init__(self, seconds=1.5, max_frames=20):
+        self.seconds = positive_finite(seconds, "sweep_window")
+        if isinstance(max_frames, bool) or not isinstance(max_frames, int) or max_frames <= 0:
+            raise ValueError("max_frames must be a positive integer")
+        self.frames = deque(maxlen=max_frames)
+
+    def clear(self):
+        self.frames.clear()
+
+    def add(self, stamp, pose, ang, ranges, hit):
+        if self.frames and stamp <= self.frames[-1][0]:
+            return
+        a = np.asarray(ang)[hit] + pose[2]; rr = np.asarray(ranges)[hit]
+        points = np.column_stack((pose[0] + rr * np.cos(a), pose[1] + rr * np.sin(a)))
+        self.frames.append((stamp, points))
+        while self.frames and stamp - self.frames[0][0] > self.seconds:
+            self.frames.popleft()
+
+    def scan(self, pose):
+        if not self.frames:
+            return np.zeros(0), np.zeros(0), np.zeros(0, bool)
+        pts = np.concatenate([p for _, p in self.frames], axis=0) - np.asarray(pose[:2])
+        ang = np.arctan2(pts[:, 1], pts[:, 0]) - pose[2]
+        return ang, np.linalg.norm(pts, axis=1), np.ones(len(pts), bool)
+
+    def correct(self, before, after):
+        """Carry an accepted rigid pose correction into all stored endpoints."""
+        a = after[2] - before[2]; c, s = math.cos(a), math.sin(a)
+        rot = np.array([[c, -s], [s, c]])
+        self.frames = deque(((t, (p - before[:2]) @ rot.T + after[:2]) for t, p in self.frames),
+                            maxlen=self.frames.maxlen)
+
+
 class DuckSLAM:
     def __init__(self, gains=None, info=DEFAULT_MAP, max_r=MAX_R, min_hits=12):
         if not isinstance(gains, OdomGains):            # old call style: DuckSLAM(v_gain)
@@ -134,6 +216,8 @@ class DuckSLAM:
         self.pose = np.array([0.0, 0.0, 0.0])
         self.logodds = np.zeros((info.nx, info.ny), np.float32)
         self.n_match = 0
+        self.match_reason = "initializing"
+        self.match_overlap = 0.0
 
     def body_velocity(self, cmd_vx, cmd_vy):
         g = self.gains
@@ -192,13 +276,24 @@ class DuckSLAM:
         return self.scan_from_points(ps @ R_bs.T + t_bs, min_bin_points=1, bin_deg=fov_h_deg / n,
                                      bin_offset=0.5 if n % 2 == 0 else 0.0)     # one bin per zone column
 
-    def match(self, ang, r, hit):
+    def match(self, ang, r, hit, current_scan=None):
         info = self.info
         occ = (self.logodds > 0.8).astype(np.float32)
-        if hit.sum() < self.min_hits or occ.sum() < 80:
+        self.match_overlap = 0.0
+        if hit.sum() < self.min_hits:
+            self.match_reason = "insufficient_hits"
+            return False
+        if occ.sum() < 80:
+            self.match_reason = "map_not_ready"
             return False
         field = ndimage.gaussian_filter(occ, 1.6)
         px, py = r[hit] * np.cos(ang[hit]), r[hit] * np.sin(ang[hit])
+        # A straight wall cannot constrain translation along itself. A large count
+        # of nearly identical zones/sweep repeats must not masquerade as 2-D support.
+        spread = np.linalg.eigvalsh(np.cov(np.vstack((px, py))))
+        if spread[0] < 0.0025:
+            self.match_reason = "degenerate_geometry"
+            return False
         best, best_s = (0.0, 0.0, 0.0), -1.0
         for dth in np.radians(np.arange(-6, 6.1, 1.5)):
             c, s = math.cos(self.pose[2] + dth), math.sin(self.pose[2] + dth)
@@ -212,10 +307,34 @@ class DuckSLAM:
                     score -= 0.02 * (abs(dx) + abs(dy)) / 0.075 + 0.02 * abs(dth) / math.radians(6)
                     if score > best_s:
                         best_s, best = score, (dx, dy, dth)
-        if best_s > 0.12:
+        dx, dy, dth = best
+        c, s = math.cos(self.pose[2] + dth), math.sin(self.pose[2] + dth)
+        ix = np.floor((self.pose[0] + dx + c * px - s * py - info.x0) / info.res).astype(int)
+        iy = np.floor((self.pose[1] + dy + s * px + c * py - info.y0) / info.res).astype(int)
+        inside = (ix >= 0) & (ix < info.nx) & (iy >= 0) & (iy < info.ny)
+        distance = ndimage.distance_transform_edt(~occ.astype(bool)) * info.res
+        self.match_overlap = float((distance[ix[inside], iy[inside]] < 0.075).sum() / len(px))
+        if current_scan is not None:
+            # An old sweep agreeing with the map cannot conceal a new occlusion,
+            # dropout, or displacement in the latest acquisition.
+            aa, rr, hh = current_scan
+            xx, yy = rr[hh] * np.cos(aa[hh]), rr[hh] * np.sin(aa[hh])
+            ii = np.floor((self.pose[0] + dx + c * xx - s * yy - info.x0) / info.res).astype(int)
+            jj = np.floor((self.pose[1] + dy + s * xx + c * yy - info.y0) / info.res).astype(int)
+            ok = (ii >= 0) & (ii < info.nx) & (jj >= 0) & (jj < info.ny)
+            overlap = float((distance[ii[ok], jj[ok]] < 0.075).sum() / max(len(xx), 1))
+            if len(xx) < 4 or overlap < 0.7:
+                self.match_reason = "fresh_scan_disagrees"
+                return False
+        if max(abs(dx), abs(dy)) >= 0.074 or abs(dth) >= math.radians(5.9):
+            self.match_reason = "search_boundary"
+            return False
+        if best_s > 0.12 and self.match_overlap >= 0.7:
             self.pose += 0.6 * np.array(best)
             self.n_match += 1
+            self.match_reason = "accepted"
             return True
+        self.match_reason = "low_overlap"
         return False
 
     def update_map(self, ang, r, hit, free_weight=0.35, hit_weight=1.2):
@@ -302,6 +421,48 @@ def _clearance_m(grid, info):
     if occ.any():
         return occ, ndimage.distance_transform_edt(~occ) * info.res
     return occ, np.full(grid.shape, np.inf)
+
+
+def motion_clear(grid, pose, speed, yaw_rate, horizon=0.6, info=DEFAULT_MAP,
+                 clearance=ROBOT_RADIUS, escape=False, distances=None):
+    """Check the commanded arc against known-free cells and the footprint margin.
+
+    `speed` is a conservative measured SI speed bound, not a gait command. Escape
+    may start within the margin but must never reduce its existing clearance.
+    This sampled check is a local guard, not a dynamics or braking guarantee.
+    """
+    speed = positive_finite(speed, "speed_bound_mps")
+    horizon = positive_finite(horizon, "motion horizon")
+    if not math.isfinite(yaw_rate):
+        raise ValueError("yaw_rate must be finite")
+    if distances is None:
+        _, distances = _clearance_m(grid, info)
+    start = info.cell(*pose[:2])
+    if not info.inside(*start) or grid[start] == 100:
+        return False
+    required = min(clearance, distances[start]) if escape else clearance
+    steps = max(2, int(math.ceil(abs(speed) * horizon / (info.res / 3))))
+    for t in np.linspace(0, horizon, steps + 1)[1:]:
+        if abs(yaw_rate) < 1e-6:
+            x = pose[0] + speed * t * math.cos(pose[2]); y = pose[1] + speed * t * math.sin(pose[2])
+        else:
+            x = pose[0] + speed / yaw_rate * (math.sin(pose[2] + yaw_rate * t) - math.sin(pose[2]))
+            y = pose[1] - speed / yaw_rate * (math.cos(pose[2] + yaw_rate * t) - math.cos(pose[2]))
+        ij = info.cell(x, y)
+        if not info.inside(*ij) or grid[ij] != 0 or distances[ij] + 1e-9 < required:
+            return False
+        if escape:
+            required = min(clearance, distances[ij])
+    return True
+
+
+def path_target(path, pose, lookahead=0.22):
+    """Walk forward from the nearest path point, never chase the old start behind us."""
+    nearest = min(range(len(path)), key=lambda i: math.hypot(path[i][0] - pose[0], path[i][1] - pose[1]))
+    for p in path[nearest:]:
+        if math.hypot(p[0] - pose[0], p[1] - pose[1]) >= lookahead:
+            return p
+    return path[-1]
 
 
 def _bfs(trav, start):

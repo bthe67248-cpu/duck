@@ -6,7 +6,8 @@ Subscribes  /imu (gyro + accel -> complementary attitude filter), /cmd_vel (gait
                                                 /camera/pose_level + /camera/camera_info for detection association
             /yolo/detections (vision_msgs/Detection2DArray)
 Publishes   /map (OccupancyGrid, 1 Hz), TF map -> base_level, /slam/pose (PoseStamped),
-            /slam/state (String: "ok" | "recovering": large tilt/fall, map and translation updates suspended; heading still tracked),
+            /slam/state (String: "ok" | "initializing" | "weak" | "stale" | "recovering"),
+            /slam/match (String: local constraint acceptance reason and map overlap; not an accuracy bound),
             /goal (PointStamped): the beacon's map position, only when a detection has a trustworthy range,
             /slam/beacon (String): "ranged ..." / "unranged: ..." for every beacon detection (diagnostics)
 
@@ -72,6 +73,9 @@ class SlamNode(Node):
         self.declare_parameter("v_gain_lat", 0.0)             # asymmetric in MuJoCo -> not predicted
         self.declare_parameter("cmd_timeout", 0.5)
         self.declare_parameter("scan_matching", True)
+        self.declare_parameter("scan_timeout", 0.75)          # acquisition age, not publication/receipt age
+        self.declare_parameter("match_timeout", 1.5)
+        self.declare_parameter("sweep_window", 1.5)           # short local constraints; NOT loop closure
         self.declare_parameter("fall_tilt_deg", 35.0)         # filtered tilt above this -> "recovering"
         self.declare_parameter("upright_tilt_deg", 15.0)      # ... back to "ok" after `upright_hold` s below this
         self.declare_parameter("upright_hold", 1.0)
@@ -88,12 +92,16 @@ class SlamNode(Node):
         gains = ds.OdomGains(fwd=float(self.get_parameter("v_gain").value), rev=float(self.get_parameter("v_gain_rev").value),
                              lat=float(self.get_parameter("v_gain_lat").value))
         if self.mode == "tof":
-            self.slam = ds.DuckSLAM(gains, max_r=float(self.get_parameter("tof_max_range").value), min_hits=4)
+            self.slam = ds.DuckSLAM(gains, max_r=float(self.get_parameter("tof_max_range").value), min_hits=12)
             fov = float(self.get_parameter("tof_fov_deg").value)
             self.tof_rays = ds.tof_zone_rays(8, fov, fov)
         else:
             self.slam = ds.DuckSLAM(gains)
         self.tilt = ds.TiltFilter()
+        self.health = ds.LocalizationHealth(float(self.get_parameter("scan_timeout").value),
+                                             float(self.get_parameter("match_timeout").value))
+        self.sweep = ds.ScanWindow(float(self.get_parameter("sweep_window").value))
+        self.last_frame_ns = -1; self.bootstrap = True
         self.cmd = (0.0, 0.0); self.cmd_t = -1e9; self.last_imu_t = None
         self.state = "ok"; self.upright_since = None
         self.K = None
@@ -106,6 +114,7 @@ class SlamNode(Node):
         self.pub_map = self.create_publisher(OccupancyGrid, "map", 1)
         self.pub_pose = self.create_publisher(PoseStamped, "slam/pose", 10)
         self.pub_state = self.create_publisher(String, "slam/state", 10)
+        self.pub_match = self.create_publisher(String, "slam/match", 10)
         self.pub_goal = self.create_publisher(PointStamped, "goal", 10)
         self.pub_beacon = self.create_publisher(String, "slam/beacon", 10)
         self.tf = TransformBroadcaster(self)
@@ -121,9 +130,14 @@ class SlamNode(Node):
         self.create_subscription(Detection2DArray, "yolo/detections", self.on_det, 5)
         self.create_timer(1.0, self.publish_map)
         self.create_timer(0.2, self.flush_detections)
+        self.create_timer(0.2, self.publish_state)
 
     def now_ns(self):
         return self.get_clock().now().nanoseconds
+
+    def publish_state(self):
+        state = self.state if self.state != "ok" else self.health.state(self.now_ns() * 1e-9)
+        self.pub_state.publish(String(data=state))
 
     # 1. predict (50 Hz) ------------------------------------------------------------------
     def on_cmd(self, m):
@@ -139,16 +153,17 @@ class SlamNode(Node):
         tilt = math.degrees(self.tilt.tilt())
         if self.state == "ok" and tilt > self.get_parameter("fall_tilt_deg").value:
             self.state = "recovering"; self.upright_since = None
+            self.health.invalidate(); self.sweep.clear(); self.bootstrap = False
             self.get_logger().warn(f"tilt {tilt:.0f} deg: fall/recovery, map and translation updates suspended")
         elif self.state == "recovering":
             if tilt < self.get_parameter("upright_tilt_deg").value:
                 self.upright_since = self.upright_since or t
                 if t - self.upright_since > self.get_parameter("upright_hold").value:
                     self.state = "ok"
-                    self.get_logger().info("upright again: resuming (pose may need relocalisation by scan matching)")
+                    self.get_logger().info("upright again: motion remains gated on accepted local scan constraints")
             else:
                 self.upright_since = None
-        self.pub_state.publish(String(data=self.state))
+        self.publish_state()
         if 0 < dt < 0.2:
             # heading keeps integrating through a stumble (the tilt-corrected yaw rate stays valid); translation from
             # the gait command and map updates are suspended while recovering
@@ -191,6 +206,8 @@ class SlamNode(Node):
 
     def on_frame(self, msg):
         ns = stamp_ns(msg.header)
+        if ns <= self.last_frame_ns or not 0 <= (self.now_ns() - ns) * 1e-9 <= self.health.scan_timeout:
+            return                                          # replay/late packets cannot refresh localization
         poses = self.cam_poses if self.mode == "depth" else self.sensor_poses
         sp = poses.get(ns)
         if sp is None:
@@ -200,6 +217,7 @@ class SlamNode(Node):
         hist_k, pose_acq = self.pose_hist.nearest(ns, 30_000_000)
         if pose_acq is None:
             return
+        self.last_frame_ns = ns
         R, t = sp
         if self.mode == "depth":
             if self.K is None:
@@ -214,17 +232,34 @@ class SlamNode(Node):
                                                   fov_h_deg=float(self.get_parameter("tof_fov_deg").value))
             pts = ds.tof_points(ranges, valid, self.tof_rays, self.get_parameter("tof_range_convention").value)
             data = (pts @ R.T + t, ranges[valid] if len(pts) else np.zeros(0))   # level-frame points + ranges
+        accepted = False
         if len(ang):
             current = self.slam.pose.copy()
             self.slam.pose = pose_acq.copy()                   # process at the acquisition pose ...
+            self.sweep.add(ns * 1e-9, pose_acq, ang, r, hit)
             if self.get_parameter("scan_matching").value:
-                self.slam.match(ang, r, hit)
+                constraints = self.sweep.scan(pose_acq) if self.mode == "tof" else (ang, r, hit)
+                accepted = self.slam.match(*constraints, current_scan=(ang, r, hit))
             corr = self.slam.pose - pose_acq
-            self.slam.update_map(ang, r, hit)
+            if accepted:
+                self.bootstrap = False
+                self.sweep.correct(pose_acq, self.slam.pose)
+            # Build the initial reference while standing still. Rejected moving
+            # scans must not reinforce a bad match by drawing duplicate walls.
+            stationary_origin = np.linalg.norm(pose_acq[:2]) < 0.05 and abs(pose_acq[2]) < math.radians(3)
+            if accepted or (self.bootstrap and stationary_origin):
+                self.slam.update_map(ang, r, hit)
             self.slam.pose = current + corr                    # ... and carry the correction to now
             if np.any(corr):                                   # later history entries get it too, so a frame acquired
                 for k in [k for k in self.pose_hist.d if k > ns]:     # before this one was processed is not
                     self.pose_hist.d[k] = self.pose_hist.d[k] + corr  # corrected twice
+            pose_acq = pose_acq + corr
+        self.health.observe(ns * 1e-9, accepted)
+        reason = self.slam.match_reason if len(ang) else "empty_scan"
+        if not self.get_parameter("scan_matching").value:
+            reason = "matching_disabled; navigation gated"
+        self.pub_match.publish(String(data=f"{reason}; overlap={self.slam.match_overlap:.2f}"))
+        self.publish_state()
         self.frames.put(ns, (data, pose_acq.copy()))
 
     @staticmethod

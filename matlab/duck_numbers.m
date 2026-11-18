@@ -22,6 +22,10 @@ a  = S.a_toe;       % m    centre of mass to the front edge of the sole
 ab = S.a_heel;      % m    centre of mass to the rear edge of the sole
 d  = S.d_knee;      % m    horizontal distance knee pivot to centre-of-mass line
 td = 0.03;          % s    servo command-to-motion delay  (EXAMPLE until the bench test)
+if isfield(S,'servo_delay_s') && ~isempty(S.servo_delay_s)
+    td = S.servo_delay_s;
+    fprintf('Measured servo delay %.4f s (delay check only; configure plant latency separately).\n', td);
+end
 kp_servo = S.kp;    % N.m/rad  one servo's position gain in the model
 stall    = S.stall; % N.m
 g  = 9.81;

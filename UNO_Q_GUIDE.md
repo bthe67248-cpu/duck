@@ -2,6 +2,8 @@
 
 This is the plan for moving what now runs in simulation (`C:\dev\duckling_sim`) onto the duck's own board. **None of it has been run on hardware.** Updated for the V3 handoff revision (17 Nov 2026): chosen camera and ToF, black PLA at 30% infill, and the corrected-model test results. Board facts come from the UNO Q datasheet and Arduino pages; anything I could not confirm is marked *check*.
 
+**Software update:** [`results/hardware_readiness/HANDOFF.md`](results/hardware_readiness/HANDOFF.md) records the new measured-input JSON workflow and software verification. `duck_tof` and `sensor_pose_node` now exist as acquisition/TF interfaces (see [`ros2/duck_nav/HARDWARE_SENSORS.md`](ros2/duck_nav/HARDWARE_SENSORS.md)); the actual sensor bus adapter and calibrated hardware TF remain unwritten. These interfaces do not make the robot hardware-ready. Use the perception-only launch for sensor bring-up.
+
 ## The board, in the numbers that matter here
 
 | Part | What it is | What it means for the duck |
@@ -9,7 +11,7 @@ This is the plan for moving what now runs in simulation (`C:\dev\duckling_sim`) 
 | Qualcomm QRB2210 | 4 × Cortex-A53 at 2.0 GHz, Adreno 702 GPU, Debian Linux | Runs the policy, camera, YOLO, SLAM, navigation, ROS 2. Roughly 5 to 10 times slower than your PC per core |
 | RAM / storage | Yours is the 4 GB model (ABX00173): 4 GB RAM, 32 GB eMMC | Enough for ROS 2 in Docker plus YOLO, SLAM and the policy together. Others have run a TurtleBot3 ROS 2 container on this model |
 | STM32U585 | Cortex-M33, 160 MHz, 2 MB flash, 786 KB RAM, Arduino sketches on Zephyr | Servo bus, IMU, 100 Hz loop, safety watchdog |
-| Bridge | MessagePack-RPC over an internal UART, `arduino-router` service on Linux, `Arduino_RouterBridge` library on the MCU | The only link between the two halves. One forum report puts it near 112 kbps, so messages must be small and binary (*check on your board*) |
+| Bridge | MessagePack-RPC over an internal UART, `arduino-router` service on Linux, `Arduino_RouterBridge` library on the MCU | The official XGO UNO Q runtime documents a 2 Mbps Bridge configuration; this is a configured link rate, not measured application throughput on your custom board |
 
 ## What moves over as-is, and what does not
 
@@ -55,7 +57,7 @@ The STM32 owns everything time-critical. Write (or take from the XGO-Duck runtim
 4. Exposes two Bridge calls to Linux: `set_targets` (14 joint targets) and `get_state` (joint positions, gyro, accelerometer).
 5. **Watchdog:** if no `set_targets` arrives for 100 ms, hold the last pose with reduced torque; after 500 ms, go limp. This is what saves the robot when Linux stalls.
 
-Keep the Bridge traffic small. 14 targets down and 34 values up at 50 Hz, packed as 16-bit integers, is about 27 kbps. Sending the same as text or 64-bit floats will not fit if the link really is near 112 kbps.
+Keep the Bridge traffic bounded. The illustrative 14 targets down and 34 values up at 50 Hz, packed as 16-bit integers, has 38.4 kbps of payload before framing and timestamps (48 × 2 × 50 × 8). The official XGO runtime documents a 2 Mbps Bridge and 1 Mbps servo bus: [interface reference](https://wiki.xgorobot.com/kb/the-xgo-series-robot/duck-architecture?model=duck). Measure actual throughput, latency and missed deadlines on the custom HAT; a configured baud rate is not an application timing guarantee.
 
 **Gate:** with the duck on its stand, a Linux-side script moves each joint alone by ±10° and reads it back within 2°. Each joint moves the right part in the right direction (compare with `scripts\inspect_model.py` joint order: 0–4 left leg, 5–8 neck and head, 9–13 right leg).
 
@@ -79,7 +81,7 @@ Then in MATLAB: `startup_duck`, `build_duck_sim`, `run_tests`. Then `scripts\tun
 ## Step 4. Standing and walking on the real robot
 
 1. **Standing first, with the balance loop on the STM32.** Port `tiltFilter` and the two gains into the 100 Hz loop (it is about ten lines of C). Robot on the floor, a hand ready. Compare the knee sag with the simulated 4.6°: that single number checks mass and servo stiffness together.
-2. **Walking: use the XGO-Duck policy, not the Microduck one.** Your printed parts and servos are the XGO-Duck's, and that project ships a runtime and policy for this hardware. Get that walking before anything else.
+2. **Walking: evaluate the official XGO-Duck UNO Q runtime and policy as an adaptation starting point.** [Runtime](https://github.com/LuwuDynamics/xgoduck_runtime_arduino), [training](https://github.com/LuwuDynamics/xgoduck_rl). It is not validated for your custom head, shield, masses or HAT. Verify servo variant/firmware, IDs, signs, zero offsets, limits, IMU axes, HAT wiring, observation order and action scaling before supported tests. The stock runtime has 14 policy-controlled joints and a separate mouth servo, ID 34: [mapping source](https://github.com/LuwuDynamics/xgoduck_runtime_arduino/blob/master/python/rl_core.py). That explains the stock 15-servo total; verify whether your integral-bill build retains the mouth actuator.
 3. If you want the Microduck behaviours (get-up, roll, sit): retrain in `microduck_rl` with your masses and a Feetech servo model. That needs an NVIDIA GPU (rented; your RX 9070 will not run it). Check each retrained policy in `scripts\motions.py` before it goes on the robot.
 4. On Linux the policy is small: one ONNX Runtime call at 50 Hz. `world_sim.py` shows the exact observation layout (gyro, gravity direction, joint positions relative to STAND, joint velocities, last action, 13 command values).
 
@@ -103,7 +105,7 @@ docker run -it --net=host --privileged -v ~/duck_ws:/duck_ws ros:jazzy-ros-base
 4. Write two new nodes to replace `world_sim`:
    - `duck_hw`: calls the Bridge. Publishes `/joint_states` and `/imu`; subscribes `/cmd_vel` and `/head_yaw_cmd`; runs the walking policy and sends `set_targets`.
    - Camera: `usb_camera_node` is already written (V4L2 through OpenCV, newest frame only, stale-frame watchdog, calibrated `CameraInfo`). It has not been run on hardware. Use the stable `/dev/v4l/by-id/...` path, start near 640 × 480 at 15 to 30 fps, and lock the exposure. YOLO letterboxes any size.
-   - `duck_tof` (not written yet): reads the VL53L5CX and publishes `/tof/zones` exactly as `world_sim` does (PointCloud2 with x y z range status zone, stamped at acquisition), plus `/tof/pose_level` at the same stamp.
+   - `duck_tof` now provides the acquisition wrapper and offline replay backend. Supply a real VL53L5CX backend to publish `/tof/zones` as `world_sim` does (PointCloud2 with x y z range status zone, stamped at acquisition). `sensor_pose_node` publishes matching-stamp `/tof/pose_level` and `/camera/pose_level` from a measured hardware TF chain. Neither node has been run on the board; the bus backend and encoder/IMU TF source remain required.
    - Only one node may own `/cmd_vel` at a time. `nav_node` sends a zero command when it stops or hands over, but the MCU watchdog (Step 2) is the real safety net.
 5. Launch every node with `use_sim_time:=false`. In the launch file, drop `world_sim` and `score_node`.
 6. Reaching the container from the Bridge: the `arduino-router` socket lives on the host, so mount it into the container (*check its path on your board*).
