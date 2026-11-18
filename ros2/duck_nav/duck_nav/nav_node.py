@@ -39,13 +39,18 @@ class NavNode(Node):
         self.declare_parameter("clearance", ds.ROBOT_RADIUS)
         self.declare_parameter("pose_timeout", 0.5)      # s (sim time): older pose -> stop
         self.declare_parameter("map_timeout", 3.0)       # s (sim time): older map -> stop
+        self.declare_parameter("slam_state_timeout", 0.75)
+        self.declare_parameter("speed_bound_mps", 0.35)  # calibrate on hardware; conservative simulated forward speed
         self.declare_parameter("min_explored_m2", 2.0)   # reachable known-free area needed before "complete"
         self.declare_parameter("no_frontier_plans", 5)   # consecutive no-frontier plans before judging
         self.declare_parameter("goal_reached_m", 0.36)
+        for name in ("pose_timeout", "map_timeout", "slam_state_timeout", "speed_bound_mps"):
+            ds.positive_finite(self.get_parameter(name).value, name)
         self.enabled = bool(self.get_parameter("autonomous").value)
         self.lock = threading.RLock()                    # replan / drive / callbacks run on different threads
         self.grid = None; self.info = None; self.map_t = None
-        self.pose = None; self.pose_t = None; self.slam_state = "ok"; self.goal = None
+        self.pose = None; self.pose_t = None; self.slam_state = "initializing"; self.slam_state_t = None; self.goal = None
+        self.distances = None
         self.path = None; self.mode = "explore"; self.visited_goal = False; self.finished = False
         self.progress_ref = None; self.unstick_until = 0.0; self.status = ""; self.no_frontier = 0
         self.pub_cmd = self.create_publisher(Twist, "cmd_vel", 10)
@@ -56,7 +61,7 @@ class NavNode(Node):
                                                 QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
         self.create_subscription(OccupancyGrid, "map", self.on_map, 1)
         self.create_subscription(PoseStamped, "slam/pose", self.on_pose, 10)
-        self.create_subscription(String, "slam/state", lambda m: setattr(self, "slam_state", m.data), 10)
+        self.create_subscription(String, "slam/state", self.on_slam_state, 10)
         self.create_subscription(PointStamped, "goal", self.on_goal, 10)
         self.create_subscription(Bool, "nav/enable", self.on_enable, 10)
         # planning runs in its own callback group so a slow plan never blocks the 20 Hz command stream
@@ -81,15 +86,28 @@ class NavNode(Node):
         info = ds.MapInfo(res=float(i.resolution), x0=float(i.origin.position.x), y0=float(i.origin.position.y),
                           nx=int(i.width), ny=int(i.height))
         grid = ds.grid_from_msg_data(msg.data, i.width, i.height)
+        _, distances = ds._clearance_m(grid, info)
         with self.lock:
-            self.info, self.grid, self.map_t = info, grid, self.now()
+            self.info, self.grid, self.map_t = info, grid, self.stamp(msg.header)
+            self.distances = distances
+
+    @staticmethod
+    def stamp(header):
+        return header.stamp.sec + header.stamp.nanosec * 1e-9
+
+    def on_slam_state(self, msg):
+        with self.lock:
+            self.slam_state = msg.data; self.slam_state_t = self.now()
 
     def on_pose(self, msg):
         if msg.header.frame_id != "map":
             return
         o = msg.pose.orientation
-        self.pose = (msg.pose.position.x, msg.pose.position.y, 2 * math.atan2(o.z, o.w))
-        self.pose_t = self.now()
+        pose = (msg.pose.position.x, msg.pose.position.y, 2 * math.atan2(o.z, o.w))
+        if not all(math.isfinite(v) for v in pose):
+            return
+        with self.lock:
+            self.pose = pose; self.pose_t = self.stamp(msg.header)
 
     def on_goal(self, msg):
         g = (msg.point.x, msg.point.y)
@@ -120,8 +138,10 @@ class NavNode(Node):
             self.get_logger().info(f"[t={self.now():.1f} s] {text}")
         self.pub_status.publish(String(data=text))
 
-    def stop(self, why=None):
-        self.pub_cmd.publish(Twist()); self.pub_head.publish(Float64(data=0.0)); self.path = None
+    def stop(self, why=None, center_head=True):
+        self.pub_cmd.publish(Twist()); self.path = None
+        if center_head:
+            self.pub_head.publish(Float64(data=0.0))
         self.unstick_until = 0.0; self.progress_ref = None
         if why:
             self.say(why)
@@ -136,10 +156,12 @@ class NavNode(Node):
         t = self.now()
         if self.pose_t is None or self.grid is None:
             return "waiting for observations"
-        if t - self.pose_t > self.get_parameter("pose_timeout").value:
+        if not 0 <= t - self.pose_t <= self.get_parameter("pose_timeout").value:
             return "stale pose"
-        if t - self.map_t > self.get_parameter("map_timeout").value:
+        if not 0 <= t - self.map_t <= self.get_parameter("map_timeout").value:
             return "stale map"
+        if self.slam_state_t is None or not 0 <= t - self.slam_state_t <= self.get_parameter("slam_state_timeout").value:
+            return "stale slam state"
         if self.slam_state != "ok":
             return f"slam {self.slam_state}"
         return None
@@ -166,6 +188,8 @@ class NavNode(Node):
         with self.lock:
             if self.finished or not self.enabled:
                 return                                   # disabled while planning: do not resurrect a path
+            if self.fault():
+                self.path = None; return
             self.apply_plan(path, mode, state)
 
     def apply_plan(self, path, mode, state):
@@ -207,8 +231,9 @@ class NavNode(Node):
             return                      # someone else owns /cmd_vel, or we are done; a zero was sent on the transition
         t = self.now()
         self.pub_head.publish(Float64(data=0.9 * math.sin(2 * math.pi * t / 4.0)))      # head sweep
-        if self.fault() or self.mode in ("out_of_map", "start_blocked"):
-            self.stop(); return
+        fault = self.fault()
+        if fault or self.mode in ("out_of_map", "start_blocked"):
+            self.stop(fault, center_head=False); return      # keep gathering head-sweep constraints while still
         cmd = Twist()
         if t < self.unstick_until:
             cmd.angular.z = 1.2; self.pub_cmd.publish(cmd); return
@@ -219,13 +244,19 @@ class NavNode(Node):
             self.unstick_until = t + 2.5; self.progress_ref = None
             self.get_logger().info("no progress for 8 s: turning in place and replanning")
         if path:
-            ahead = [p for p in path if math.hypot(p[0] - self.pose[0], p[1] - self.pose[1]) > 0.22]
-            tgt = ahead[0] if ahead else path[-1]
+            tgt = ds.path_target(path, self.pose, lookahead=0.06 if self.mode == "escape" else 0.22)
             e = (math.atan2(tgt[1] - self.pose[1], tgt[0] - self.pose[0]) - self.pose[2] + math.pi) % (2 * math.pi) - math.pi
             if abs(e) > 0.6:
                 cmd.angular.z = 1.2 * float(np.sign(e))
             else:
                 cmd.linear.x = float(self.get_parameter("walk_cmd").value); cmd.angular.z = float(np.clip(2.0 * e, -1.0, 1.0))
+                if not ds.motion_clear(self.grid, self.pose, float(self.get_parameter("speed_bound_mps").value),
+                                       cmd.angular.z, info=self.info,
+                                       clearance=float(self.get_parameter("clearance").value),
+                                       escape=self.mode == "escape", distances=self.distances):
+                    cmd.linear.x = 0.0
+                    cmd.angular.z = float(np.clip(2.0 * e, -1.0, 1.0))
+                    self.say("path clearance guard: turning in place and replanning")
         elif self.mode == "no_frontier":
             cmd.angular.z = 1.0                                                         # look around in place
         self.pub_cmd.publish(cmd)

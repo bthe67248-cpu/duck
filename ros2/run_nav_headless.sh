@@ -6,6 +6,8 @@
 # launched are stopped (its own process group); other ROS processes on the machine are left alone.
 P=${DUCK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}
 source /opt/ros/jazzy/setup.bash; source ~/duck_ws/install/setup.bash
+# Under WSL, render on the GPU (Mesa's D3D12 driver) rather than llvmpipe on the CPU: ~4x faster camera frames
+[ -e /dev/dxg ] && export GALLIUM_DRIVER=${GALLIUM_DRIVER:-d3d12}
 SENSORS=ideal
 for a in "$@"; do case $a in sensors:=*) SENSORS=${a#sensors:=};; esac; done
 OUT=${OUT:-$HOME/duck_ws/run_$SENSORS}

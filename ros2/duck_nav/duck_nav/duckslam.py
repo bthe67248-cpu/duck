@@ -123,6 +123,88 @@ class OdomGains:
     rev_deadband: float = 0.4   # reverse |command| below this: the policy stands still
 
 
+def positive_finite(value, name):
+    """Validate timing/speed bounds shared by the pure helpers and ROS nodes."""
+    if isinstance(value, (bool, np.bool_)) or not math.isfinite(float(value)) or float(value) <= 0:
+        raise ValueError(f"{name} must be finite and positive")
+    return float(value)
+
+
+class LocalizationHealth:
+    """Acquisition-time health, independent of the rate of predicted pose publication.
+
+    This is a conservative gate, not an accuracy estimate. Two accepted constraints
+    are required after a failure; an old success cannot keep navigation enabled.
+    """
+
+    def __init__(self, scan_timeout=0.75, match_timeout=1.5):
+        self.scan_timeout = positive_finite(scan_timeout, "scan_timeout")
+        self.match_timeout = positive_finite(match_timeout, "match_timeout")
+        self.last_scan = None; self.last_match = None; self.streak = 0
+
+    def observe(self, stamp, accepted):
+        if self.last_scan is not None and stamp <= self.last_scan:
+            return
+        if self.last_scan is not None and stamp - self.last_scan > self.scan_timeout:
+            self.streak = 0
+        self.last_scan = stamp
+        self.streak = self.streak + 1 if accepted else 0
+        if accepted:
+            self.last_match = stamp
+
+    def invalidate(self):
+        self.last_match = None; self.streak = 0
+
+    def state(self, now):
+        if self.last_scan is None:
+            return "initializing"
+        if not 0 <= now - self.last_scan <= self.scan_timeout:
+            return "stale"
+        if self.last_match is None or not 0 <= now - self.last_match <= self.match_timeout or self.streak < 2:
+            return "weak"
+        return "ok"
+
+
+class ScanWindow:
+    """Short, odometry-compensated head sweep; never a loop closure or global relocalizer.
+
+    Store endpoints in the prediction frame and re-express them at the newest pose.
+    Bounded duration limits command-odometry error. Clear after a correction/fall.
+    """
+
+    def __init__(self, seconds=1.5, max_frames=20):
+        self.seconds = positive_finite(seconds, "sweep_window")
+        if isinstance(max_frames, bool) or not isinstance(max_frames, int) or max_frames <= 0:
+            raise ValueError("max_frames must be a positive integer")
+        self.frames = deque(maxlen=max_frames)
+
+    def clear(self):
+        self.frames.clear()
+
+    def add(self, stamp, pose, ang, ranges, hit):
+        if self.frames and stamp <= self.frames[-1][0]:
+            return
+        a = np.asarray(ang)[hit] + pose[2]; rr = np.asarray(ranges)[hit]
+        points = np.column_stack((pose[0] + rr * np.cos(a), pose[1] + rr * np.sin(a)))
+        self.frames.append((stamp, points))
+        while self.frames and stamp - self.frames[0][0] > self.seconds:
+            self.frames.popleft()
+
+    def scan(self, pose):
+        if not self.frames:
+            return np.zeros(0), np.zeros(0), np.zeros(0, bool)
+        pts = np.concatenate([p for _, p in self.frames], axis=0) - np.asarray(pose[:2])
+        ang = np.arctan2(pts[:, 1], pts[:, 0]) - pose[2]
+        return ang, np.linalg.norm(pts, axis=1), np.ones(len(pts), bool)
+
+    def correct(self, before, after):
+        """Carry an accepted rigid pose correction into all stored endpoints."""
+        a = after[2] - before[2]; c, s = math.cos(a), math.sin(a)
+        rot = np.array([[c, -s], [s, c]])
+        self.frames = deque(((t, (p - before[:2]) @ rot.T + after[:2]) for t, p in self.frames),
+                            maxlen=self.frames.maxlen)
+
+
 class DuckSLAM:
     def __init__(self, gains=None, info=DEFAULT_MAP, max_r=MAX_R, min_hits=12):
         if not isinstance(gains, OdomGains):            # old call style: DuckSLAM(v_gain)
@@ -134,6 +216,16 @@ class DuckSLAM:
         self.pose = np.array([0.0, 0.0, 0.0])
         self.logodds = np.zeros((info.nx, info.ny), np.float32)
         self.n_match = 0
+        self.match_reason = "initializing"
+        self.match_overlap = 0.0
+        self.map_version = 0             # bumped by update_map; invalidates the cached likelihood tables
+        self._tables = None
+        self.match_cov = None            # 3x3 covariance of the last correlative match (x, y, theta)
+        self.last_offset = None          # measured (undamped) pose offset of the last applied match
+        # online odometry calibration: slip = observed / commanded-model forward motion, from scan corrections
+        self.slip = 1.0
+        self._slip_num = self._slip_den = 0.0
+        self._raw_fwd = 0.0              # model forward distance since the last slip update (unscaled, signed)
 
     def body_velocity(self, cmd_vx, cmd_vy):
         g = self.gains
@@ -146,8 +238,11 @@ class DuckSLAM:
         return vx, vy
 
     def predict(self, cmd_vx, yaw_rate, dt, cmd_vy=0.0):
-        """Dead-reckoning step. `yaw_rate` must be the WORLD yaw rate (see `world_yaw_rate`), not raw gyro z."""
+        """Dead-reckoning step. `yaw_rate` must be the WORLD yaw rate (see `world_yaw_rate`), not raw gyro z.
+        Translation is scaled by the online slip estimate (see `observe_slip`)."""
         vx, vy = self.body_velocity(cmd_vx, cmd_vy)
+        self._raw_fwd += vx * dt
+        vx, vy = self.slip * vx, self.slip * vy
         self.pose[2] = (self.pose[2] + yaw_rate * dt + math.pi) % (2 * math.pi) - math.pi
         c, s = math.cos(self.pose[2]), math.sin(self.pose[2])
         self.pose[0] += (c * vx - s * vy) * dt
@@ -192,33 +287,212 @@ class DuckSLAM:
         return self.scan_from_points(ps @ R_bs.T + t_bs, min_bin_points=1, bin_deg=fov_h_deg / n,
                                      bin_offset=0.5 if n % 2 == 0 else 0.0)     # one bin per zone column
 
-    def match(self, ang, r, hit):
+    def match(self, ang, r, hit, current_scan=None):
         info = self.info
         occ = (self.logodds > 0.8).astype(np.float32)
-        if hit.sum() < self.min_hits or occ.sum() < 80:
+        self.match_overlap = 0.0
+        if hit.sum() < self.min_hits:
+            self.match_reason = "insufficient_hits"
+            return False
+        if occ.sum() < 80:
+            self.match_reason = "map_not_ready"
             return False
         field = ndimage.gaussian_filter(occ, 1.6)
         px, py = r[hit] * np.cos(ang[hit]), r[hit] * np.sin(ang[hit])
-        best, best_s = (0.0, 0.0, 0.0), -1.0
-        for dth in np.radians(np.arange(-6, 6.1, 1.5)):
-            c, s = math.cos(self.pose[2] + dth), math.sin(self.pose[2] + dth)
-            wx, wy = c * px - s * py, s * px + c * py
-            for dx in np.arange(-0.075, 0.076, 0.025):
-                for dy in np.arange(-0.075, 0.076, 0.025):
-                    ix = np.floor((self.pose[0] + dx + wx - info.x0) / info.res).astype(int)
-                    iy = np.floor((self.pose[1] + dy + wy - info.y0) / info.res).astype(int)
-                    inside = (ix >= 0) & (ix < info.nx) & (iy >= 0) & (iy < info.ny)
-                    score = field[ix[inside], iy[inside]].sum() / len(px)
-                    score -= 0.02 * (abs(dx) + abs(dy)) / 0.075 + 0.02 * abs(dth) / math.radians(6)
-                    if score > best_s:
-                        best_s, best = score, (dx, dy, dth)
-        if best_s > 0.12:
+        # A straight wall cannot constrain translation along itself. A large count
+        # of nearly identical zones/sweep repeats must not masquerade as 2-D support.
+        spread = np.linalg.eigvalsh(np.cov(np.vstack((px, py))))
+        if spread[0] < 0.0025:
+            self.match_reason = "degenerate_geometry"
+            return False
+        # All 9 x 7 x 7 candidate corrections scored in one array operation (same search, same tie-break
+        # order as the original nested loop, ~30x faster: it matters at 10 Hz on the UNO Q's A53 cores).
+        dths = np.radians(np.arange(-6, 6.1, 1.5)); dxy = np.arange(-0.075, 0.076, 0.025)
+        th = self.pose[2] + dths
+        wx = np.cos(th)[:, None] * px - np.sin(th)[:, None] * py                 # (T, N)
+        wy = np.sin(th)[:, None] * px + np.cos(th)[:, None] * py
+        ix = np.floor((self.pose[0] + dxy[None, :, None, None] + wx[:, None, None, :] - info.x0) / info.res).astype(int)
+        iy = np.floor((self.pose[1] + dxy[None, None, :, None] + wy[:, None, None, :] - info.y0) / info.res).astype(int)
+        ix, iy = np.broadcast_arrays(ix, iy)                                      # (T, X, Y, N)
+        inside = (ix >= 0) & (ix < info.nx) & (iy >= 0) & (iy < info.ny)
+        vals = np.where(inside, field[np.clip(ix, 0, info.nx - 1), np.clip(iy, 0, info.ny - 1)], 0.0)
+        scores = vals.sum(-1) / len(px) - (0.02 * (np.abs(dxy)[None, :, None] + np.abs(dxy)[None, None, :]) / 0.075
+                                           + 0.02 * np.abs(dths)[:, None, None] / math.radians(6))
+        t_, x_, y_ = np.unravel_index(np.argmax(scores), scores.shape)
+        best_s, best = float(scores[t_, x_, y_]), (float(dxy[x_]), float(dxy[y_]), float(dths[t_]))
+        dx, dy, dth = best
+        c, s = math.cos(self.pose[2] + dth), math.sin(self.pose[2] + dth)
+        ix = np.floor((self.pose[0] + dx + c * px - s * py - info.x0) / info.res).astype(int)
+        iy = np.floor((self.pose[1] + dy + s * px + c * py - info.y0) / info.res).astype(int)
+        inside = (ix >= 0) & (ix < info.nx) & (iy >= 0) & (iy < info.ny)
+        distance = ndimage.distance_transform_edt(~occ.astype(bool)) * info.res
+        self.match_overlap = float((distance[ix[inside], iy[inside]] < 0.075).sum() / len(px))
+        if current_scan is not None:
+            # An old sweep agreeing with the map cannot conceal a new occlusion,
+            # dropout, or displacement in the latest acquisition.
+            aa, rr, hh = current_scan
+            xx, yy = rr[hh] * np.cos(aa[hh]), rr[hh] * np.sin(aa[hh])
+            ii = np.floor((self.pose[0] + dx + c * xx - s * yy - info.x0) / info.res).astype(int)
+            jj = np.floor((self.pose[1] + dy + s * xx + c * yy - info.y0) / info.res).astype(int)
+            ok = (ii >= 0) & (ii < info.nx) & (jj >= 0) & (jj < info.ny)
+            overlap = float((distance[ii[ok], jj[ok]] < 0.075).sum() / max(len(xx), 1))
+            if len(xx) < 4 or overlap < 0.7:
+                self.match_reason = "fresh_scan_disagrees"
+                return False
+        if max(abs(dx), abs(dy)) >= 0.074 or abs(dth) >= math.radians(5.9):
+            self.match_reason = "search_boundary"
+            return False
+        if best_s > 0.12 and self.match_overlap >= 0.7:
             self.pose += 0.6 * np.array(best)
             self.n_match += 1
+            self.match_reason = "accepted"
             return True
+        self.match_reason = "low_overlap"
         return False
 
+    def observe_slip(self, decay=0.9, min_den=0.05, lo=0.0, hi=1.3, relax=0.02, max_fwd_std=0.04, leak=0.0):
+        """Update the slip factor after a sensor frame. A walking robot that pushes against an obstacle keeps
+        stepping, so the gait command says it moves while it does not (the gait version of wheel slip). The
+        scan matcher then keeps pulling the pose back; the ratio of observed to modelled forward motion over
+        the last ~1 s (exponential window, `decay` per frame) becomes the scale applied in `predict`.
+        Call once per processed frame, after matching (uses last_offset when the match was applied)."""
+        u = np.array([math.cos(self.pose[2]), math.sin(self.pose[2])])
+        usable = self.last_offset is not None and (
+            self.match_cov is None or float(u @ self.match_cov[:2, :2] @ u) <= max_fwd_std ** 2)
+        if usable:                                       # only corrections that pin down the forward position
+            observed = self.slip * self._raw_fwd + float(self.last_offset[:2] @ u)
+            self._slip_num = decay * self._slip_num + observed * math.copysign(1.0, self._raw_fwd or 1.0)
+            self._slip_den = decay * self._slip_den + abs(self._raw_fwd)
+            self._raw_fwd = 0.0
+            if self._slip_den > min_den:
+                self.slip = float(np.clip(self._slip_num / self._slip_den, lo, hi))
+        if abs(self._raw_fwd) < 1e-4:                    # standing still: drift back toward the model
+            self.slip += relax * (1.0 - self.slip)
+        self.slip += leak * (1.0 - self.slip)            # optional constant pull toward the model
+
+    # ---- correlative scan matching (Olson, "Real-Time Correlative Scan Matching", ICRA 2009) ----------------
+    def likelihood_tables(self, sigma=0.05, block=4):
+        """Log-likelihood table of a return landing in each cell: its distance to the nearest occupied cell,
+        blurred by sensor noise `sigma` and clamped at 2.5 sigma so one stray point cannot dominate. Also the
+        block-max table, Lb[i, j] = max(L[i:i+block, j:j+block]), which upper-bounds the score of every fine
+        translation inside a coarse block, so the coarse-to-fine search returns the brute-force optimum.
+        Cached until the map changes."""
+        key = (self.map_version, sigma, block)
+        if self._tables is not None and self._tables[0] == key:
+            return self._tables[1:]
+        occ = self.logodds > 0.8
+        d = ndimage.distance_transform_edt(~occ) * self.info.res if occ.any() else np.full(occ.shape, 1e3)
+        L = (-0.5 * np.minimum(d / sigma, 2.5) ** 2).astype(np.float32)
+        pad = np.pad(L, ((0, block - 1), (0, block - 1)), constant_values=L.min())
+        Lb = np.lib.stride_tricks.sliding_window_view(pad, (block, block)).max(axis=(-1, -2))
+        self._tables = (key, L, Lb, d)
+        return L, Lb, d
+
+    def match_correlative(self, ang, r, hit, current_scan=None, window=0.30, ang_window=math.radians(12),
+                          ang_step=math.radians(1.0), sigma=0.05, prior_xy=0.20, prior_th=math.radians(8),
+                          max_std_xy=0.06, max_std_th=math.radians(3.0), min_overlap=0.6, neff_cap=40, gain=1.0):
+        """Exhaustive correlative match over +-`window` m and +-`ang_window`, with an exact two-level bound,
+        a Gaussian odometry prior, and the match covariance from the posterior over the local grid (Olson eq. 3).
+
+        True: constrained in every direction, pose moved to the posterior mean. Along a featureless wall only
+        the well-constrained direction is corrected (reason "partial") and False is returned, so the motion
+        gate stays conservative. Sets match_reason, match_overlap and match_cov."""
+        info = self.info
+        self.match_overlap = 0.0; self.match_cov = None; self.last_offset = None
+        if hit.sum() < self.min_hits:
+            self.match_reason = "insufficient_hits"; return False
+        if (self.logodds > 0.8).sum() < 80:
+            self.match_reason = "map_not_ready"; return False
+        L, Lb, dist = self.likelihood_tables(sigma)
+        px, py = r[hit] * np.cos(ang[hit]), r[hit] * np.sin(ang[hit])
+        n = len(px); w_pt = min(n, neff_cap) / n        # sweep repeats are correlated: cap the effective count
+        res, B = info.res, 4
+        W = int(round(window / res)); W += (-W) % B      # fine offsets -W..W-1 cells, in coarse blocks of B
+        dth = np.arange(-ang_window, ang_window + 1e-9, ang_step)
+        th = self.pose[2] + dth
+        T = len(th)
+        cx = (self.pose[0] + np.cos(th)[:, None] * px - np.sin(th)[:, None] * py - info.x0) / res
+        cy = (self.pose[1] + np.sin(th)[:, None] * px + np.cos(th)[:, None] * py - info.y0) / res
+        ix0, iy0 = np.floor(cx).astype(int), np.floor(cy).astype(int)            # (T, N)
+        lo_val = float(L.min())
+
+        def score(table, i, j):
+            ok = (i >= 0) & (i < info.nx) & (j >= 0) & (j < info.ny)
+            return np.where(ok, table[np.clip(i, 0, info.nx - 1), np.clip(j, 0, info.ny - 1)], lo_val).sum(-1) * w_pt
+
+        def prior(ox, oy, d_th):
+            return -0.5 * (((ox * res) ** 2 + (oy * res) ** 2) / prior_xy ** 2 + (d_th / prior_th) ** 2)
+
+        # 1. coarse upper bound for every (theta, block x, block y)
+        blocks = np.arange(-W, W, B)
+        nb = len(blocks)
+        ub = score(Lb, ix0[:, None, None, :] + blocks[None, :, None, None],
+                   iy0[:, None, None, :] + blocks[None, None, :, None])                # (T, nb, nb)
+        near = np.where(blocks < 0, np.minimum(blocks + B - 1, 0), blocks)               # offset closest to 0
+        ub = ub + prior(near[None, :, None], near[None, None, :], dth[:, None, None])
+        # 2. branch and bound: refine blocks in bound order until no block can beat the best fine score
+        order = np.argsort(ub, axis=None)[::-1]
+        best_s, best = -np.inf, None
+        fine = np.arange(B)
+        for flat in order:
+            if ub.flat[flat] <= best_s:
+                break
+            t_i, bx, by = np.unravel_index(flat, ub.shape)
+            ox = blocks[bx] + fine; oy = blocks[by] + fine
+            v = score(L, ix0[t_i][None, None, :] + ox[:, None, None], iy0[t_i][None, None, :] + oy[None, :, None])
+            v = v + prior(ox[:, None], oy[None, :], dth[t_i])
+            k = np.unravel_index(np.argmax(v), v.shape)
+            if v[k] > best_s:
+                best_s, best = float(v[k]), (int(ox[k[0]]), int(oy[k[1]]), int(t_i))
+        bx_, by_, bt = best
+        if abs(bx_) >= W - 1 or by_ <= -W + 1 or by_ >= W - 1 or bt in (0, T - 1):
+            self.match_reason = "search_boundary"; return False
+        # 3. posterior over a local fine grid around the optimum -> mean and covariance
+        lo = np.arange(-4, 5)
+        ts = np.arange(max(bt - 3, 0), min(bt + 4, T))
+        S = score(L, ix0[ts][:, None, None, :] + (bx_ + lo)[None, :, None, None],
+                  iy0[ts][:, None, None, :] + (by_ + lo)[None, None, :, None])
+        S = S + prior((bx_ + lo)[None, :, None], (by_ + lo)[None, None, :], dth[ts][:, None, None])
+        p = np.exp(S - S.max()); p /= p.sum()
+        X = np.stack(np.broadcast_arrays(dth[ts][:, None, None] * 0 + (bx_ + lo)[None, :, None] * res,
+                                         dth[ts][:, None, None] * 0 + (by_ + lo)[None, None, :] * res,
+                                         dth[ts][:, None, None] + 0 * lo[None, :, None]), -1).reshape(-1, 3)
+        pf = p.reshape(-1)
+        mean = pf @ X
+        cov = (X - mean).T @ ((X - mean) * pf[:, None]) + np.diag([res ** 2 / 12, res ** 2 / 12, ang_step ** 2 / 12])
+        self.match_cov = cov
+        # fit quality at the optimum: fraction of points within 7.5 cm of a mapped wall
+        c, s_ = math.cos(th[bt]), math.sin(th[bt])
+
+        def overlap(xx, yy):
+            gx = self.pose[0] + bx_ * res + c * xx - s_ * yy; gy = self.pose[1] + by_ * res + s_ * xx + c * yy
+            gi = np.floor((gx - info.x0) / res).astype(int); gj = np.floor((gy - info.y0) / res).astype(int)
+            ok = (gi >= 0) & (gi < info.nx) & (gj >= 0) & (gj < info.ny)
+            return float((dist[gi[ok], gj[ok]] < 0.075).sum() / max(len(xx), 1))
+
+        self.match_overlap = overlap(px, py)
+        if self.match_overlap < min_overlap:
+            self.match_reason = "low_overlap"; return False
+        if current_scan is not None:                     # the newest frame alone must agree with the map too
+            aa, rr, hh = current_scan
+            xx, yy = rr[hh] * np.cos(aa[hh]), rr[hh] * np.sin(aa[hh])
+            if len(xx) < 3 or overlap(xx, yy) < 0.6:
+                self.match_reason = "fresh_scan_disagrees"; return False
+        if math.sqrt(cov[2, 2]) > max_std_th:
+            self.match_reason = "ambiguous_heading"; return False
+        evals, evecs = np.linalg.eigh(cov[:2, :2])
+        if math.sqrt(evals[1]) <= max_std_xy:
+            self.pose += gain * mean; self.n_match += 1; self.last_offset = mean
+            self.match_reason = "accepted"; return True
+        if math.sqrt(evals[0]) <= max_std_xy:            # e.g. along a wall: correct across it and heading only
+            v = evecs[:, 0]
+            self.pose[:2] += gain * v * (v @ mean[:2]); self.pose[2] += gain * mean[2]
+            self.last_offset = np.array([*(v * (v @ mean[:2])), mean[2]])
+            self.match_reason = "partial"; return False
+        self.match_reason = "ambiguous"; return False
+
     def update_map(self, ang, r, hit, free_weight=0.35, hit_weight=1.2):
+        self.map_version += 1
         info = self.info
         x, y, th = self.pose
         steps = np.arange(info.res, self.max_r, info.res)
@@ -241,6 +515,84 @@ class DuckSLAM:
         g[self.logodds < -0.5] = 0
         g[self.logodds > 0.8] = 100
         return g
+
+
+
+class FrameLocalizer:
+    """Per-frame scan-matching and mapping policy, shared by slam_node and tools/slam_replay.py.
+
+    `step` is called with the robot pose at the frame's acquisition time; it matches, decides whether to map,
+    and returns (accepted, correction). The caller carries the correction to the current pose.
+      - matching: the correlative matcher (default) or the old grid search, over a short sweep window
+      - relocalisation: after `relocalize_after` s without a healthy state, the search widens to
+        +-`reloc_window` m / +-`reloc_ang` rad with a weak prior (one bad step must not be permanent)
+      - mapping: while bootstrapping (until localisation is first healthy), while the map is too small to
+        match against, and afterwards on accepted/healthy frames only once the body has moved `map_move` m
+        or turned `map_turn` rad since the last map update (GMapping-style keyframes; standing still adds no
+        information and lets map and pose creep together)
+      - slip: online odometry scale from forward corrections (DuckSLAM.observe_slip)
+    """
+
+    def __init__(self, slam, matcher="correlative", sweep=1.0, gain=0.6, fresh=False, slip=True,
+                 relocalize_after=3.0, reloc_window=0.8, reloc_ang=math.radians(25), map_move=0.03,
+                 map_turn=math.radians(3), scan_timeout=0.75, match_timeout=1.5, use_sweep=True):
+        self.slam = slam
+        self.matcher, self.gain, self.fresh, self.slip = matcher, gain, fresh, slip
+        self.relocalize_after, self.reloc_window, self.reloc_ang = relocalize_after, reloc_window, reloc_ang
+        self.map_move, self.map_turn = map_move, map_turn
+        self.health = LocalizationHealth(scan_timeout, match_timeout)
+        self.sweep = ScanWindow(sweep) if use_sweep and sweep > 0 else None
+        self.bootstrap = True
+        self.last_ok = None              # last time the health state was "ok"
+        self.last_map_pose = None
+        self.relocalizing = False
+
+    def reset_after_fall(self):
+        self.health.invalidate()
+        if self.sweep is not None:
+            self.sweep.clear()
+
+    def step(self, ts, pose_acq, ang, r, hit, match=True):
+        slam = self.slam
+        slam.pose = pose_acq.copy()
+        if self.sweep is not None:
+            self.sweep.add(ts, pose_acq, ang, r, hit)
+            cons = self.sweep.scan(pose_acq)
+        else:
+            cons = (ang, r, hit)
+        accepted = False
+        slam.last_offset = None
+        if match:
+            fresh = (ang, r, hit) if self.fresh else None
+            since_ok = ts - (self.last_ok if self.last_ok is not None else ts)
+            self.relocalizing = not self.bootstrap and since_ok > self.relocalize_after
+            if self.matcher == "correlative":
+                kw = dict(window=self.reloc_window, ang_window=self.reloc_ang, prior_xy=1.0, prior_th=0.6) \
+                    if self.relocalizing else {}
+                accepted = slam.match_correlative(*cons, current_scan=fresh, gain=1.0 if self.relocalizing else self.gain,
+                                                  **kw)
+            else:
+                accepted = slam.match(*cons, current_scan=fresh)
+        corr = slam.pose - pose_acq
+        if accepted and self.sweep is not None:
+            self.sweep.correct(pose_acq, slam.pose)
+        healthy = self.health.state(ts) == "ok" and slam.match_reason not in (
+            "fresh_scan_disagrees", "search_boundary", "ambiguous", "ambiguous_heading")
+        moved = self.last_map_pose is None or (
+            math.hypot(*(slam.pose[:2] - self.last_map_pose[:2])) >= self.map_move
+            or abs((slam.pose[2] - self.last_map_pose[2] + math.pi) % (2 * math.pi) - math.pi) >= self.map_turn)
+        if self.bootstrap or slam.match_reason == "map_not_ready" or ((accepted or healthy) and moved):
+            slam.update_map(ang, r, hit)
+            self.last_map_pose = slam.pose.copy()
+        self.health.observe(ts, accepted)
+        if self.health.state(ts) == "ok":
+            self.last_ok = ts
+            self.bootstrap = False
+        elif self.last_ok is None and not self.bootstrap:
+            self.last_ok = ts
+        if self.slip:
+            slam.observe_slip()
+        return accepted, corr
 
 
 def world_yaw_rate(gyro_body, up_body):
@@ -302,6 +654,48 @@ def _clearance_m(grid, info):
     if occ.any():
         return occ, ndimage.distance_transform_edt(~occ) * info.res
     return occ, np.full(grid.shape, np.inf)
+
+
+def motion_clear(grid, pose, speed, yaw_rate, horizon=0.6, info=DEFAULT_MAP,
+                 clearance=ROBOT_RADIUS, escape=False, distances=None):
+    """Check the commanded arc against known-free cells and the footprint margin.
+
+    `speed` is a conservative measured SI speed bound, not a gait command. Escape
+    may start within the margin but must never reduce its existing clearance.
+    This sampled check is a local guard, not a dynamics or braking guarantee.
+    """
+    speed = positive_finite(speed, "speed_bound_mps")
+    horizon = positive_finite(horizon, "motion horizon")
+    if not math.isfinite(yaw_rate):
+        raise ValueError("yaw_rate must be finite")
+    if distances is None:
+        _, distances = _clearance_m(grid, info)
+    start = info.cell(*pose[:2])
+    if not info.inside(*start) or grid[start] == 100:
+        return False
+    required = min(clearance, distances[start]) if escape else clearance
+    steps = max(2, int(math.ceil(abs(speed) * horizon / (info.res / 3))))
+    for t in np.linspace(0, horizon, steps + 1)[1:]:
+        if abs(yaw_rate) < 1e-6:
+            x = pose[0] + speed * t * math.cos(pose[2]); y = pose[1] + speed * t * math.sin(pose[2])
+        else:
+            x = pose[0] + speed / yaw_rate * (math.sin(pose[2] + yaw_rate * t) - math.sin(pose[2]))
+            y = pose[1] - speed / yaw_rate * (math.cos(pose[2] + yaw_rate * t) - math.cos(pose[2]))
+        ij = info.cell(x, y)
+        if not info.inside(*ij) or grid[ij] != 0 or distances[ij] + 1e-9 < required:
+            return False
+        if escape:
+            required = min(clearance, distances[ij])
+    return True
+
+
+def path_target(path, pose, lookahead=0.22):
+    """Walk forward from the nearest path point, never chase the old start behind us."""
+    nearest = min(range(len(path)), key=lambda i: math.hypot(path[i][0] - pose[0], path[i][1] - pose[1]))
+    for p in path[nearest:]:
+        if math.hypot(p[0] - pose[0], p[1] - pose[1]) >= lookahead:
+            return p
+    return path[-1]
 
 
 def _bfs(trav, start):

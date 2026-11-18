@@ -2,6 +2,8 @@
 
 Everything in this repo runs in simulation on estimated numbers. These steps make it match the real robot. Do them in order. The carrier board is at [bthe67248-cpu/UNO_Q_HAT_IMU_SERVOS_XT60](https://github.com/bthe67248-cpu/UNO_Q_HAT_IMU_SERVOS_XT60). The step-by-step board plan is [UNO_Q_GUIDE.md](UNO_Q_GUIDE.md).
 
+**Software progress:** [hardware-readiness handoff](results/hardware_readiness/HANDOFF.md). Measurement JSON input and strict contact checking are implemented. Sensor acquisition interfaces and TF pose lookup are implemented, with offline tests; the actual VL53L5CX bus adapter and hardware encoder/IMU TF remain missing. Weak/stale stopping is implemented. The patch's strict scan-match rules were replaced by a correlative matcher with slip estimation and local relocalisation ([SLAM tuning](results/slam_tuning/README.md)); loop closure and hardware localisation remain open.
+
 ## 1. Board bring-up (UNO_Q_HAT_IMU_SERVOS_XT60)
 
 - [ ] Order the board with 2 oz outer copper (gerbers: `fabrication/UNOQ_HAT_gerbers_2026-11-13.zip` in the HAT repo)
@@ -41,7 +43,8 @@ Everything in this repo runs in simulation on estimated numbers. These steps mak
 - [ ] Check the drawings, mass, current and V4L2 modes; check USB streaming on the UNO Q (hub or not)
 - [ ] ToF at 3.3 V logic; zone order and range convention; a rigid shared bracket; a clear optical opening
 - [ ] Calibrate camera intrinsics, then camera and ToF extrinsics
-- [ ] Write the `duck_tof` node and the hardware `/camera/pose_level` + `/tof/pose_level` publisher
+- [x] Write `duck_tof` acquisition wrapper and exact-stamp TF pose publisher, with offline contract tests
+- [ ] Supply the actual VL53L5CX backend, synchronized hardware acquisition stamps, measured extrinsics and encoder/IMU TF; validate nodes on ROS and hardware
 
 ## 6. On the UNO Q (see UNO_Q_GUIDE.md)
 
@@ -53,13 +56,14 @@ Everything in this repo runs in simulation on estimated numbers. These steps mak
 
 ## 7. Open software work
 
-- [ ] Localisation good enough for the 8×8 ToF (realistic runs: 0.25 to 1.2 m mean error): more scan-match constraints over the head sweep, loop closure, slow down or stop when the match is weak
-- [ ] Re-localise after a fall
+- [x] Scan matching that keeps the duck exploring with the 8×8 ToF: correlative matcher over the head sweep, slip estimation, stop when the match is weak ([SLAM tuning](results/slam_tuning/README.md))
+- [ ] Loop closure / pose graph: realistic runs still drift late in long runs (up to 2.4 m at 600 s)
+- [ ] Re-localise after a fall: local relocalisation (±0.8 m / ±25° after 3 s unhealthy) exists; a global one does not
 - [ ] Stop the escape / plan loop near walls (pure pursuit cuts corners into the clearance margin)
 - [ ] Roll (sideways) balance: only pitch is controlled now
 - [ ] YOLO: domain randomization, then fine-tune on real labelled camera photos
 - [ ] Retrain walking policies on measured masses and a Feetech servo model (needs a rented NVIDIA GPU); now required, since the pretrained walk fails on the corrected model
 - [ ] Finish `ros2/parked_commands` (steps in its README.txt), after command ownership is settled
 - [ ] Update `scripts/slam_nav.py` to use the fixed planner, or retire it
-- [ ] Dependency pinning and a fresh-workspace build check
+- [ ] Fresh-workspace build check (dependency versions are pinned in `requirements-test.txt`; CI runs the tests)
 - [ ] Optional: Simscape Multibody route and linear margins (needs toolboxes not installed)

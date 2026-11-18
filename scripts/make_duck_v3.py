@@ -9,12 +9,13 @@ Roots are derived from this file's location. Overrides: $DUCKLING_ROOT (repo roo
 Edit ONLY the block below with your own scale/ruler measurements, then re-run.
 Everything marked ESTIMATE / PROVISIONAL is a placeholder, not a measurement.
 """
-import argparse, json, os, shutil, sys
+import argparse, hashlib, json, os, shutil, sys
 import mujoco
 import numpy as np
 import trimesh
 from pathlib import Path
 import xml.etree.ElementTree as ET
+from calibration import load_calibration
 
 ROOT = Path(os.environ.get("DUCKLING_ROOT", Path(__file__).resolve().parents[1]))
 SRC = Path(os.environ.get("DUCKLING_UPSTREAM",
@@ -67,9 +68,27 @@ REMOVED_COLLISION_MESHES = {"top_head_shell", "bottom_head_shell", "jaw"}   # ob
 _ap = argparse.ArgumentParser()
 _ap.add_argument("--torso-scale", type=float, default=1.0)
 _ap.add_argument("--tag", default="")
+_ap.add_argument("--calibration", type=Path, help="measured JSON inputs (see config/robot_measurements.example.json)")
 _ap.add_argument("--base", default="robot_walk.xml",
                  help="upstream robot file: robot_walk.xml (feet-only contact) or robot_groundcontact.xml (body can lie on the floor)")
 _args = _ap.parse_args()
+if any(c not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-" for c in _args.tag):
+    _ap.error("--tag may contain only letters, numbers, underscore and hyphen")
+CALIBRATION = None
+if _args.calibration:
+    try:
+        CALIBRATION = load_calibration(_args.calibration)
+    except (ValueError, OSError) as exc:
+        _ap.error(str(exc))
+    MEASURED_MASS.update(CALIBRATION["measured_mass_kg"])
+    V3_PART_MASS_G.update(CALIBRATION["print_mass_g"])
+    SERVO.update({k: v for k, v in CALIBRATION["servo"].items() if k != "delay_s"})
+    if "shield_pos_m" in CALIBRATION:
+        SHIELD_POS = " ".join(map(str, CALIBRATION["shield_pos_m"]))
+    if "head_shift_m" in CALIBRATION:
+        HEAD_SHIFT = CALIBRATION["head_shift_m"]
+    if "delay_s" in CALIBRATION["servo"]:
+        print("  NOTE: measured servo delay is recorded for the delay check; actuator latency is NOT automatically simulated.")
 OUT_ROBOT = f"duck_v3{'_' + _args.tag if _args.tag else ''}.xml"
 OUT_SCENE = f"duck_v3{'_' + _args.tag if _args.tag else ''}_scene.xml"
 GC = "groundcontact" in _args.base
@@ -282,6 +301,9 @@ def main():
     else:
         print("  head link mass is the WEIGHED value; V3 composite step skipped (weighed value includes the shells)")
         ledger["_head_link"] = dict(new_mass_g=MEASURED_MASS["jaw_soft"] * 1000, note="weighed complete link")
+        for n_ in ("duck_head_upper_v3", "duck_head_lower_v3"):
+            part_mass_kg(n_, v3, design_checks, ledger)
+            ledger[n_]["included_in_measured_head"] = True
 
     # mouth_tip: lowest-front point of the new bill (vertex maximising -y -z near the centre line)
     lm = trimesh.load(DST / "assets" / "duck_head_lower_v3.stl").vertices
@@ -384,9 +406,18 @@ def main():
 
     ET.indent(tree, "  ")
     tree.write(DST / OUT_ROBOT)
-    (DST / f"mass_ledger{'_' + _args.tag if _args.tag else ''}.json").write_text(json.dumps(
-        dict(status="PROVISIONAL: 30% infill wall-proxy masses, not slicer/scale values",
-             pla_density_g_mm3=PLA_DENSITY_G_MM3, parts=ledger), indent=1))
+    record = dict(status="PROVISIONAL: unmeasured components and upstream COM/inertia remain estimates",
+                  model_robot_sha256=hashlib.sha256((DST / OUT_ROBOT).read_bytes()).hexdigest(),
+                  pla_density_g_mm3=PLA_DENSITY_G_MM3, parts=ledger,
+                  measured_link_mass_kg={k: v for k, v in MEASURED_MASS.items() if v is not None},
+                  shield_pos_m=sp.tolist(), head_shift_m=list(HEAD_SHIFT),
+                  servo_overrides=SERVO,
+                  note="Link masses rescale existing inertia at unchanged COM; weights alone do not calibrate COM/inertia.")
+    if CALIBRATION:
+        record["calibration_sha256"] = CALIBRATION["source_sha256"]
+        record["servo_delay_s"] = CALIBRATION["servo"].get("delay_s")
+        record["whole_robot_mass_kg"] = CALIBRATION["whole_robot_mass_kg"]
+    (DST / f"mass_ledger{'_' + _args.tag if _args.tag else ''}.json").write_text(json.dumps(record, indent=1))
 
     # 5. scene: floor + light + keyframes (ctrl padded with 2 zeros for the push motors)
     scene = ET.parse(SRC / "scene_walk.xml")

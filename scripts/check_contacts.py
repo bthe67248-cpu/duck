@@ -5,16 +5,30 @@ Usage:  .venv\Scripts\python.exe scripts\check_contacts.py
 2. Joint-range sweep (head chain over its full range, legs over a walking-size range, random combinations):
    robot-robot contacts that involve a head/shield proxy are counted per geom pair. They must be empty (or explained).
 3. Lie-down drops: the robot is dropped on its front, back, left and right side; which proxies reach the floor.
-Writes results/post_fix/contact_check.txt and exits 1 only if the STAND pose has a self contact; clashes inside the operating envelope are reported as design findings.
+Exits 1 for STAND self-contact OR a head/shield clash in the sampled operating
+envelope. --report-only restores the old stand-only exit status. Random sampling
+does not prove full-range clearance or get-up feasibility. Historical reports are
+preserved: the default output is results/hardware_readiness/contact_check.txt.
 """
-import os, sys
+import argparse, hashlib, os, sys, tempfile
 from collections import Counter
 from pathlib import Path
 import mujoco, numpy as np
 
 ROOT = Path(os.environ.get("DUCKLING_ROOT", Path(__file__).resolve().parents[1]))
-m = mujoco.MjModel.from_xml_path(str(ROOT / "model" / "duck_v3_gc_scene.xml")); d = mujoco.MjData(m)
+ap = argparse.ArgumentParser(description=__doc__)
+ap.add_argument("--scene", type=Path, default=ROOT / "model" / "duck_v3_gc_scene.xml")
+ap.add_argument("--samples", type=int, default=6000)
+ap.add_argument("--seed", type=int, default=1)
+ap.add_argument("--output", type=Path, default=ROOT / "results/hardware_readiness/contact_check.txt")
+ap.add_argument("--report-only", action="store_true", help="report envelope clashes without failing (diagnostics only)")
+args = ap.parse_args()
+if args.samples < 1:
+    ap.error("--samples must be positive")
+m = mujoco.MjModel.from_xml_path(str(args.scene)); d = mujoco.MjData(m)
 key = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_KEY, "sim_start")
+if key < 0:
+    ap.error("scene has no sim_start keyframe")
 lines = []
 
 
@@ -29,6 +43,23 @@ def gname(g):
 
 PROXY = {m.geom(i).name for i in range(m.ngeom) if m.geom(i).name.endswith("_collision") and
          m.geom(i).name.split("_")[0] in ("head", "bill", "shield")}
+required = {"head_dome_collision", "head_lower_collision", "head_upper_skirt_collision", "bill_collision",
+            "shield_back_collision", "shield_side_l_collision", "shield_side_r_collision"}
+if not required <= PROXY:
+    ap.error("contact gate needs the ground-contact model with all head/shield collision proxies; missing " +
+             ", ".join(sorted(required - PROXY)))
+for name in required:
+    geom = m.geom(name).id
+    if m.geom_contype[geom] == 0 or m.geom_conaffinity[geom] == 0:
+        ap.error(f"{name}: disabled collision mask cannot certify clearance")
+log(f"scene: {args.scene.name}; sha256: {hashlib.sha256(args.scene.read_bytes()).hexdigest()}")
+# MuJoCo serializes compiled numeric inputs and mesh data here, covering included
+# XML/mesh changes that a scene-file hash alone would miss.
+with tempfile.TemporaryDirectory() as temp:
+    compiled = Path(temp) / "model.mjb"
+    mujoco.mj_saveModel(m, str(compiled), None)
+    log(f"compiled model sha256: {hashlib.sha256(compiled.read_bytes()).hexdigest()}")
+log(f"sampling seed: {args.seed}; poses per envelope: {args.samples}")
 log("proxy geoms (contype/conaffinity/body): " + ", ".join(
     f"{n}({m.geom_contype[m.geom(n).id]}/{m.geom_conaffinity[m.geom(n).id]}/{m.body(m.geom_bodyid[m.geom(n).id]).name})" for n in sorted(PROXY)))
 floor = m.geom("floor").id
@@ -48,7 +79,7 @@ for a, b, fl, dist in contacts():
     log(f"   {a} <-> {b}  dist {dist*1000:+.2f} mm" + ("" if fl else "   <== SELF CONTACT"))
     bad += (not fl)
 
-rng = np.random.default_rng(1)
+rng = np.random.default_rng(args.seed)
 jn = {m.actuator(i).name: m.actuator_trnid[i, 0] for i in range(14)}
 qa = {n: m.jnt_qposadr[j] for n, j in jn.items()}
 rg = {n: m.jnt_range[j].copy() for n, j in jn.items()}
@@ -57,12 +88,13 @@ head = ["neck_pitch", "head_pitch", "head_yaw", "head_roll"]
 legs = [n for n in jn if n not in head]
 # operating envelope = what the pretrained policies / head commands use (about STAND); full = every joint limit
 ENV = dict(neck_pitch=0.4, head_pitch=0.6, head_yaw=1.2, head_roll=0.44)
-N = 6000
+N = args.samples
 
 
 def sweep(full):
     pairs = Counter()
     for k in range(N):
+        pose_pairs = set()
         d.qpos[:] = home
         for n in head:
             d.qpos[qa[n]] = rng.uniform(*rg[n]) if full else np.clip(home[qa[n]] + rng.uniform(-ENV[n], ENV[n]), *rg[n])
@@ -74,7 +106,8 @@ def sweep(full):
                 continue
             a, b = gname(c.geom1), gname(c.geom2)
             if a in PROXY or b in PROXY:
-                pairs[tuple(sorted((a, b)))] += 1
+                pose_pairs.add(tuple(sorted((a, b))))
+        pairs.update(pose_pairs)
     return pairs
 
 
@@ -83,7 +116,7 @@ env = sweep(False)
 if not env:
     log("   none")
 for (a, b), n in env.most_common():
-    log(f"   {a} <-> {b}: {n} poses ({100*n/N:.1f}%)  <== DESIGN FINDING (real clash, contact kept enabled)"); findings += 1
+    log(f"   {a} <-> {b}: {n} poses ({100*n/N:.1f}%)  <== OPERATING-ENVELOPE CLASH (contact kept enabled)"); findings += 1
 log(f"\n2b. INFORMATIONAL, {N} random poses over the FULL head joint limits and legs +-0.5 rad: real geometric clashes of the "
     "V3 head/shield with neck/torso/legs (kept enabled; keep head commands out of them on hardware)")
 full = sweep(True)
@@ -100,7 +133,11 @@ for label, quat in (("on its front", (0.7071, 0, 0.7071, 0)), ("on its back", (0
         mujoco.mj_step(m, d)
     touch = sorted({a if b == "floor" else b for a, b, fl, _ in contacts() if fl})
     log(f"   {label:18s}: {', '.join(touch) or 'none'}")
-log(f"\nSTAND-pose self contacts (defects): {bad}; operating-envelope clash pairs (design findings, not failures): {findings}")
-out = ROOT / "results" / "post_fix"; out.mkdir(parents=True, exist_ok=True)
-(out / "contact_check.txt").write_text("\n".join(lines) + "\n")
-sys.exit(1 if bad else 0)
+log(f"\nSTAND-pose self contacts: {bad}; operating-envelope clash pairs: {findings}")
+log("Random samples are a regression check, not a clearance certificate. Full-range findings and drops remain informational.")
+failed = bool(bad or (findings and not args.report_only))
+log("GATE: " + ("FAIL" if failed else "PASS (sampled poses only)") +
+    (" [REPORT ONLY: envelope clashes do not fail]" if args.report_only else ""))
+args.output.parent.mkdir(parents=True, exist_ok=True)
+args.output.write_text("\n".join(lines) + "\n")
+sys.exit(1 if failed else 0)

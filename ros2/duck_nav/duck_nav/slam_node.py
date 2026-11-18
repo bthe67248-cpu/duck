@@ -6,7 +6,8 @@ Subscribes  /imu (gyro + accel -> complementary attitude filter), /cmd_vel (gait
                                                 /camera/pose_level + /camera/camera_info for detection association
             /yolo/detections (vision_msgs/Detection2DArray)
 Publishes   /map (OccupancyGrid, 1 Hz), TF map -> base_level, /slam/pose (PoseStamped),
-            /slam/state (String: "ok" | "recovering": large tilt/fall, map and translation updates suspended; heading still tracked),
+            /slam/state (String: "ok" | "initializing" | "weak" | "stale" | "recovering"),
+            /slam/match (String: local constraint acceptance reason and map overlap; not an accuracy bound),
             /goal (PointStamped): the beacon's map position, only when a detection has a trustworthy range,
             /slam/beacon (String): "ranged ..." / "unranged: ..." for every beacon detection (diagnostics)
 
@@ -72,6 +73,20 @@ class SlamNode(Node):
         self.declare_parameter("v_gain_lat", 0.0)             # asymmetric in MuJoCo -> not predicted
         self.declare_parameter("cmd_timeout", 0.5)
         self.declare_parameter("scan_matching", True)
+        self.declare_parameter("scan_timeout", 0.75)          # acquisition age, not publication/receipt age
+        self.declare_parameter("match_timeout", 1.5)
+        self.declare_parameter("sweep_window", 1.0)           # short local constraints; NOT loop closure
+        # depth mode matches over the sweep window too: single narrow camera frames let the +-30 cm correlative
+        # search lock onto wrong alignments (ideal trial: 0.68 m mean error without the window, 0.09 m with it),
+        # and the grid matcher rejects most single-wall frames as degenerate geometry
+        self.declare_parameter("depth_sweep", True)
+        self.declare_parameter("matcher", "correlative")      # correlative (Olson 2009) | grid (old +-7.5 cm search)
+        # tuned offline on a recorded realistic run (tools/slam_replay.py); see results/slam_tuning/README.md
+        self.declare_parameter("tof_min_hits", 8)             # ToF hits in the sweep window needed to match
+        self.declare_parameter("match_gain", 0.6)             # fraction of each correction applied (damps aliasing)
+        self.declare_parameter("fresh_check", False)          # also require the newest frame alone to agree
+        self.declare_parameter("slip_estimation", True)       # scale gait odometry by observed/modelled motion
+        self.declare_parameter("relocalize_after", 3.0)       # s without healthy localisation -> widen the search
         self.declare_parameter("fall_tilt_deg", 35.0)         # filtered tilt above this -> "recovering"
         self.declare_parameter("upright_tilt_deg", 15.0)      # ... back to "ok" after `upright_hold` s below this
         self.declare_parameter("upright_hold", 1.0)
@@ -80,6 +95,9 @@ class SlamNode(Node):
         self.declare_parameter("tof_fov_deg", 45.0)
         self.declare_parameter("tof_max_range", 2.0)
         self.declare_parameter("det_wait", 1.0)
+        self.declare_parameter("target_height", 0.0)          # m; known target height -> box-size depth (0 = off)
+        self.declare_parameter("size_agreement", 0.3)         # ToF depth must be within 30% of the box-size depth
+        self.declare_parameter("size_max_range", 2.5)         # m; beyond this a box-size-only range is not used
         self.declare_parameter("range_spread_max", 0.15)      # m; ToF zones in a box must agree this well
         self.declare_parameter("goal_confirmations", 2)       # consistent ranged sightings before /goal is published
         self.mode = str(self.get_parameter("sensor_mode").value)
@@ -88,12 +106,24 @@ class SlamNode(Node):
         gains = ds.OdomGains(fwd=float(self.get_parameter("v_gain").value), rev=float(self.get_parameter("v_gain_rev").value),
                              lat=float(self.get_parameter("v_gain_lat").value))
         if self.mode == "tof":
-            self.slam = ds.DuckSLAM(gains, max_r=float(self.get_parameter("tof_max_range").value), min_hits=4)
+            self.slam = ds.DuckSLAM(gains, max_r=float(self.get_parameter("tof_max_range").value), min_hits=int(self.get_parameter("tof_min_hits").value))
             fov = float(self.get_parameter("tof_fov_deg").value)
             self.tof_rays = ds.tof_zone_rays(8, fov, fov)
         else:
             self.slam = ds.DuckSLAM(gains)
         self.tilt = ds.TiltFilter()
+        # matching / mapping / relocalisation / slip policy, shared with tools/slam_replay.py
+        self.loc = ds.FrameLocalizer(
+            self.slam, matcher=self.matcher_name(),
+            sweep=float(self.get_parameter("sweep_window").value),
+            use_sweep=self.mode == "tof" or bool(self.get_parameter("depth_sweep").value),
+            gain=float(self.get_parameter("match_gain").value), fresh=bool(self.get_parameter("fresh_check").value),
+            slip=bool(self.get_parameter("slip_estimation").value),
+            relocalize_after=float(self.get_parameter("relocalize_after").value), map_move=0.0, map_turn=0.0,
+            scan_timeout=float(self.get_parameter("scan_timeout").value),
+            match_timeout=float(self.get_parameter("match_timeout").value))
+        self.health = self.loc.health
+        self.last_frame_ns = -1
         self.cmd = (0.0, 0.0); self.cmd_t = -1e9; self.last_imu_t = None
         self.state = "ok"; self.upright_since = None
         self.K = None
@@ -106,6 +136,7 @@ class SlamNode(Node):
         self.pub_map = self.create_publisher(OccupancyGrid, "map", 1)
         self.pub_pose = self.create_publisher(PoseStamped, "slam/pose", 10)
         self.pub_state = self.create_publisher(String, "slam/state", 10)
+        self.pub_match = self.create_publisher(String, "slam/match", 10)
         self.pub_goal = self.create_publisher(PointStamped, "goal", 10)
         self.pub_beacon = self.create_publisher(String, "slam/beacon", 10)
         self.tf = TransformBroadcaster(self)
@@ -121,9 +152,14 @@ class SlamNode(Node):
         self.create_subscription(Detection2DArray, "yolo/detections", self.on_det, 5)
         self.create_timer(1.0, self.publish_map)
         self.create_timer(0.2, self.flush_detections)
+        self.create_timer(0.2, self.publish_state)
 
     def now_ns(self):
         return self.get_clock().now().nanoseconds
+
+    def publish_state(self):
+        state = self.state if self.state != "ok" else self.health.state(self.now_ns() * 1e-9)
+        self.pub_state.publish(String(data=state))
 
     # 1. predict (50 Hz) ------------------------------------------------------------------
     def on_cmd(self, m):
@@ -139,16 +175,17 @@ class SlamNode(Node):
         tilt = math.degrees(self.tilt.tilt())
         if self.state == "ok" and tilt > self.get_parameter("fall_tilt_deg").value:
             self.state = "recovering"; self.upright_since = None
+            self.loc.reset_after_fall()
             self.get_logger().warn(f"tilt {tilt:.0f} deg: fall/recovery, map and translation updates suspended")
         elif self.state == "recovering":
             if tilt < self.get_parameter("upright_tilt_deg").value:
                 self.upright_since = self.upright_since or t
                 if t - self.upright_since > self.get_parameter("upright_hold").value:
                     self.state = "ok"
-                    self.get_logger().info("upright again: resuming (pose may need relocalisation by scan matching)")
+                    self.get_logger().info("upright again: motion remains gated on accepted local scan constraints")
             else:
                 self.upright_since = None
-        self.pub_state.publish(String(data=self.state))
+        self.publish_state()
         if 0 < dt < 0.2:
             # heading keeps integrating through a stumble (the tilt-corrected yaw rate stays valid); translation from
             # the gait command and map updates are suspended while recovering
@@ -191,6 +228,8 @@ class SlamNode(Node):
 
     def on_frame(self, msg):
         ns = stamp_ns(msg.header)
+        if ns <= self.last_frame_ns or not 0 <= (self.now_ns() - ns) * 1e-9 <= self.health.scan_timeout:
+            return                                          # replay/late packets cannot refresh localization
         poses = self.cam_poses if self.mode == "depth" else self.sensor_poses
         sp = poses.get(ns)
         if sp is None:
@@ -200,6 +239,7 @@ class SlamNode(Node):
         hist_k, pose_acq = self.pose_hist.nearest(ns, 30_000_000)
         if pose_acq is None:
             return
+        self.last_frame_ns = ns
         R, t = sp
         if self.mode == "depth":
             if self.K is None:
@@ -214,18 +254,30 @@ class SlamNode(Node):
                                                   fov_h_deg=float(self.get_parameter("tof_fov_deg").value))
             pts = ds.tof_points(ranges, valid, self.tof_rays, self.get_parameter("tof_range_convention").value)
             data = (pts @ R.T + t, ranges[valid] if len(pts) else np.zeros(0))   # level-frame points + ranges
+        accepted = False
         if len(ang):
             current = self.slam.pose.copy()
-            self.slam.pose = pose_acq.copy()                   # process at the acquisition pose ...
-            if self.get_parameter("scan_matching").value:
-                self.slam.match(ang, r, hit)
-            corr = self.slam.pose - pose_acq
-            self.slam.update_map(ang, r, hit)
+            accepted, corr = self.loc.step(ns * 1e-9, pose_acq, ang, r, hit,      # match + map at the acquisition pose
+                                           match=bool(self.get_parameter("scan_matching").value))
             self.slam.pose = current + corr                    # ... and carry the correction to now
             if np.any(corr):                                   # later history entries get it too, so a frame acquired
                 for k in [k for k in self.pose_hist.d if k > ns]:     # before this one was processed is not
                     self.pose_hist.d[k] = self.pose_hist.d[k] + corr  # corrected twice
+            pose_acq = pose_acq + corr
+        # an empty frame (no return within range) says nothing about localisation quality: not counted as a
+        # failed match (counting it reset the health streak, stopped map updates and diverged in replay)
+        reason = self.slam.match_reason if len(ang) else "empty_scan"
+        if not self.get_parameter("scan_matching").value:
+            reason = "matching_disabled; navigation gated"
+        self.pub_match.publish(String(data=f"{reason}; overlap={self.slam.match_overlap:.2f}"))
+        self.publish_state()
         self.frames.put(ns, (data, pose_acq.copy()))
+
+    def matcher_name(self):
+        m = self.get_parameter("matcher").value
+        if m not in ("correlative", "grid"):
+            raise ValueError("matcher must be 'correlative' or 'grid'")
+        return m
 
     @staticmethod
     def read_tof(msg):
@@ -341,18 +393,37 @@ class SlamNode(Node):
             return None, f"depth {z:.2f} m out of range"
         return ds.pixel_to_level(cx, cy, z, R_bc, t_bc, K), ""
 
+    def size_depth(self, cy, h):
+        """Camera-axis depth from the box height of a target of known height; None if unknown or cut off."""
+        H = float(self.get_parameter("target_height").value)
+        K = self.K
+        if H <= 0 or h < 8 or cy - h / 2 <= 1 or cy + h / 2 >= K.height - 1:
+            return None                                       # no known size, tiny box, or clipped by the image edge
+        return K.fy * H / h
+
     def range_tof(self, data, cx, cy, w, h, R_bc, t_bc):
+        """Depth from the ToF zones that project into the box, bearing from the camera.
+
+        The 8x8 zones are 5.6 deg apart, so the zone centres place the target up to ~3 deg off sideways; the
+        camera box centre is far more precise. So: camera ray through the box centre, at the ToF depth."""
         pts, rng = data
-        if len(pts) == 0:
-            return None, "no valid ToF zones"
-        u, v, z = ds.level_to_pixel(pts, R_bc, t_bc, self.K)
-        inside = (z > 0.05) & (np.abs(u - cx) <= w / 4 + 2) & (np.abs(v - cy) <= h / 4 + 2)
-        if not inside.any():
-            return None, "no valid ToF zone projects into the box"
-        r = rng[inside]
-        if r.max() - r.min() > self.get_parameter("range_spread_max").value:
-            return None, f"ToF zones in the box disagree ({r.min():.2f}-{r.max():.2f} m): object/background mix"
-        return np.median(pts[inside], axis=0), ""
+        zs = self.size_depth(cy, h)
+        if len(pts):
+            u, v, z = ds.level_to_pixel(pts, R_bc, t_bc, self.K)
+            inside = (z > 0.05) & (np.abs(u - cx) <= w / 4 + 2) & (np.abs(v - cy) <= h / 4 + 2)
+        else:
+            inside = np.zeros(0, bool)
+        if inside.any():
+            r = rng[inside]
+            if r.max() - r.min() > self.get_parameter("range_spread_max").value:
+                return None, f"ToF zones in the box disagree ({r.min():.2f}-{r.max():.2f} m): object/background mix"
+            zt = float(np.median(z[inside]))
+            if zs is not None and abs(zt - zs) > float(self.get_parameter("size_agreement").value) * zs:
+                return None, f"ToF depth {zt:.2f} m vs box-size depth {zs:.2f} m: ToF probably sees the background"
+            return ds.pixel_to_level(cx, cy, zt, R_bc, t_bc, self.K), ""
+        if zs is not None and 0.1 < zs < float(self.get_parameter("size_max_range").value):
+            return ds.pixel_to_level(cx, cy, zs, R_bc, t_bc, self.K), ""   # no ToF zone on it: size only
+        return None, "no valid ToF zone projects into the box" if len(pts) else "no valid ToF zones"
 
     def publish_map(self):
         info = self.slam.info
