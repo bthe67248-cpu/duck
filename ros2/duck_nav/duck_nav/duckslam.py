@@ -250,6 +250,14 @@ class DuckSLAM:
         self.pose[0] += (c * vx - s * vy) * dt
         self.pose[1] += (s * vx + c * vy) * dt
 
+    def predict_measured(self, vx, vy, yaw_rate, dt):
+        """Dead-reckoning step from a MEASURED body-frame velocity (m/s), e.g. camera floor flow. Same heading
+        handling as `predict`, but no gait-command gain and no slip scaling (the measurement is already metric)."""
+        self.pose[2] = (self.pose[2] + yaw_rate * dt + math.pi) % (2 * math.pi) - math.pi
+        c, s = math.cos(self.pose[2]), math.sin(self.pose[2])
+        self.pose[0] += (c * vx - s * vy) * dt
+        self.pose[1] += (s * vx + c * vy) * dt
+
     @staticmethod
     def scan_from_points(pb, min_bin_points=1, bin_deg=2.0, bin_offset=0.0):
         """Points in the level body frame (N, 3) -> 2-D scan (bearing, range, hit) for mapping/matching.
