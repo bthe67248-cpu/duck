@@ -15,6 +15,8 @@ from dataclasses import dataclass
 import numpy as np
 from scipy import ndimage
 
+from .pose_graph import PoseGraph, carry_pose_correction
+
 
 @dataclass(frozen=True)
 class MapInfo:
@@ -535,7 +537,8 @@ class FrameLocalizer:
 
     def __init__(self, slam, matcher="correlative", sweep=1.0, gain=0.6, fresh=False, slip=True,
                  relocalize_after=3.0, reloc_window=0.8, reloc_ang=math.radians(25), map_move=0.03,
-                 map_turn=math.radians(3), scan_timeout=0.75, match_timeout=1.5, use_sweep=True):
+                 map_turn=math.radians(3), scan_timeout=0.75, match_timeout=1.5, use_sweep=True,
+                 loop_closure=False, graph_max_nodes=160):
         self.slam = slam
         self.matcher, self.gain, self.fresh, self.slip = matcher, gain, fresh, slip
         self.relocalize_after, self.reloc_window, self.reloc_ang = relocalize_after, reloc_window, reloc_ang
@@ -546,9 +549,17 @@ class FrameLocalizer:
         self.last_ok = None              # last time the health state was "ok"
         self.last_map_pose = None
         self.relocalizing = False
+        if loop_closure and np.any(slam.logodds):
+            raise ValueError("loop_closure requires an empty initial map with retained raw scans")
+        self.graph = PoseGraph(graph_max_nodes) if loop_closure else None
+        if self.graph is not None:
+            self.map_move = max(self.map_move, 0.15)
+            self.map_turn = max(self.map_turn, math.radians(15))
 
     def reset_after_fall(self):
         self.health.invalidate()
+        if self.graph is not None:
+            self.graph.pending = None
         if self.sweep is not None:
             self.sweep.clear()
 
@@ -573,7 +584,6 @@ class FrameLocalizer:
                                                   **kw)
             else:
                 accepted = slam.match(*cons, current_scan=fresh)
-        corr = slam.pose - pose_acq
         if accepted and self.sweep is not None:
             self.sweep.correct(pose_acq, slam.pose)
         healthy = self.health.state(ts) == "ok" and slam.match_reason not in (
@@ -581,8 +591,35 @@ class FrameLocalizer:
         moved = self.last_map_pose is None or (
             math.hypot(*(slam.pose[:2] - self.last_map_pose[:2])) >= self.map_move
             or abs((slam.pose[2] - self.last_map_pose[2] + math.pi) % (2 * math.pi) - math.pi) >= self.map_turn)
-        if self.bootstrap or slam.match_reason == "map_not_ready" or ((accepted or healthy) and moved):
-            slam.update_map(ang, r, hit)
+        should_map = self.bootstrap or slam.match_reason == "map_not_ready" or ((accepted or healthy) and moved)
+        if self.graph is not None:
+            # The graph owns every mapped scan: rebuilding must never discard untracked evidence.
+            should_map = should_map and (moved or self.bootstrap or slam.match_reason == "map_not_ready")
+            if self.graph.full:
+                self.graph.reason = "disabled_capacity"
+        if should_map:
+            if self.graph is None or self.graph.full:
+                # Once saturated, continue mapping but permanently stop graph additions/rebuilds.
+                slam.update_map(ang, r, hit)
+            else:
+                before = slam.pose.copy()
+                closure_scan = self.sweep.scan(before) if self.sweep is not None else (ang, r, hit)
+                closed = self.graph.add(ts, before, (ang, r, hit), closure_scan, allow_closure=match)
+                if closed:
+                    after = self.graph.nodes[-1].pose.copy()
+                    # Reintegrate every retained raw acquisition at its optimized keyframe pose.
+                    slam.logodds.fill(0)
+                    slam.map_version += 1; slam._tables = None
+                    for node in self.graph.nodes:
+                        slam.pose = node.pose.copy()
+                        slam.update_map(*node.scan)
+                    slam.pose = after
+                    self.health.invalidate()
+                    if self.sweep is not None:
+                        self.sweep.clear()
+                    slam.last_offset = None  # a graph correction is not evidence of gait slip
+                else:
+                    slam.update_map(ang, r, hit)
             self.last_map_pose = slam.pose.copy()
         self.health.observe(ts, accepted)
         if self.health.state(ts) == "ok":
@@ -592,6 +629,8 @@ class FrameLocalizer:
             self.last_ok = ts
         if self.slip:
             slam.observe_slip()
+        corr = slam.pose - pose_acq
+        corr[2] = (corr[2] + math.pi) % (2 * math.pi) - math.pi
         return accepted, corr
 
 

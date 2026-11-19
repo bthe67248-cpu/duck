@@ -80,6 +80,8 @@ class SlamNode(Node):
         # search lock onto wrong alignments (ideal trial: 0.68 m mean error without the window, 0.09 m with it),
         # and the grid matcher rejects most single-wall frames as degenerate geometry
         self.declare_parameter("depth_sweep", True)
+        self.declare_parameter("loop_closure", False)          # experimental bounded keyframe graph
+        self.declare_parameter("graph_max_nodes", 160)
         self.declare_parameter("matcher", "correlative")      # correlative (Olson 2009) | grid (old +-7.5 cm search)
         # tuned offline on a recorded realistic run (tools/slam_replay.py); see results/slam_tuning/README.md
         self.declare_parameter("tof_min_hits", 8)             # ToF hits in the sweep window needed to match
@@ -115,6 +117,8 @@ class SlamNode(Node):
         # matching / mapping / relocalisation / slip policy, shared with tools/slam_replay.py
         self.loc = ds.FrameLocalizer(
             self.slam, matcher=self.matcher_name(),
+            loop_closure=bool(self.get_parameter("loop_closure").value),
+            graph_max_nodes=int(self.get_parameter("graph_max_nodes").value),
             sweep=float(self.get_parameter("sweep_window").value),
             use_sweep=self.mode == "tof" or bool(self.get_parameter("depth_sweep").value),
             gain=float(self.get_parameter("match_gain").value), fresh=bool(self.get_parameter("fresh_check").value),
@@ -126,6 +130,8 @@ class SlamNode(Node):
         self.last_frame_ns = -1
         self.cmd = (0.0, 0.0); self.cmd_t = -1e9; self.last_imu_t = None
         self.state = "ok"; self.upright_since = None
+        self.recovery_started = None; self.recovery_warned = False
+        self.map_revision_ns = -1
         self.K = None
         self.pose_hist = StampBuffer(200)                     # 4 s of 50 Hz poses
         self.cam_poses = StampBuffer(20); self.sensor_poses = StampBuffer(30)
@@ -137,6 +143,7 @@ class SlamNode(Node):
         self.pub_pose = self.create_publisher(PoseStamped, "slam/pose", 10)
         self.pub_state = self.create_publisher(String, "slam/state", 10)
         self.pub_match = self.create_publisher(String, "slam/match", 10)
+        self.pub_revision = self.create_publisher(String, "slam/map_revision", 10)
         self.pub_goal = self.create_publisher(PointStamped, "goal", 10)
         self.pub_beacon = self.create_publisher(String, "slam/beacon", 10)
         self.tf = TransformBroadcaster(self)
@@ -175,9 +182,14 @@ class SlamNode(Node):
         tilt = math.degrees(self.tilt.tilt())
         if self.state == "ok" and tilt > self.get_parameter("fall_tilt_deg").value:
             self.state = "recovering"; self.upright_since = None
+            self.recovery_started = t; self.recovery_warned = False
             self.loc.reset_after_fall()
             self.get_logger().warn(f"tilt {tilt:.0f} deg: fall/recovery, map and translation updates suspended")
         elif self.state == "recovering":
+            if not self.recovery_warned and self.recovery_started is not None and t - self.recovery_started >= 10.0:
+                self.recovery_warned = True
+                self.get_logger().warn(f"recovery persists for {t - self.recovery_started:.1f} s, tilt {tilt:.0f} deg; "
+                                       "translation and mapping remain suspended until upright")
             if tilt < self.get_parameter("upright_tilt_deg").value:
                 self.upright_since = self.upright_since or t
                 if t - self.upright_since > self.get_parameter("upright_hold").value:
@@ -257,21 +269,36 @@ class SlamNode(Node):
         accepted = False
         if len(ang):
             current = self.slam.pose.copy()
+            revision = self.loc.graph.revision if self.loc.graph is not None else 0
             accepted, corr = self.loc.step(ns * 1e-9, pose_acq, ang, r, hit,      # match + map at the acquisition pose
                                            match=bool(self.get_parameter("scan_matching").value))
-            self.slam.pose = current + corr                    # ... and carry the correction to now
+            after = pose_acq + corr
+            self.slam.pose = ds.carry_pose_correction(current, pose_acq, after)
             if np.any(corr):                                   # later history entries get it too, so a frame acquired
                 for k in [k for k in self.pose_hist.d if k > ns]:     # before this one was processed is not
-                    self.pose_hist.d[k] = self.pose_hist.d[k] + corr  # corrected twice
-            pose_acq = pose_acq + corr
+                    self.pose_hist.d[k] = ds.carry_pose_correction(self.pose_hist.d[k], pose_acq, after)
+            pose_acq = after
+            if self.loc.graph is not None and self.loc.graph.revision != revision:
+                self.invalidate_map_caches()
         # an empty frame (no return within range) says nothing about localisation quality: not counted as a
         # failed match (counting it reset the health streak, stopped map updates and diverged in replay)
         reason = self.slam.match_reason if len(ang) else "empty_scan"
         if not self.get_parameter("scan_matching").value:
             reason = "matching_disabled; navigation gated"
-        self.pub_match.publish(String(data=f"{reason}; overlap={self.slam.match_overlap:.2f}"))
+        self.pub_match.publish(String(data=f"{reason}; overlap={self.slam.match_overlap:.2f}"
+                                           + (f"; graph={self.loc.graph.reason}; revision={self.loc.graph.revision}"
+                                              if self.loc.graph is not None else "")))
         self.publish_state()
         self.frames.put(ns, (data, pose_acq.copy()))
+
+    def invalidate_map_caches(self):
+        """Old observations/goals cannot be carried by a single nonrigid graph correction."""
+        self.frames.d.clear(); self.pending_dets.clear()
+        self.goal = None; self.goal_n = 0; self.candidates.clear()
+        self.map_revision_ns = self.now_ns()
+        event = f"{self.loc.graph.revision}:{self.map_revision_ns}"
+        self.pub_revision.publish(String(data=event))
+        self.publish_map()
 
     def matcher_name(self):
         m = self.get_parameter("matcher").value
@@ -293,6 +320,8 @@ class SlamNode(Node):
 
     # 3. beacon position from YOLO boxes + range --------------------------------------------
     def on_det(self, msg):
+        if stamp_ns(msg.header) <= self.map_revision_ns:
+            return
         if any(d.results and d.results[0].hypothesis.class_id == "beacon" for d in msg.detections):
             self.pending_dets.append(msg)
             self.flush_detections()

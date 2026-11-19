@@ -88,3 +88,35 @@ def test_weak_localization_stops_body_but_preserves_head_sweep(nav):
     assert nav.pub_head.records[0].data == pytest.approx(0.9)
     assert len(nav.pub_head.records) == 1  # stop must not immediately recenter the head
     assert nav.pub_status.records[-1].data == "slam weak"
+
+
+def test_map_revision_stops_and_waits_for_corrected_map_and_pose(nav):
+    nav.goal = (1., 0.); nav.visited_goal = True
+    nav.on_map_revision(message(data='1:5100000000'))
+    assert nav.path is None and nav.goal is None and not nav.visited_goal
+    assert nav.pub_cmd.records[-1].linear.x == 0
+    assert nav.fault() == 'waiting for corrected map and pose'
+    nav.now = lambda: 5.2
+    nav.map_t = 5.2
+    assert nav.fault() == 'waiting for corrected map and pose'
+    nav.pose_t = 5.2
+    assert nav.fault() is None
+    nav.on_goal(message(header=message(frame_id='map', stamp=message(sec=5, nanosec=0)), point=message(x=1., y=0.)))
+    assert nav.goal is None
+    nav.on_map_revision(message(data='1:5000000000'))  # stale duplicate cannot reopen the gate
+    assert nav.revision_stamp == pytest.approx(5.1)
+
+
+def test_revision_during_planning_discards_old_plan(nav, monkeypatch):
+    import duck_nav.duckslam as ds
+    nav.info = ds.MapInfo(nx=5, ny=5)
+    nav.goal = None; nav.visited_goal = False
+    original_get = nav.get_parameter
+    nav.get_parameter = lambda key: message(value=.125) if key == 'clearance' else original_get(key)
+    def plan(*args, **kwargs):
+        nav.on_map_revision(message(data='1:5000000000'))
+        return [(0., 0.), (1., 0.)], 'explore'
+    monkeypatch.setattr(ds, 'plan', plan)
+    nav.apply_plan = lambda *args: pytest.fail('stale plan applied after graph optimization')
+    nav.replan()
+    assert nav.path is None

@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "bag": "~/duck_bags/new_s1",
+  "duration_s": 599.980001,
+  "recorded_live": {
+    "samples": 5981,
+    "error_m": {
+      "mean": 0.4425661988634562,
+      "median": 0.16713469303675538,
+      "max": 1.8657433188428616
+    }
+  },
+  "results": [
+    {
+      "graph_revision": 0,
+      "graph_nodes": 160,
+      "graph_edges": 159,
+      "graph_reason": "disabled_capacity",
+      "config": {},
+      "effective_config": {
+        "matcher": "correlative",
+        "sweep": 1.0,
+        "min_hits": 8,
+        "map": "gated",
+        "fresh": false,
+        "kw": {},
+        "loc": {
+          "loop_closure": true
+        }
+      },
+      "policy": "shared",
+      "samples": 5618,
+      "error_m": {
+        "mean": 1.1302930642687645,
+        "median": 1.3143217394374582,
+        "max": 2.287407008760361
+      },
+      "motion_gate_ok_pct": 30.847276610893555,
+      "recovery_entries": 0,
+      "relocalizing_frames": 2280,
+      "accepted_frames": 1995,
+      "frames": 6000,
+      "match_mean_ms": 9.696240950101753,
+      "match_reasons": {
+        "map_not_ready": 53,
+        "accepted": 1995,
+        "low_overlap": 2113,
+        "search_boundary": 1381,
+        "partial": 348,
+        "insufficient_hits": 2
+      }
+    }
+  ],
+  "limitations": [
+    "Open-loop localisation only; recorded path is fixed.",
+    "Events are sorted by acquisition time; ROS callback loss, queueing and publication latency are not reproduced.",
+    "Default parameters mirror the launch defaults; custom node parameters must be supplied explicitly."
+  ]
+}

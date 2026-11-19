@@ -12,8 +12,9 @@ slam_node.on_imu / on_frame; keep the two in step when either changes.
 
 Config keys (defaults = current slam_node behaviour):
   matcher   correlative | grid | none          sweep    seconds of accumulated frames (0 = single frame)
-  min_hits  hits needed to match               map      always | gated (accepted, healthy or bootstrap)
-  fresh     current-frame agreement check      kw       extra keyword arguments for the matcher
+  min_hits  hits needed to match               loc      FrameLocalizer keyword overrides
+  fresh     current-frame agreement check
+  Historical map/kw/slip options require --legacy. Offline ordering does not reproduce ROS queueing.
 """
 import argparse
 import bisect
@@ -29,8 +30,14 @@ ap = argparse.ArgumentParser()
 ap.add_argument("bag")
 ap.add_argument("--config", default="{}")
 ap.add_argument("--grid", help="JSON list of configs, evaluated on one read of the bag")
+ap.add_argument("--output", type=Path, help="write machine-readable metrics JSON")
+ap.add_argument("--duration", type=float, default=600.0, help="maximum simulated seconds from first event")
+ap.add_argument("--loop-closure", action="store_true", help="enable shared FrameLocalizer pose graph")
+ap.add_argument("--legacy", action="store_true", help="use historical matcher policy instead of shared node policy")
 ap.add_argument("--src", default=str(Path(__file__).resolve().parents[1]))
 args = ap.parse_args()
+if not math.isfinite(args.duration) or args.duration <= 0:
+    ap.error("--duration must be finite and positive")
 sys.path.insert(0, args.src)
 import duck_nav.duckslam as ds  # noqa: E402
 
@@ -40,7 +47,8 @@ from rosidl_runtime_py.utilities import get_message  # noqa: E402
 from sensor_msgs_py import point_cloud2  # noqa: E402
 
 TOPICS = ["/imu", "/cmd_vel", "/tof/zones", "/tof/pose_level", "/ground_truth/pose", "/clock", "/slam/pose"]
-DEFAULT = dict(matcher="correlative", sweep=1.5, min_hits=12, map="gated", fresh=True, kw={})
+DEFAULT = dict(matcher="correlative", sweep=1.0, min_hits=8, map="gated", fresh=False, kw={}, loc={})
+LEGACY = dict(matcher="correlative", sweep=1.5, min_hits=12, map="gated", fresh=True, kw={})
 # {"min_hits": 8, "loc": {}} replays the current slam_node defaults through duckslam.FrameLocalizer
 
 
@@ -67,11 +75,18 @@ def read_bag(path):
 
 
 msgs = read_bag(args.bag)
+missing = set(TOPICS[:-1]) - {topic for topic, _, _ in msgs}
+if missing:
+    ap.error("bag is missing required populated topics: " + ", ".join(sorted(missing)))
 clock = sorted((t_rx, m.clock.sec + m.clock.nanosec * 1e-9) for tp, m, t_rx in msgs if tp == "/clock")
 crx = [c[0] for c in clock]
 
 
 def sim_time(t_rx):                                   # receive (wall) time -> sim time, for header-less /cmd_vel
+    if not clock:
+        ap.error("/clock is required to align headerless /cmd_vel; do not substitute wall time")
+    if len(clock) == 1:
+        return clock[0][1]
     i = min(max(bisect.bisect_left(crx, t_rx), 1), len(clock) - 1)
     return clock[i - 1][1] if t_rx - clock[i - 1][0] < clock[i][0] - t_rx else clock[i][1]
 
@@ -102,7 +117,11 @@ for tp, m, t_rx in msgs:
         gt.append((stamp(m.header), m.pose.position.x, m.pose.position.y))
 events.sort(key=lambda e: (e[0], e[1]))
 gt.sort(); gts = [g[0] for g in gt]
-dur = events[-1][0] - events[0][0]
+if not events or not gt:
+    ap.error("bag must contain IMU/ToF events and /ground_truth/pose")
+start_t = events[0][0]
+events = [event for event in events if event[0] < start_t + args.duration]
+dur = events[-1][0] - start_t
 
 
 def truth_err(t, x, y):
@@ -113,7 +132,16 @@ def truth_err(t, x, y):
 
 
 def run(cfg):
-    c = {**DEFAULT, **cfg}
+    allowed = set(DEFAULT) | {"debug", "trace", "slip", "slip_kw"}
+    if set(cfg) - allowed:
+        ap.error("unknown config keys: " + ", ".join(sorted(set(cfg) - allowed)))
+    if not args.legacy and set(cfg) & {"map", "kw", "slip", "slip_kw"}:
+        ap.error("map/kw/slip/slip_kw require --legacy; use loc overrides for shared policy")
+    c = {**(LEGACY if args.legacy else DEFAULT), **cfg}
+    if args.loop_closure:
+        if args.legacy:
+            ap.error("--loop-closure requires the shared policy (omit --legacy)")
+        c["loc"] = {**c.get("loc", {}), "loop_closure": True}
     slam = ds.DuckSLAM(ds.OdomGains(), max_r=2.0, min_hits=c["min_hits"])
     rays = ds.tof_zone_rays(8, 45.0, 45.0)
     tilt = ds.TiltFilter()
@@ -125,7 +153,10 @@ def run(cfg):
     errs, oks, n_frames, n_acc, match_s, reasons = [], [], 0, 0, [], {}
     slips = []
     relocs = 0
-    loc = ds.FrameLocalizer(slam, **c["loc"]) if "loc" in c else None
+    loc_kw = dict(matcher=c["matcher"], sweep=c["sweep"], fresh=c["fresh"], map_move=0.0, map_turn=0.0)
+    loc_kw.update(c.get("loc", {}))
+    loc = ds.FrameLocalizer(slam, **loc_kw) if "loc" in c else None
+    state, upright_since, recoveries = "ok", None, 0
     if loc is not None:
         health = loc.health
     next_err_t = 0.0
@@ -135,15 +166,31 @@ def run(cfg):
             dt = t - last_imu if last_imu is not None else 0.0
             last_imu = t
             up = tilt.update(gyro, acc, dt if 0 < dt < 0.2 else 0.0)
+            tilt_deg = math.degrees(tilt.tilt())
+            if state == "ok" and tilt_deg > 35.0:
+                state, upright_since = "recovering", None
+                recoveries += 1
+                if loc is not None:
+                    loc.reset_after_fall()
+                elif sweep is not None:
+                    sweep = ds.ScanWindow(c["sweep"])
+            elif state == "recovering":
+                if tilt_deg < 15.0:
+                    if upright_since is None:
+                        upright_since = t
+                    if t - upright_since > 1.0:
+                        state = "ok"
+                else:
+                    upright_since = None
             if 0 < dt < 0.2:
-                vx, vy = cmd if t - cmd_t < 0.5 else (0.0, 0.0)
+                vx, vy = cmd if t - cmd_t < 0.5 and state == "ok" else (0.0, 0.0)
                 slam.predict(vx, ds.world_yaw_rate(gyro, up), dt, cmd_vy=vy)
             hist[t] = slam.pose.copy(); hist_keys.append(t)
             if t >= next_err_t:
                 next_err_t = t + 0.1
                 e = truth_err(t, *slam.pose[:2])
                 if e is not None:
-                    errs.append(e); oks.append(health.state(t) == "ok")
+                    errs.append(e); oks.append(state == "ok" and health.state(t) == "ok")
             continue
         if kind == 1:
             cmd, cmd_t = data, t
@@ -153,7 +200,7 @@ def run(cfg):
         sp = tof_pose.get(key)
         i = bisect.bisect_left(hist_keys, ts)
         cand = [hist_keys[j] for j in (i - 1, i) if 0 <= j < len(hist_keys) and abs(hist_keys[j] - ts) <= 0.03]
-        if sp is None or not cand or c["matcher"] == "none":
+        if sp is None or not cand or c["matcher"] == "none" or state != "ok":
             continue
         k = min(cand, key=lambda q: abs(q - ts))
         pose_acq = hist[k].copy()
@@ -170,10 +217,11 @@ def run(cfg):
             reasons[slam.match_reason] = reasons.get(slam.match_reason, 0) + 1
             n_acc += bool(accepted); slips.append(slam.slip)
             relocs += loc.relocalizing
-            slam.pose = current + corr
+            corrected = pose_acq + corr
+            slam.pose = ds.carry_pose_correction(current, pose_acq, corrected)
             if np.any(corr):
                 for kk in hist_keys[bisect.bisect_right(hist_keys, ts):]:
-                    hist[kk] = hist[kk] + corr
+                    hist[kk] = ds.carry_pose_correction(hist[kk], pose_acq, corrected)
             continue
         current = slam.pose.copy(); slam.pose = pose_acq.copy()
         if sweep is not None:
@@ -218,15 +266,39 @@ def run(cfg):
             k = max(1, len(slips) // 15)
             print("   slip per window:", " ".join(f"{np.mean(slips[i:i + k]):.2f}" for i in range(0, len(slips), k)))
         print("   error per 20 s:", " ".join(f"{e[i:i + w].mean():.2f}" for i in range(0, len(e), w)))
-    top = dict(sorted(reasons.items(), key=lambda kv: -kv[1])[:4])
-    print(f"{json.dumps(cfg):70s} err mean {e.mean():.3f} med {np.median(e):.3f} max {e.max():.3f} | "
-          f"ok {100 * np.mean(oks):3.0f}% reloc {relocs} acc {n_acc:4d}/{n_frames} {1e3 * np.mean(match_s) if match_s else 0:4.1f} ms | {top}",
-          flush=True)
-    return e.mean()
+    if not len(e) or (not n_frames and c["matcher"] != "none"):
+        ap.error("replay has no scored samples or no usable ToF frames in selected duration")
+    graph = loc.graph if loc is not None else None
+    metrics = dict(graph_revision=graph.revision if graph is not None else 0,
+                   graph_nodes=len(graph.nodes) if graph is not None else 0,
+                   graph_edges=len(graph.edges) if graph is not None else 0,
+                   graph_reason=graph.reason if graph is not None else "disabled", config=cfg, effective_config=c, policy="legacy" if loc is None else "shared",
+                   samples=len(e), error_m={"mean": float(e.mean()) if len(e) else None,
+                   "median": float(np.median(e)) if len(e) else None, "max": float(e.max()) if len(e) else None},
+                   motion_gate_ok_pct=float(100 * np.mean(oks)) if oks else None,
+                   recovery_entries=recoveries, relocalizing_frames=relocs, accepted_frames=int(n_acc),
+                   frames=n_frames, match_mean_ms=float(1e3 * np.mean(match_s)) if match_s else None,
+                   match_reasons=reasons)
+    print(json.dumps(metrics), flush=True)
+    return metrics
 
 
+reference = None
 if live:
-    le = np.array([v for v in (truth_err(t_, x_, y_) for t_, x_, y_ in live[::5]) if v is not None])
-    print(f"{dur:.0f} s bag; recorded live /slam/pose: err mean {le.mean():.3f} med {np.median(le):.3f} max {le.max():.3f}")
-for cfg in (json.loads(args.grid) if args.grid else [json.loads(args.config)]):
-    run(cfg)
+    le = np.array([v for v in (truth_err(t_, x_, y_) for t_, x_, y_ in live[::5]
+                              if start_t <= t_ < start_t + args.duration) if v is not None])
+    if len(le):
+        reference = dict(samples=len(le), error_m=dict(mean=float(le.mean()), median=float(np.median(le)), max=float(le.max())))
+        print(f"{dur:.0f} s bag; recorded live /slam/pose: {json.dumps(reference)}")
+configs = json.loads(args.grid) if args.grid else [json.loads(args.config)]
+if not isinstance(configs, list) or not configs or not all(isinstance(c, dict) for c in configs):
+    ap.error("--grid must be a nonempty list of configuration objects")
+results = [run(cfg) for cfg in configs]
+if args.output:
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(dict(schema_version=1, bag=str(Path(args.bag).resolve()), duration_s=dur,
+        recorded_live=reference, results=results,
+        limitations=["Open-loop localisation only; recorded path is fixed.",
+                     "Events are sorted by acquisition time; ROS callback loss, queueing and publication latency are not reproduced.",
+                     "Default parameters mirror the launch defaults; custom node parameters must be supplied explicitly."]),
+        indent=2, allow_nan=False) + "\n")

@@ -50,6 +50,8 @@ class NavNode(Node):
         self.lock = threading.RLock()                    # replan / drive / callbacks run on different threads
         self.grid = None; self.info = None; self.map_t = None
         self.pose = None; self.pose_t = None; self.slam_state = "initializing"; self.slam_state_t = None; self.goal = None
+        self.revision_stamp = -math.inf
+        self.map_revision = 0
         self.distances = None
         self.path = None; self.mode = "explore"; self.visited_goal = False; self.finished = False
         self.progress_ref = None; self.unstick_until = 0.0; self.status = ""; self.no_frontier = 0
@@ -62,6 +64,7 @@ class NavNode(Node):
         self.create_subscription(OccupancyGrid, "map", self.on_map, 1)
         self.create_subscription(PoseStamped, "slam/pose", self.on_pose, 10)
         self.create_subscription(String, "slam/state", self.on_slam_state, 10)
+        self.create_subscription(String, "slam/map_revision", self.on_map_revision, 10)
         self.create_subscription(PointStamped, "goal", self.on_goal, 10)
         self.create_subscription(Bool, "nav/enable", self.on_enable, 10)
         # planning runs in its own callback group so a slow plan never blocks the 20 Hz command stream
@@ -109,7 +112,22 @@ class NavNode(Node):
         with self.lock:
             self.pose = pose; self.pose_t = self.stamp(msg.header)
 
+    def on_map_revision(self, msg):
+        try:
+            revision, ns = (int(x) for x in msg.data.split(":"))
+        except (ValueError, TypeError):
+            return
+        with self.lock:
+            if revision <= getattr(self, "map_revision", 0):
+                return
+            self.map_revision = revision; self.revision_stamp = ns * 1e-9
+            self.path = None; self.goal = None; self.visited_goal = False
+            self.progress_ref = None; self.unstick_until = 0.0; self.no_frontier = 0
+            self.stop("map corrected; waiting for fresh observations")
+
     def on_goal(self, msg):
+        if self.stamp(msg.header) <= getattr(self, "revision_stamp", -math.inf):
+            return
         g = (msg.point.x, msg.point.y)
         if msg.header.frame_id != "map" or not all(math.isfinite(v) for v in g):
             self.say(f"goal rejected: frame '{msg.header.frame_id}'"); return
@@ -156,6 +174,8 @@ class NavNode(Node):
         t = self.now()
         if self.pose_t is None or self.grid is None:
             return "waiting for observations"
+        if min(self.pose_t, self.map_t) < getattr(self, "revision_stamp", -math.inf):
+            return "waiting for corrected map and pose"
         if not 0 <= t - self.pose_t <= self.get_parameter("pose_timeout").value:
             return "stale pose"
         if not 0 <= t - self.map_t <= self.get_parameter("map_timeout").value:
@@ -174,6 +194,7 @@ class NavNode(Node):
             f = self.fault()
             if f:
                 self.path = None; self.say(f); return
+            revision = getattr(self, "map_revision", 0)
             grid, info, pose = self.grid, self.info, self.pose
             goal = None if self.visited_goal else self.goal
             if goal is not None and math.hypot(goal[0] - pose[0], goal[1] - pose[1]) < self.get_parameter("goal_reached_m").value:
@@ -186,8 +207,8 @@ class NavNode(Node):
         if mode == "no_frontier":
             state = ds.exploration_state(grid, pose, info, min_area_m2=float(self.get_parameter("min_explored_m2").value))
         with self.lock:
-            if self.finished or not self.enabled:
-                return                                   # disabled while planning: do not resurrect a path
+            if self.finished or not self.enabled or revision != getattr(self, "map_revision", 0):
+                return                                   # inputs changed while planning
             if self.fault():
                 self.path = None; return
             self.apply_plan(path, mode, state)

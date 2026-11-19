@@ -6,6 +6,7 @@ sensors:=realistic  noisy RGB camera + simulated VL53L5CX 8x8 ToF (45 x 45 deg, 
                     60 ms latency). SLAM maps from the 64 ToF zones and ranges YOLO boxes with them.
 autonomous:=false -> the navigator stays idle until something publishes true on /nav/enable."""
 import os
+import json
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
@@ -27,9 +28,9 @@ def nodes(context):
     seed = int(LaunchConfiguration("seed").perform(context))
     return [
         Node(package="duck_nav", executable="world_sim", output="screen",
-             parameters=[{"mjcf": os.path.join(share, "mjcf", "duck_v3_gc_world.xml"),
+             parameters=[{"mjcf": LaunchConfiguration("mjcf").perform(context) or os.path.join(share, "mjcf", "duck_v3_gc_world.xml"),
                           "policy": os.path.join(share, "models", "velstand.onnx"),
-                          "world_json": os.path.join(share, "mjcf", "world.json"),
+                          "world_json": LaunchConfiguration("world_json").perform(context) or os.path.join(share, "mjcf", "world.json"),
                           "sensor_profile": sensors, "seed": seed,
                           "real_time": ParameterValue(LaunchConfiguration("real_time"), value_type=bool),
                           "rt_factor": ParameterValue(LaunchConfiguration("rt_factor"), value_type=float)}]),
@@ -40,6 +41,8 @@ def nodes(context):
         Node(package="duck_nav", executable="slam_node", output="screen",
              parameters=[{"scan_matching": ParameterValue(LaunchConfiguration("scan_matching"), value_type=bool),
                           "sensor_mode": "depth" if sensors == "ideal" else "tof",
+                          "loop_closure": ParameterValue(LaunchConfiguration("loop_closure"), value_type=bool),
+                          "graph_max_nodes": ParameterValue(LaunchConfiguration("graph_max_nodes"), value_type=int),
                           "matcher": LaunchConfiguration("matcher"),  # correlative | grid
                           "depth_sweep": ParameterValue(LaunchConfiguration("depth_sweep"), value_type=bool),
                           "target_radius": 0.04,                    # the sim beacon is a known 4 cm-radius,
@@ -49,7 +52,10 @@ def nodes(context):
              parameters=[{"autonomous": ParameterValue(LaunchConfiguration("autonomous"), value_type=bool)}, sim_time]),
         Node(package="duck_nav", executable="score_node", output="screen",
              parameters=[{"timeout": ParameterValue(LaunchConfiguration("timeout"), value_type=float),
-                          "out_dir": LaunchConfiguration("out_dir"), "profile": sensors}, sim_time]),
+                          "out_dir": LaunchConfiguration("out_dir"), "profile": sensors,
+                          "beacon_x": ParameterValue(LaunchConfiguration("beacon_x"), value_type=float),
+                          "beacon_y": ParameterValue(LaunchConfiguration("beacon_y"), value_type=float),
+                          "room": [float(v) for v in json.loads(LaunchConfiguration("room").perform(context))]}, sim_time]),
         Node(package="rviz2", executable="rviz2", condition=IfCondition(LaunchConfiguration("rviz")),
              arguments=["-d", os.path.join(share, "rviz", "duck_nav.rviz")], parameters=[sim_time]),
     ]
@@ -58,6 +64,13 @@ def nodes(context):
 def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument("sensors", default_value="ideal"),
+        DeclareLaunchArgument("mjcf", default_value=""),
+        DeclareLaunchArgument("world_json", default_value=""),
+        DeclareLaunchArgument("beacon_x", default_value="4.0"),
+        DeclareLaunchArgument("beacon_y", default_value="1.3"),
+        DeclareLaunchArgument("room", default_value="[-0.67, 4.47, -1.97, 1.97]"),
+        DeclareLaunchArgument("loop_closure", default_value="false"),
+        DeclareLaunchArgument("graph_max_nodes", default_value="160"),
         DeclareLaunchArgument("rviz", default_value="true"),
         DeclareLaunchArgument("scan_matching", default_value="true"),
         DeclareLaunchArgument("matcher", default_value="correlative"),

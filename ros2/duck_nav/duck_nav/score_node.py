@@ -41,6 +41,7 @@ class ScoreNode(Node):
         self.declare_parameter("fall_height", 0.085)
         self.declare_parameter("room", [-0.67, 4.47, -1.97, 1.97])   # x0 x1 y0 y1 of the room interior (world.json walls)
         self.declare_parameter("profile", "")
+        self.revision_ns = -1; self.map_revision = 0
         self.gt_hist = {}; self.gt = None; self.goal = None; self.grid = None; self.info = None
         self.true_xy, self.est_xy, self.errs = [], [], []
         self.falls = 0; self.was_up = True; self.events = []; self.status = ""; self.result = None
@@ -48,7 +49,8 @@ class ScoreNode(Node):
         self.det = {}; self.frames = 0; self.written = False
         self.create_subscription(PoseStamped, "ground_truth/pose", self.on_gt, 50)
         self.create_subscription(PoseStamped, "slam/pose", self.on_est, 50)
-        self.create_subscription(PointStamped, "goal", lambda m: setattr(self, "goal", (m.point.x, m.point.y)), 10)
+        self.create_subscription(PointStamped, "goal", self.on_goal, 10)
+        self.create_subscription(String, "slam/map_revision", self.on_map_revision, 10)
         self.create_subscription(OccupancyGrid, "map", self.on_map, 1)
         self.create_subscription(String, "nav/status", self.on_status, 10)
         latched = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
@@ -60,6 +62,18 @@ class ScoreNode(Node):
 
     def now(self):
         return self.get_clock().now().nanoseconds * 1e-9
+
+    def on_goal(self, m):
+        if stamp_ns(m.header) > self.revision_ns:
+            self.goal = (m.point.x, m.point.y)
+
+    def on_map_revision(self, m):
+        try:
+            revision, ns = (int(x) for x in m.data.split(":"))
+        except (ValueError, TypeError):
+            return
+        if revision > self.map_revision:
+            self.map_revision = revision; self.revision_ns = ns; self.goal = None
 
     def on_gt(self, m):
         p, q = m.pose.position, m.pose.orientation
@@ -173,6 +187,14 @@ class ScoreNode(Node):
         except Exception as e:                                             # noqa: BLE001
             self.get_logger().warn(f"map image not written: {e}")
         self.get_logger().info("RUN FINISHED\n" + "\n".join(lines))
+        # The runner must not kill this process between result.json and map rendering.
+        # Rename within the output directory gives it an atomic completion marker.
+        marker = os.path.join(out, "run_complete.json")
+        with open(marker + ".tmp", "w") as f:
+            json.dump({"schema_version": 1, "sim_time_s": res["sim_time_s"],
+                       "artifacts": [name for name in ("result.json", "summary.txt", "map.png")
+                                     if os.path.isfile(os.path.join(out, name))]}, f)
+        os.replace(marker + ".tmp", marker)
 
 
 def main():
