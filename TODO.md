@@ -63,6 +63,8 @@ Windows-only `job2.sh`/`patch_ort.py` were not supplied. Ten-seed/layout and pai
 
 - [x] Scan matching that keeps the duck exploring with the 8×8 ToF: correlative matcher over the head sweep, slip estimation, stop when the match is weak ([SLAM tuning](results/slam_tuning/README.md))
 - [ ] Validate experimental loop closure / pose graph on recorded and closed-loop trials: realistic baseline runs still drift late (up to 2.4 m at 600 s); implementation alone is not evidence of improved accuracy
+- [x] Heading from a full attitude filter (quaternion + gyro bias calibration): realistic seeds 0-5 mean error 0.40 m vs 1.34 m, beacon 6/6 vs 3/6 ([heading](results/heading/README.md))
+- [ ] Measured forward motion instead of gait-command odometry: camera floor optical flow, scored on the camera-recorded bags first
 - [ ] Re-localise after a fall: local relocalisation (±0.8 m / ±25° after 3 s unhealthy) exists; a global one does not
 - [ ] Stop the escape / plan loop near walls (pure pursuit cuts corners into the clearance margin)
 - [ ] Roll (sideways) balance: only pitch is controlled now

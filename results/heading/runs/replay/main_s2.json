@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "bag": "~/duck_bags/main_s2",
+  "duration_s": 599.980001,
+  "recorded_live": {
+    "samples": 5987,
+    "error_m": {
+      "mean": 0.21109766645576533,
+      "median": 0.20475092789042673,
+      "max": 0.5153890003843268
+    }
+  },
+  "results": [
+    {
+      "graph_revision": 0,
+      "graph_nodes": 0,
+      "graph_edges": 0,
+      "graph_reason": "disabled",
+      "config": {
+        "attitude": "tilt"
+      },
+      "effective_config": {
+        "matcher": "correlative",
+        "sweep": 1.0,
+        "min_hits": 8,
+        "map": "gated",
+        "fresh": false,
+        "kw": {},
+        "loc": {},
+        "attitude": "tilt"
+      },
+      "policy": "shared",
+      "samples": 5618,
+      "error_m": {
+        "mean": 0.3963750439766415,
+        "median": 0.4130159996493753,
+        "max": 0.5913511152942983
+      },
+      "motion_gate_ok_pct": 10.3061587753649,
+      "recovery_entries": 1,
+      "relocalizing_frames": 0,
+      "accepted_frames": 624,
+      "frames": 713,
+      "match_mean_ms": 11.278575245014206,
+      "match_reasons": {
+        "map_not_ready": 22,
+        "accepted": 624,
+        "partial": 47,
+        "insufficient_hits": 1,
+        "search_boundary": 8
+      }
+    },
+    {
+      "graph_revision": 0,
+      "graph_nodes": 0,
+      "graph_edges": 0,
+      "graph_reason": "disabled",
+      "config": {
+        "attitude": "quaternion"
+      },
+      "effective_config": {
+        "matcher": "correlative",
+        "sweep": 1.0,
+        "min_hits": 8,
+        "map": "gated",
+        "fresh": false,
+        "kw": {},
+        "loc": {},
+        "attitude": "quaternion"
+      },
+      "policy": "shared",
+      "samples": 5618,
+      "error_m": {
+        "mean": 0.39533903261596726,
+        "median": 0.37552022481415115,
+        "max": 0.93365335646384
+      },
+      "motion_gate_ok_pct": 10.16375934496262,
+      "recovery_entries": 1,
+      "relocalizing_frames": 0,
+      "accepted_frames": 620,
+      "frames": 722,
+      "match_mean_ms": 10.815545878873357,
+      "match_reasons": {
+        "map_not_ready": 22,
+        "accepted": 620,
+        "partial": 53,
+        "search_boundary": 14,
+        "insufficient_hits": 1
+      }
+    }
+  ],
+  "limitations": [
+    "Open-loop localisation only; recorded path is fixed.",
+    "Events are sorted by acquisition time; ROS callback loss, queueing and publication latency are not reproduced.",
+    "Default parameters mirror the launch defaults; custom node parameters must be supplied explicitly."
+  ]
+}

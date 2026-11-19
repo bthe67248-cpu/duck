@@ -132,6 +132,11 @@ the patch's current-frame agreement check, GMapping-style keyframe map gating, g
 - Simulated ToF: point rays, not real zone cones; the real sensor's noise and zone order are unmeasured.
 - Camera visual odometry (VINS-RGBD-style) was researched but not built.
 
+## Later: heading filter
+
+Heading now comes from a full attitude filter; on seeds 0-5 it cut mean error from 1.34 m to 0.40 m and
+reached the beacon 6/6 times instead of 3/6. See [`results/heading/README.md`](../heading/README.md).
+
 ## Next
 
 1. Loop closure: keep submaps/keyframes and match the current sweep against older parts of the map
