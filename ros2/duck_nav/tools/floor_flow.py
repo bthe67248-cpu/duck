@@ -48,12 +48,12 @@ from rosidl_runtime_py.utilities import get_message
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import duck_nav.duckslam as ds  # noqa: E402
+from duck_nav.flowodom import (GRID, PIX, floor_points, project, rigid_fit, ransac_rigid,  # noqa: E402,F401
+                              rectify, track_rect)
 
 TOPICS = ["/camera/image_raw", "/camera/pose_level", "/camera/camera_info", "/ground_truth/pose", "/cmd_vel",
           "/clock"]
-PIX = 0.5                                   # pixel centre offset: index i covers [i, i + 1) in the intrinsics' frame
 # top-down grid in the level frame: x forward, y left; res m per pixel
-GRID = dict(x0=-0.4, x1=1.4, y0=-1.0, y1=1.0, res=0.008)
 
 
 def stamp(h):
@@ -113,59 +113,6 @@ def load(path, duration):
 
 
 
-def floor_points(px, R, t, K):
-    """Pixels (N, 2) -> floor points (N, 2) in the level frame, NaN where the ray does not hit the floor ahead."""
-    u = (px[:, 0] + PIX - K[0, 2]) / K[0, 0]
-    v = (px[:, 1] + PIX - K[1, 2]) / K[1, 1]
-    d = np.stack([u, -v, -np.ones_like(u)], 1) @ R.T          # MuJoCo camera: x right, y up, looks along -z
-    s = -t[2] / d[:, 2]
-    ok = (d[:, 2] < -1e-3) & (s > 0)
-    p = t[None, :2] + s[:, None] * d[:, :2]
-    p[~ok] = np.nan
-    return p
-
-
-def project(p, R, t, K):
-    """Floor points (N, 2) in the level frame -> pixels (N, 2) of a camera at (R, t)."""
-    P = np.column_stack([p, np.zeros(len(p))]) - t
-    c = P @ R                                                  # into camera axes
-    z = -c[:, 2]
-    with np.errstate(divide="ignore", invalid="ignore"):
-        u = K[0, 0] * c[:, 0] / z + K[0, 2] - PIX
-        v = -K[1, 1] * c[:, 1] / z + K[1, 2] - PIX
-    out = np.column_stack([u, v]); out[z <= 1e-3] = np.nan
-    return out
-
-
-def rigid_fit(a, b):
-    """Least-squares R, t with a ~= R b + t (2-D)."""
-    ca, cb = a.mean(0), b.mean(0)
-    H = (b - cb).T @ (a - ca)
-    th = math.atan2(H[0, 1] - H[1, 0], H[0, 0] + H[1, 1])
-    c, s = math.cos(th), math.sin(th)
-    t = ca - np.array([[c, -s], [s, c]]) @ cb
-    return t, th
-
-
-def ransac_rigid(a, b, rng, iters=200, tol=0.02):
-    best = None
-    n = len(a)
-    for _ in range(iters):
-        i, j = rng.choice(n, 2, replace=False)
-        if np.linalg.norm(b[i] - b[j]) < 0.05:
-            continue
-        t, th = rigid_fit(a[[i, j]], b[[i, j]])
-        c, s = math.cos(th), math.sin(th)
-        res = np.linalg.norm(a - (b @ np.array([[c, s], [-s, c]]) + t), axis=1)
-        inl = res < tol
-        if best is None or inl.sum() > best.sum():
-            best = inl
-    if best is None or best.sum() < 6:
-        return None
-    t, th = rigid_fit(a[best], b[best])
-    return t, th, int(best.sum())
-
-
 def gt_at(gt, gts, t):
     i = min(bisect.bisect_left(gts, t), len(gt) - 1)
     return gt[i]
@@ -192,56 +139,6 @@ def command_motion(cmd_sim, cts, t0, t1, gains, step=0.02):
         disp += np.array([bx, by]) * min(step, t1 - t)
         t += step
     return disp
-
-
-def _grid(g=GRID):
-    nc = int(round((g["x1"] - g["x0"]) / g["res"])); nr = int(round((g["y1"] - g["y0"]) / g["res"]))
-    gx, gy = np.meshgrid(g["x0"] + g["res"] * (np.arange(nc) + 0.5), g["y0"] + g["res"] * (np.arange(nr) + 0.5))
-    return np.column_stack([gx.ravel(), gy.ravel()]), nr, nc
-
-
-_GRID = _grid()
-
-
-def rectify(img, R, t, K, horizon_row=None):
-    """Warp a camera image onto the floor plane of its level frame: returns (top-down image, valid mask).
-    Pixel (c, r) of the result is the floor point (x0 + res (c + .5), y0 + res (r + .5)). Rows above `horizon_row`
-    (default H / 3, the floor is in the lower part) are not used."""
-    grid, nr, nc = _GRID
-    H, W = img.shape
-    px = project(grid, R, t, K)
-    mx = px[:, 0].reshape(nr, nc).astype(np.float32); my = px[:, 1].reshape(nr, nc).astype(np.float32)
-    top = H / 3 if horizon_row is None else horizon_row
-    ok = np.isfinite(mx) & np.isfinite(my) & (mx >= 0) & (mx <= W - 1) & (my >= top) & (my <= H - 1)
-    mx = np.where(ok, mx, -1).astype(np.float32); my = np.where(ok, my, -1).astype(np.float32)
-    return cv2.remap(img, mx, my, cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0), ok.astype(np.uint8)
-
-
-def _to_floor(c, g=GRID):
-    return np.column_stack([g["x0"] + g["res"] * (c[:, 0] + 0.5), g["y0"] + g["res"] * (c[:, 1] + 0.5)])
-
-
-def track_rect(img0, p0, img1, p1, K, rng, win=11, levels=2, tol=0.01, gate=0.12, erode=1, fb=0.3, quality=0.02,
-               minpts=6):
-    """Body motion (t, dth, inliers) between two frames by tracking in top-down images, or None.
-    p0, p1 = (R, t) camera poses in the level frames of the two images."""
-    a, va = rectify(img0, p0[0], p0[1], K)
-    b, vb = rectify(img1, p1[0], p1[1], K)
-    e = win // 2 if erode is None else erode
-    va = cv2.erode(va & vb, np.ones((e, e), np.uint8)) if e > 1 else va & vb       # only where both frames see the floor
-    pts = cv2.goodFeaturesToTrack(a, 300, quality, 6, mask=va * 255)
-    if pts is None or len(pts) < minpts:
-        return None
-    lk = dict(winSize=(win, win), maxLevel=levels, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01))
-    q, st, _ = cv2.calcOpticalFlowPyrLK(a, b, pts, None, **lk)
-    back, st2, _ = cv2.calcOpticalFlowPyrLK(b, a, q, None, **lk)
-    pts = pts.reshape(-1, 2); q = q.reshape(-1, 2)
-    ok = (st.ravel() == 1) & (st2.ravel() == 1) & (np.linalg.norm(back.reshape(-1, 2) - pts, axis=1) < fb)
-    ok &= np.linalg.norm(q - pts, axis=1) * GRID["res"] < gate    # body motion in 0.2 s is a few cm; the checker repeats
-    if ok.sum() < minpts:
-        return None
-    fit = ransac_rigid(_to_floor(pts[ok]), _to_floor(q[ok]), rng, tol=tol)
-    return None if fit is None else (fit[0], fit[1], fit[2])
 
 
 def floor_homography(p0, p1, K):
