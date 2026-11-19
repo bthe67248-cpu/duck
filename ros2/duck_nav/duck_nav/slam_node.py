@@ -89,6 +89,8 @@ class SlamNode(Node):
         self.declare_parameter("fresh_check", False)          # also require the newest frame alone to agree
         self.declare_parameter("slip_estimation", True)       # scale gait odometry by observed/modelled motion
         self.declare_parameter("relocalize_after", 3.0)       # s without healthy localisation -> widen the search
+        self.declare_parameter("attitude_filter", "quaternion")  # quaternion (AttitudeFilter) | tilt (older)
+        self.declare_parameter("gyro_calib_s", 0.0)           # >0: measure gyro bias over the first N s (robot held still)
         self.declare_parameter("fall_tilt_deg", 35.0)         # filtered tilt above this -> "recovering"
         self.declare_parameter("upright_tilt_deg", 15.0)      # ... back to "ok" after `upright_hold` s below this
         self.declare_parameter("upright_hold", 1.0)
@@ -113,7 +115,8 @@ class SlamNode(Node):
             self.tof_rays = ds.tof_zone_rays(8, fov, fov)
         else:
             self.slam = ds.DuckSLAM(gains)
-        self.tilt = ds.TiltFilter()
+        self.tilt = ds.make_attitude_filter(self.get_parameter("attitude_filter").value)
+        self.calib_samples, self.calib_t0 = [], None
         # matching / mapping / relocalisation / slip policy, shared with tools/slam_replay.py
         self.loc = ds.FrameLocalizer(
             self.slam, matcher=self.matcher_name(),
@@ -178,6 +181,16 @@ class SlamNode(Node):
         acc = np.array([msg.linear_acceleration.x, msg.linear_acceleration.y, msg.linear_acceleration.z])
         dt = t - self.last_imu_t if self.last_imu_t is not None else 0.0
         self.last_imu_t = t
+        calib_s = float(self.get_parameter("gyro_calib_s").value)
+        if calib_s > 0 and self.calib_samples is not None and hasattr(self.tilt, "calibrate"):
+            self.calib_t0 = t if self.calib_t0 is None else self.calib_t0
+            if t - self.calib_t0 < calib_s:
+                self.calib_samples.append(gyro)
+            else:
+                ok = self.tilt.calibrate(self.calib_samples)
+                self.get_logger().info(f"gyro bias {np.round(self.tilt.bias, 4)} rad/s" if ok else
+                                       "gyro calibration rejected (robot not still); bias left at 0")
+                self.calib_samples = None
         up = self.tilt.update(gyro, acc, dt if 0 < dt < 0.2 else 0.0)
         tilt = math.degrees(self.tilt.tilt())
         if self.state == "ok" and tilt > self.get_parameter("fall_tilt_deg").value:
@@ -203,7 +216,7 @@ class SlamNode(Node):
             # the gait command and map updates are suspended while recovering
             fresh = t - self.cmd_t < self.get_parameter("cmd_timeout").value and self.state == "ok"
             vx, vy = self.cmd if fresh else (0.0, 0.0)
-            self.slam.predict(vx, ds.world_yaw_rate(gyro, up), dt, cmd_vy=vy)
+            self.slam.predict(vx, self.tilt.heading_rate(gyro, dt), dt, cmd_vy=vy)
         self.pose_hist.put(stamp_ns(msg.header), self.slam.pose.copy())
         x, y, th = self.slam.pose
         tf = TransformStamped(); tf.header.stamp = msg.header.stamp; tf.header.frame_id = "map"; tf.child_frame_id = "base_level"

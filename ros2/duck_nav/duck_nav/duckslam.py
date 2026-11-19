@@ -669,6 +669,102 @@ class TiltFilter:
     def tilt(self):
         return math.acos(float(np.clip(self.up[2], -1.0, 1.0)))
 
+    def heading_rate(self, gyro, dt):
+        """World yaw rate for odometry: the gyro projected on the filtered 'up' (planar approximation)."""
+        return world_yaw_rate(gyro, self.up)
+
+
+def quat_mul(a, b):
+    w1, x1, y1, z1 = a; w2, x2, y2, z2 = b
+    return np.array([w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2, w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2,
+                     w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2, w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2])
+
+
+def quat_yaw(q):
+    w, x, y, z = q
+    return math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z))
+
+
+class AttitudeFilter:
+    """Full 3-D attitude (body -> world quaternion, Mahony-style complementary filter) with gyro bias estimation.
+
+    Replaces TiltFilter + world_yaw_rate for heading: integrating the whole rotation keeps yaw correct while
+    the body rolls and pitches through the gait, where projecting the gyro on a filtered 'up' vector drifts
+    (recorded realistic runs: 14-26 deg over 200-600 s with a perfect simulated gyro). Same `up`/`tilt()`
+    interface as TiltFilter; `yaw()` is the heading to feed odometry.
+      - roll/pitch: corrected towards the accelerometer only when |a| is within `accel_band` of 1 g
+        (gain `kp`); the roll/pitch gyro bias is learned from the same error (gain `ki`)
+      - yaw bias is not observable from gravity, and it cannot be learned while the walking policy runs:
+        the torso keeps rotating slowly (~1 deg/s) even when commanded to stand, which an online
+        zero-velocity update mistakes for bias (it learned 0.016 rad/s on a bias-free recording). Measure
+        it with `calibrate()` while the robot is held still before walking (e.g. at power-up on a stand).
+    Yaw itself is never corrected here; scan matching does that."""
+
+    def __init__(self, kp=1.0, ki=0.02, g=9.81, accel_band=0.15, max_bias=0.1):
+        self.q = np.array([1.0, 0.0, 0.0, 0.0]); self.bias = np.zeros(3)
+        self.kp, self.ki, self.g, self.band, self.max_bias = kp, ki, g, accel_band, max_bias
+        self.initialised = False; self._dyaw = 0.0
+
+    def calibrate(self, gyro_samples, max_std=0.01):
+        """Set the gyro bias from samples taken while the body is held still. Returns False (bias unchanged)
+        if the samples are too noisy to be a still period."""
+        g = np.asarray(gyro_samples, float).reshape(-1, 3)
+        if len(g) < 10 or float(g.std(axis=0).max()) > max_std:
+            return False
+        self.bias = np.clip(g.mean(axis=0), -self.max_bias, self.max_bias)
+        return True
+
+    @property
+    def up(self):
+        """World 'up' expressed in the body frame (rotate (0,0,1) by the inverse attitude)."""
+        w, x, y, z = self.q
+        return np.array([2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x * x + y * y)])
+
+    def tilt(self):
+        return math.acos(float(np.clip(self.up[2], -1.0, 1.0)))
+
+    def yaw(self):
+        return quat_yaw(self.q)
+
+    def heading_rate(self, gyro, dt):
+        """World yaw rate for odometry: the yaw change of the last `update` over its dt."""
+        return self._dyaw / dt if dt > 0 else 0.0
+
+    def update(self, gyro, acc, dt):
+        gyro = np.asarray(gyro, float); acc = np.asarray(acc, float)
+        an = np.linalg.norm(acc)
+        if not self.initialised:
+            if an > 1e-3:                                 # start level with the measured gravity, yaw 0
+                u = acc / an
+                axis = np.cross(u, [0.0, 0.0, 1.0]); s = np.linalg.norm(axis); c = float(u[2])
+                if s > 1e-9:
+                    ang = math.atan2(s, c); axis = axis / s
+                    self.q = np.array([math.cos(ang / 2), *(math.sin(ang / 2) * axis)])
+                self.initialised = True
+            return self.up
+        self._dyaw = 0.0
+        if dt <= 0:
+            return self.up
+        yaw0 = quat_yaw(self.q)
+        w = gyro - self.bias
+        if abs(an - self.g) < self.band * self.g:
+            e = np.cross(acc / an, self.up)               # rotation taking the estimate onto the measurement
+            w = w + self.kp * e
+            self.bias[:2] = np.clip(self.bias[:2] - self.ki * e[:2] * dt, -self.max_bias, self.max_bias)
+        dq = np.array([1.0, *(0.5 * w * dt)])
+        self.q = quat_mul(self.q, dq); self.q /= np.linalg.norm(self.q)
+        self._dyaw = (quat_yaw(self.q) - yaw0 + math.pi) % (2 * math.pi) - math.pi
+        return self.up
+
+
+def make_attitude_filter(mode="quaternion"):
+    """'quaternion' (AttitudeFilter, default) or 'tilt' (the older TiltFilter + world_yaw_rate)."""
+    if mode == "quaternion":
+        return AttitudeFilter()
+    if mode == "tilt":
+        return TiltFilter()
+    raise ValueError("attitude_filter must be 'quaternion' or 'tilt'")
+
 
 # ---------------------------------------------------------------- planning -----------------------------
 ROBOT_RADIUS = 0.125            # m. Default clearance; NOT verified against the real envelope (sway, head, shield).

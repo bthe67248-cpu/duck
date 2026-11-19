@@ -13,7 +13,7 @@ slam_node.on_imu / on_frame; keep the two in step when either changes.
 Config keys (defaults = current slam_node behaviour):
   matcher   correlative | grid | none          sweep    seconds of accumulated frames (0 = single frame)
   min_hits  hits needed to match               loc      FrameLocalizer keyword overrides
-  fresh     current-frame agreement check
+  fresh     current-frame agreement check      attitude quaternion (default) | tilt (older TiltFilter)
   Historical map/kw/slip options require --legacy. Offline ordering does not reproduce ROS queueing.
 """
 import argparse
@@ -48,7 +48,7 @@ from sensor_msgs_py import point_cloud2  # noqa: E402
 
 TOPICS = ["/imu", "/cmd_vel", "/tof/zones", "/tof/pose_level", "/ground_truth/pose", "/clock", "/slam/pose"]
 DEFAULT = dict(matcher="correlative", sweep=1.0, min_hits=8, map="gated", fresh=False, kw={}, loc={})
-LEGACY = dict(matcher="correlative", sweep=1.5, min_hits=12, map="gated", fresh=True, kw={})
+LEGACY = dict(matcher="correlative", sweep=1.5, min_hits=12, map="gated", fresh=True, kw={}, attitude="tilt")
 # {"min_hits": 8, "loc": {}} replays the current slam_node defaults through duckslam.FrameLocalizer
 
 
@@ -132,7 +132,7 @@ def truth_err(t, x, y):
 
 
 def run(cfg):
-    allowed = set(DEFAULT) | {"debug", "trace", "slip", "slip_kw"}
+    allowed = set(DEFAULT) | {"debug", "trace", "slip", "slip_kw", "attitude"}
     if set(cfg) - allowed:
         ap.error("unknown config keys: " + ", ".join(sorted(set(cfg) - allowed)))
     if not args.legacy and set(cfg) & {"map", "kw", "slip", "slip_kw"}:
@@ -144,7 +144,7 @@ def run(cfg):
         c["loc"] = {**c.get("loc", {}), "loop_closure": True}
     slam = ds.DuckSLAM(ds.OdomGains(), max_r=2.0, min_hits=c["min_hits"])
     rays = ds.tof_zone_rays(8, 45.0, 45.0)
-    tilt = ds.TiltFilter()
+    tilt = ds.make_attitude_filter(c.get("attitude", "quaternion"))
     health = ds.LocalizationHealth(0.75, 1.5)
     sweep = ds.ScanWindow(c["sweep"]) if c["sweep"] > 0 else None
     cmd, cmd_t, last_imu = (0.0, 0.0), -1e9, None
@@ -184,7 +184,7 @@ def run(cfg):
                     upright_since = None
             if 0 < dt < 0.2:
                 vx, vy = cmd if t - cmd_t < 0.5 and state == "ok" else (0.0, 0.0)
-                slam.predict(vx, ds.world_yaw_rate(gyro, up), dt, cmd_vy=vy)
+                slam.predict(vx, tilt.heading_rate(gyro, dt), dt, cmd_vy=vy)
             hist[t] = slam.pose.copy(); hist_keys.append(t)
             if t >= next_err_t:
                 next_err_t = t + 0.1

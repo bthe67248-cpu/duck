@@ -19,7 +19,9 @@ import threading
 import time
 
 TOPICS = ['/clock', '/imu', '/cmd_vel', '/tof/zones', '/tof/pose_level',
-          '/ground_truth/pose', '/slam/pose', '/slam/state', '/slam/match', '/slam/map_revision', '/duck/mode', '/nav/status', '/nav/result']
+          '/ground_truth/pose', '/slam/pose', '/slam/state', '/slam/match', '/slam/map_revision', '/duck/mode', '/nav/status', '/nav/result',
+          # camera, head pose and joints: needed to test visual / measured motion offline (~1 MB/s for the images)
+          '/camera/image_raw', '/camera/camera_info', '/camera/pose_level', '/joint_states', '/yolo/detections']
 
 
 def positive(value):
