@@ -1,0 +1,637 @@
+[INFO] [launch]: All log files can be found below ~/.ros/log/2026-11-18-20-47-39-066020-DESKTOP-D7NMGD0-2535
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [world_sim-1]: process started with pid [2569]
+[INFO] [robot_state_publisher-2]: process started with pid [2570]
+[INFO] [yolo_node-3]: process started with pid [2571]
+[INFO] [slam_node-4]: process started with pid [2572]
+[INFO] [nav_node-5]: process started with pid [2573]
+[INFO] [score_node-6]: process started with pid [2574]
+[robot_state_publisher-2] [WARN] [1795063659.275483584] [kdl_parser]: The root link trunk_base has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
+[robot_state_publisher-2] [INFO] [1795063659.276374420] [robot_state_publisher]: Robot initialized
+[yolo_node-3] [INFO] [1795063660.022240616] [duck_yolo]: YOLO input 320x256, classes ['beacon', 'box']
+[world_sim-1] Dropped Escape call with ulEscapeCode : 0x03007703
+[world_sim-1] [INFO] [1795063661.823306442] [world_sim]: world_sim up (realistic sensors): 50 Hz policy, 200 Hz physics, camera 320x240 at 5 Hz, ToF 8x8 at 10 Hz, latency 0.06 s
+[nav_node-5] [INFO] [1795063661.912497493] [duck_nav]: [t=0.1 s] waiting for observations
+[nav_node-5] [INFO] [1795063662.806910606] [duck_nav]: [t=1.1 s] slam weak
+[nav_node-5] [INFO] [1795063668.794135616] [duck_nav]: [t=7.1 s] exploring
+[nav_node-5] [INFO] [1795063674.739490222] [duck_nav]: [t=13.0 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795063674.827594611] [duck_nav]: [t=13.1 s] exploring
+[nav_node-5] [INFO] [1795063678.292665700] [duck_nav]: [t=14.4 s] slam weak
+[nav_node-5] [INFO] [1795063679.003178161] [duck_nav]: [t=15.1 s] exploring
+[nav_node-5] [INFO] [1795063682.884935810] [duck_nav]: [t=18.9 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795063682.991485841] [duck_nav]: [t=19.1 s] exploring
+[nav_node-5] [INFO] [1795063683.825435900] [duck_nav]: [t=19.9 s] slam weak
+[nav_node-5] [INFO] [1795063685.044811801] [duck_nav]: [t=21.1 s] exploring
+[nav_node-5] [INFO] [1795063687.517757199] [duck_nav]: [t=23.6 s] slam weak
+[nav_node-5] [INFO] [1795063688.069553728] [duck_nav]: [t=24.2 s] exploring
+[nav_node-5] [INFO] [1795063693.392439949] [duck_nav]: [t=29.5 s] slam weak
+[yolo_node-3] [INFO] [1795063693.891568776] [duck_yolo]: 149 frames, 20 ms/inference, detections so far: {'beacon': 0, 'box': 46}
+[world_sim-1] [INFO] [1795063693.945727604] [world_sim]: sim 30 s, wall 30 s, render 45 ms per camera frame
+[nav_node-5] [INFO] [1795063694.071775532] [duck_nav]: [t=30.2 s] exploring
+[nav_node-5] [INFO] [1795063695.293741947] [duck_nav]: [t=31.4 s] slam weak
+[nav_node-5] [INFO] [1795063697.046131177] [duck_nav]: [t=33.1 s] exploring
+[nav_node-5] [INFO] [1795063697.094927333] [duck_nav]: [t=33.2 s] slam weak
+[nav_node-5] [INFO] [1795063698.086580198] [duck_nav]: [t=34.2 s] exploring
+[nav_node-5] [INFO] [1795063698.718225046] [duck_nav]: [t=34.8 s] slam weak
+[nav_node-5] [INFO] [1795063701.184430069] [duck_nav]: [t=37.2 s] exploring
+[nav_node-5] [INFO] [1795063708.905081747] [duck_nav]: [t=45.0 s] slam weak
+[nav_node-5] [INFO] [1795063715.218851131] [duck_nav]: [t=49.2 s] exploring
+[nav_node-5] [INFO] [1795063715.568925674] [duck_nav]: [t=49.5 s] slam weak
+[nav_node-5] [INFO] [1795063723.294213308] [duck_nav]: [t=57.2 s] exploring
+[nav_node-5] [INFO] [1795063723.334322759] [duck_nav]: [t=57.3 s] slam weak
+[nav_node-5] [INFO] [1795063725.207015582] [duck_nav]: [t=59.2 s] exploring
+[nav_node-5] [INFO] [1795063725.241184826] [duck_nav]: [t=59.2 s] slam weak
+[yolo_node-3] [INFO] [1795063726.031733233] [duck_yolo]: 299 frames, 17 ms/inference, detections so far: {'beacon': 0, 'box': 73}
+[world_sim-1] [INFO] [1795063726.081677144] [world_sim]: sim 60 s, wall 60 s, render 42 ms per camera frame
+[nav_node-5] [INFO] [1795063727.268020966] [duck_nav]: [t=61.2 s] exploring
+[nav_node-5] [INFO] [1795063727.349941555] [duck_nav]: [t=61.3 s] slam weak
+[nav_node-5] [INFO] [1795063729.228085867] [duck_nav]: [t=63.2 s] exploring
+[nav_node-5] [INFO] [1795063729.292906111] [duck_nav]: [t=63.3 s] slam weak
+[nav_node-5] [INFO] [1795063731.324118985] [duck_nav]: [t=65.3 s] exploring
+[nav_node-5] [INFO] [1795063731.633316764] [duck_nav]: [t=65.6 s] slam weak
+[nav_node-5] [INFO] [1795063735.262867542] [duck_nav]: [t=69.2 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1795063735.332687681] [duck_nav]: [t=69.3 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795063735.846129002] [duck_nav]: [t=69.8 s] slam weak
+[nav_node-5] [INFO] [1795063739.251969410] [duck_nav]: [t=73.2 s] exploring
+[nav_node-5] [INFO] [1795063739.845702936] [duck_nav]: [t=73.8 s] slam weak
+[nav_node-5] [INFO] [1795063740.234514267] [duck_nav]: [t=74.2 s] exploring
+[nav_node-5] [INFO] [1795063740.839040088] [duck_nav]: [t=74.8 s] slam weak
+[nav_node-5] [INFO] [1795063743.227545777] [duck_nav]: [t=77.2 s] exploring
+[nav_node-5] [INFO] [1795063743.343822860] [duck_nav]: [t=77.3 s] slam weak
+[nav_node-5] [INFO] [1795063744.259480289] [duck_nav]: [t=78.2 s] exploring
+[nav_node-5] [INFO] [1795063746.744348497] [duck_nav]: [t=78.4 s] slam weak
+[nav_node-5] [INFO] [1795063750.620605671] [duck_nav]: [t=82.2 s] exploring
+[nav_node-5] [INFO] [1795063751.053134182] [duck_nav]: [t=82.7 s] slam weak
+[nav_node-5] [INFO] [1795063753.573255102] [duck_nav]: [t=85.2 s] exploring
+[nav_node-5] [INFO] [1795063755.140764130] [duck_nav]: [t=86.8 s] slam weak
+[yolo_node-3] [INFO] [1795063758.338683469] [duck_yolo]: 449 frames, 21 ms/inference, detections so far: {'beacon': 0, 'box': 74}
+[world_sim-1] [INFO] [1795063758.381375278] [world_sim]: sim 90 s, wall 90 s, render 47 ms per camera frame
+[nav_node-5] [INFO] [1795063758.596872090] [duck_nav]: [t=90.2 s] exploring
+[nav_node-5] [INFO] [1795063758.852915641] [duck_nav]: [t=90.5 s] slam weak
+[nav_node-5] [INFO] [1795063762.553213946] [duck_nav]: [t=94.2 s] exploring
+[nav_node-5] [INFO] [1795063762.849881083] [duck_nav]: [t=94.5 s] slam weak
+[nav_node-5] [INFO] [1795063766.561551435] [duck_nav]: [t=98.2 s] exploring
+[nav_node-5] [INFO] [1795063766.941195980] [duck_nav]: [t=98.6 s] slam weak
+[nav_node-5] [INFO] [1795063775.576790417] [duck_nav]: [t=107.2 s] exploring
+[nav_node-5] [INFO] [1795063775.740409400] [duck_nav]: [t=107.4 s] slam weak
+[nav_node-5] [INFO] [1795063776.544114620] [duck_nav]: [t=108.2 s] exploring
+[nav_node-5] [INFO] [1795063778.249038028] [duck_nav]: [t=109.9 s] slam weak
+[nav_node-5] [INFO] [1795063781.917589272] [duck_nav]: [t=111.3 s] exploring
+[nav_node-5] [INFO] [1795063789.891161405] [duck_nav]: [t=119.3 s] slam weak
+[yolo_node-3] [INFO] [1795063790.579582113] [duck_yolo]: 599 frames, 20 ms/inference, detections so far: {'beacon': 0, 'box': 74}
+[world_sim-1] [INFO] [1795063790.627859706] [world_sim]: sim 120 s, wall 120 s, render 46 ms per camera frame
+[nav_node-5] [INFO] [1795063790.802389046] [duck_nav]: [t=120.2 s] exploring
+[nav_node-5] [INFO] [1795063791.995571709] [duck_nav]: [t=121.4 s] slam weak
+[nav_node-5] [INFO] [1795063793.796824680] [duck_nav]: [t=123.2 s] exploring
+[nav_node-5] [INFO] [1795063794.313015466] [duck_nav]: [t=123.7 s] slam weak
+[nav_node-5] [INFO] [1795063796.613690239] [duck_nav]: [t=126.0 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1795063797.480900421] [duck_nav]: [t=126.9 s] slam weak
+[nav_node-5] [INFO] [1795063799.591538372] [duck_nav]: [t=129.0 s] no reachable frontier
+[nav_node-5] [INFO] [1795063799.681575925] [duck_nav]: [t=129.1 s] slam weak
+[nav_node-5] [INFO] [1795063800.602875221] [duck_nav]: [t=130.0 s] no reachable frontier
+[nav_node-5] [INFO] [1795063801.289503676] [duck_nav]: [t=130.7 s] slam weak
+[nav_node-5] [INFO] [1795063802.775854450] [duck_nav]: [t=132.2 s] exploring
+[nav_node-5] [INFO] [1795063802.992615800] [duck_nav]: [t=132.4 s] slam weak
+[nav_node-5] [INFO] [1795063811.860593713] [duck_nav]: [t=141.3 s] exploring
+[nav_node-5] [INFO] [1795063812.290113596] [duck_nav]: [t=141.7 s] slam weak
+[nav_node-5] [INFO] [1795063812.825553963] [duck_nav]: [t=142.2 s] exploring
+[nav_node-5] [INFO] [1795063813.289965123] [duck_nav]: [t=142.7 s] slam weak
+[nav_node-5] [INFO] [1795063817.163805885] [duck_nav]: [t=144.3 s] exploring
+[nav_node-5] [INFO] [1795063820.271176514] [duck_nav]: [t=147.4 s] slam weak
+[nav_node-5] [INFO] [1795063821.207111396] [duck_nav]: [t=148.3 s] exploring
+[nav_node-5] [INFO] [1795063822.131107727] [duck_nav]: [t=149.2 s] slam weak
+[yolo_node-3] [INFO] [1795063822.864001154] [duck_yolo]: 749 frames, 20 ms/inference, detections so far: {'beacon': 0, 'box': 128}
+[world_sim-1] [INFO] [1795063822.910129707] [world_sim]: sim 150 s, wall 150 s, render 46 ms per camera frame
+[nav_node-5] [INFO] [1795063825.110601820] [duck_nav]: [t=152.2 s] exploring
+[nav_node-5] [INFO] [1795063825.667867797] [duck_nav]: [t=152.8 s] slam weak
+[nav_node-5] [INFO] [1795063829.154833140] [duck_nav]: [t=156.3 s] exploring
+[nav_node-5] [INFO] [1795063829.465538822] [duck_nav]: [t=156.6 s] slam weak
+[nav_node-5] [INFO] [1795063832.160473529] [duck_nav]: [t=159.3 s] exploring
+[nav_node-5] [INFO] [1795063832.465967066] [duck_nav]: [t=159.6 s] slam weak
+[nav_node-5] [INFO] [1795063833.143129425] [duck_nav]: [t=160.3 s] exploring
+[nav_node-5] [INFO] [1795063833.865376977] [duck_nav]: [t=161.0 s] slam weak
+[nav_node-5] [INFO] [1795063837.129589039] [duck_nav]: [t=164.2 s] exploring
+[nav_node-5] [INFO] [1795063837.565156685] [duck_nav]: [t=164.7 s] slam weak
+[nav_node-5] [INFO] [1795063840.154660249] [duck_nav]: [t=167.3 s] exploring
+[nav_node-5] [INFO] [1795063841.276832640] [duck_nav]: [t=168.4 s] slam weak
+[nav_node-5] [INFO] [1795063843.186648940] [duck_nav]: [t=170.3 s] exploring
+[nav_node-5] [INFO] [1795063843.230279074] [duck_nav]: [t=170.4 s] slam weak
+[nav_node-5] [INFO] [1795063846.142109193] [duck_nav]: [t=173.2 s] exploring
+[nav_node-5] [INFO] [1795063850.387135808] [duck_nav]: [t=175.3 s] slam weak
+[yolo_node-3] [INFO] [1795063855.079658103] [duck_yolo]: 899 frames, 21 ms/inference, detections so far: {'beacon': 0, 'box': 174}
+[world_sim-1] [INFO] [1795063855.130783607] [world_sim]: sim 180 s, wall 180 s, render 48 ms per camera frame
+[nav_node-5] [INFO] [1795063858.352181517] [duck_nav]: [t=183.3 s] exploring
+[nav_node-5] [INFO] [1795063858.851454456] [duck_nav]: [t=183.8 s] slam weak
+[nav_node-5] [INFO] [1795063864.357411986] [duck_nav]: [t=189.3 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1795063864.480591731] [duck_nav]: [t=189.4 s] slam weak
+[nav_node-5] [INFO] [1795063868.431872786] [duck_nav]: [t=193.3 s] exploring
+[nav_node-5] [INFO] [1795063868.795616789] [duck_nav]: [t=193.7 s] slam weak
+[nav_node-5] [INFO] [1795063870.361039175] [duck_nav]: [t=195.3 s] exploring
+[nav_node-5] [INFO] [1795063870.381832963] [duck_nav]: [t=195.3 s] slam weak
+[nav_node-5] [INFO] [1795063873.357926530] [duck_nav]: [t=198.3 s] exploring
+[nav_node-5] [INFO] [1795063873.703908849] [duck_nav]: [t=198.6 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795063874.314385296] [duck_nav]: [t=199.2 s] slam weak
+[nav_node-5] [INFO] [1795063876.401302823] [duck_nav]: [t=201.3 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1795063876.444227589] [duck_nav]: [t=201.4 s] slam weak
+[nav_node-5] [INFO] [1795063880.347733017] [duck_nav]: [t=205.3 s] exploring
+[nav_node-5] [INFO] [1795063880.983857489] [duck_nav]: [t=205.9 s] slam weak
+[yolo_node-3] [INFO] [1795063887.340297991] [duck_yolo]: 1049 frames, 23 ms/inference, detections so far: {'beacon': 0, 'box': 253}
+[world_sim-1] [INFO] [1795063887.391493098] [world_sim]: sim 210 s, wall 210 s, render 52 ms per camera frame
+[nav_node-5] [INFO] [1795063892.358945784] [duck_nav]: [t=215.0 s] robot cell is mapped occupied or boxed in: stopping
+[nav_node-5] [INFO] [1795063892.560095751] [duck_nav]: [t=215.2 s] slam weak
+[nav_node-5] [INFO] [1795063895.655994502] [duck_nav]: [t=218.3 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1795063895.710382465] [duck_nav]: [t=218.4 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795063896.077433076] [duck_nav]: [t=218.7 s] slam weak
+[nav_node-5] [INFO] [1795063899.629221008] [duck_nav]: [t=222.3 s] exploring
+[nav_node-5] [INFO] [1795063899.844257796] [duck_nav]: [t=222.5 s] slam weak
+[nav_node-5] [INFO] [1795063908.634332496] [duck_nav]: [t=231.3 s] exploring
+[nav_node-5] [INFO] [1795063908.719773423] [duck_nav]: [t=231.4 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795063909.153739610] [duck_nav]: [t=231.8 s] slam weak
+[yolo_node-3] [INFO] [1795063919.536188819] [duck_yolo]: 1199 frames, 22 ms/inference, detections so far: {'beacon': 0, 'box': 329}
+[world_sim-1] [INFO] [1795063919.587395145] [world_sim]: sim 240 s, wall 240 s, render 51 ms per camera frame
+[nav_node-5] [INFO] [1795063921.900458660] [duck_nav]: [t=242.3 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1795063922.470880817] [duck_nav]: [t=242.9 s] slam weak
+[nav_node-5] [INFO] [1795063933.752236337] [duck_nav]: [t=254.2 s] exploring
+[nav_node-5] [INFO] [1795063933.806775668] [duck_nav]: [t=254.3 s] slam weak
+[nav_node-5] [INFO] [1795063937.795239121] [duck_nav]: [t=258.2 s] exploring
+[nav_node-5] [INFO] [1795063938.537416160] [duck_nav]: [t=259.0 s] slam weak
+[nav_node-5] [INFO] [1795063948.545106327] [duck_nav]: [t=269.0 s] robot cell is mapped occupied or boxed in: stopping
+[nav_node-5] [INFO] [1795063948.748642796] [duck_nav]: [t=269.2 s] slam weak
+[yolo_node-3] [INFO] [1795063949.535561413] [duck_yolo]: 1349 frames, 21 ms/inference, detections so far: {'beacon': 0, 'box': 411}
+[nav_node-5] [INFO] [1795063949.550833399] [duck_nav]: [t=270.0 s] robot cell is mapped occupied or boxed in: stopping
+[world_sim-1] [INFO] [1795063949.582354809] [world_sim]: sim 270 s, wall 270 s, render 47 ms per camera frame
+[nav_node-5] [INFO] [1795063950.260777627] [duck_nav]: [t=270.7 s] slam weak
+[nav_node-5] [INFO] [1795063963.802437013] [duck_nav]: [t=282.3 s] exploring
+[nav_node-5] [INFO] [1795063964.078371095] [duck_nav]: [t=282.6 s] slam weak
+[nav_node-5] [INFO] [1795063964.714710239] [duck_nav]: [t=283.2 s] exploring
+[nav_node-5] [INFO] [1795063964.741469996] [duck_nav]: [t=283.3 s] slam weak
+[nav_node-5] [INFO] [1795063966.809406515] [duck_nav]: [t=285.3 s] exploring
+[nav_node-5] [INFO] [1795063966.999272636] [duck_nav]: [t=285.5 s] slam weak
+[nav_node-5] [INFO] [1795063970.733596335] [duck_nav]: [t=289.2 s] exploring
+[nav_node-5] [INFO] [1795063971.218669822] [duck_nav]: [t=289.7 s] slam weak
+[nav_node-5] [INFO] [1795063975.709265934] [duck_nav]: [t=294.2 s] exploring
+[nav_node-5] [INFO] [1795063975.891112603] [duck_nav]: [t=294.4 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795063975.991288239] [duck_nav]: [t=294.5 s] slam weak
+[nav_node-5] [INFO] [1795063976.823529560] [duck_nav]: [t=295.3 s] exploring
+[nav_node-5] [INFO] [1795063977.175034084] [duck_nav]: [t=295.7 s] slam weak
+[yolo_node-3] [INFO] [1795063981.473560974] [duck_yolo]: 1499 frames, 20 ms/inference, detections so far: {'beacon': 0, 'box': 494}
+[world_sim-1] [INFO] [1795063981.517878933] [world_sim]: sim 300 s, wall 300 s, render 44 ms per camera frame
+[nav_node-5] [INFO] [1795063992.734563642] [duck_nav]: [t=309.3 s] exploring
+[nav_node-5] [INFO] [1795063992.769641656] [duck_nav]: [t=309.3 s] slam weak
+[nav_node-5] [INFO] [1795064012.708111193] [duck_nav]: [t=329.2 s] exploring
+[nav_node-5] [INFO] [1795064013.161272018] [duck_nav]: [t=329.7 s] slam weak
+[yolo_node-3] [INFO] [1795064013.459841673] [duck_yolo]: 1649 frames, 21 ms/inference, detections so far: {'beacon': 0, 'box': 575}
+[world_sim-1] [INFO] [1795064013.507054924] [world_sim]: sim 330 s, wall 330 s, render 46 ms per camera frame
+[nav_node-5] [INFO] [1795064013.755688831] [duck_nav]: [t=330.3 s] exploring
+[nav_node-5] [INFO] [1795064014.973595149] [duck_nav]: [t=331.5 s] slam weak
+[nav_node-5] [INFO] [1795064017.782223965] [duck_nav]: [t=334.3 s] exploring
+[nav_node-5] [INFO] [1795064019.322255176] [duck_nav]: [t=335.8 s] slam weak
+[nav_node-5] [INFO] [1795064027.756610325] [duck_nav]: [t=342.3 s] exploring
+[nav_node-5] [INFO] [1795064028.156678765] [duck_nav]: [t=342.7 s] slam weak
+[nav_node-5] [INFO] [1795064031.692693622] [duck_nav]: [t=346.2 s] exploring
+[nav_node-5] [INFO] [1795064031.869584198] [duck_nav]: [t=346.4 s] slam weak
+[nav_node-5] [INFO] [1795064035.799025908] [duck_nav]: [t=350.3 s] exploring
+[nav_node-5] [INFO] [1795064036.056340275] [duck_nav]: [t=350.6 s] slam weak
+[nav_node-5] [INFO] [1795064039.772040495] [duck_nav]: [t=354.3 s] exploring
+[nav_node-5] [INFO] [1795064040.069122784] [duck_nav]: [t=354.6 s] slam weak
+[yolo_node-3] [INFO] [1795064045.455238382] [duck_yolo]: 1799 frames, 18 ms/inference, detections so far: {'beacon': 0, 'box': 649}
+[world_sim-1] [INFO] [1795064045.505208272] [world_sim]: sim 360 s, wall 360 s, render 43 ms per camera frame
+[nav_node-5] [INFO] [1795064046.720324171] [duck_nav]: [t=361.2 s] exploring
+[nav_node-5] [INFO] [1795064047.019032664] [duck_nav]: [t=361.6 s] slam weak
+[nav_node-5] [INFO] [1795064048.793145126] [duck_nav]: [t=363.3 s] exploring
+[nav_node-5] [INFO] [1795064049.178383748] [duck_nav]: [t=363.7 s] slam weak
+[nav_node-5] [INFO] [1795064050.722185598] [duck_nav]: [t=365.3 s] exploring
+[nav_node-5] [INFO] [1795064051.130849627] [duck_nav]: [t=365.7 s] slam weak
+[nav_node-5] [INFO] [1795064052.724219270] [duck_nav]: [t=367.3 s] exploring
+[nav_node-5] [INFO] [1795064052.860709365] [duck_nav]: [t=367.4 s] slam weak
+[nav_node-5] [INFO] [1795064056.827508212] [duck_nav]: [t=369.3 s] exploring
+[nav_node-5] [INFO] [1795064056.869198782] [duck_nav]: [t=369.4 s] slam weak
+[nav_node-5] [INFO] [1795064064.485815285] [duck_nav]: [t=377.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064066.195353072] [duck_nav]: [t=378.7 s] slam weak
+[nav_node-5] [INFO] [1795064069.468378823] [duck_nav]: [t=382.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064070.304799511] [duck_nav]: [t=382.8 s] slam weak
+[nav_node-5] [INFO] [1795064073.473309495] [duck_nav]: [t=386.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064074.179632906] [duck_nav]: [t=386.7 s] slam weak
+[nav_node-5] [INFO] [1795064076.480315973] [duck_nav]: [t=389.0 s] robot is outside the map: stopping
+[yolo_node-3] [INFO] [1795064077.467389713] [duck_yolo]: 1949 frames, 18 ms/inference, detections so far: {'beacon': 0, 'box': 735}
+[world_sim-1] [INFO] [1795064077.518098695] [world_sim]: sim 390 s, wall 390 s, render 41 ms per camera frame
+[nav_node-5] [INFO] [1795064078.191047041] [duck_nav]: [t=390.7 s] slam weak
+[nav_node-5] [INFO] [1795064081.482807126] [duck_nav]: [t=394.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064082.168007582] [duck_nav]: [t=394.7 s] slam weak
+[nav_node-5] [INFO] [1795064085.481781598] [duck_nav]: [t=398.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064086.205098108] [duck_nav]: [t=398.7 s] slam weak
+[nav_node-5] [INFO] [1795064091.502118575] [duck_nav]: [t=402.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064092.211046608] [duck_nav]: [t=402.7 s] slam weak
+[nav_node-5] [INFO] [1795064094.505880749] [duck_nav]: [t=405.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064096.201502018] [duck_nav]: [t=406.7 s] slam weak
+[nav_node-5] [INFO] [1795064098.506934568] [duck_nav]: [t=409.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064100.309700301] [duck_nav]: [t=410.8 s] slam weak
+[nav_node-5] [INFO] [1795064103.505148240] [duck_nav]: [t=414.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064104.237448859] [duck_nav]: [t=414.7 s] slam weak
+[nav_node-5] [INFO] [1795064106.501393404] [duck_nav]: [t=417.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064108.422645724] [duck_nav]: [t=418.9 s] slam weak
+[yolo_node-3] [INFO] [1795064109.500643502] [duck_yolo]: 2099 frames, 18 ms/inference, detections so far: {'beacon': 0, 'box': 826}
+[world_sim-1] [INFO] [1795064109.541744565] [world_sim]: sim 420 s, wall 420 s, render 43 ms per camera frame
+[nav_node-5] [INFO] [1795064110.518772182] [duck_nav]: [t=421.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064112.234679836] [duck_nav]: [t=422.7 s] slam weak
+[nav_node-5] [INFO] [1795064114.503979505] [duck_nav]: [t=425.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064116.309248407] [duck_nav]: [t=426.8 s] slam weak
+[nav_node-5] [INFO] [1795064118.518178072] [duck_nav]: [t=429.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064120.308702896] [duck_nav]: [t=430.8 s] slam weak
+[nav_node-5] [INFO] [1795064125.544424045] [duck_nav]: [t=434.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064126.305442873] [duck_nav]: [t=434.8 s] slam weak
+[nav_node-5] [INFO] [1795064128.543463771] [duck_nav]: [t=437.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064130.253467048] [duck_nav]: [t=438.7 s] slam weak
+[nav_node-5] [INFO] [1795064132.553332907] [duck_nav]: [t=441.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064134.521003055] [duck_nav]: [t=442.9 s] slam weak
+[nav_node-5] [INFO] [1795064136.558278812] [duck_nav]: [t=445.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064138.255588777] [duck_nav]: [t=446.7 s] slam weak
+[nav_node-5] [INFO] [1795064140.542384677] [duck_nav]: [t=449.0 s] robot is outside the map: stopping
+[yolo_node-3] [INFO] [1795064141.544360429] [duck_yolo]: 2249 frames, 19 ms/inference, detections so far: {'beacon': 0, 'box': 927}
+[world_sim-1] [INFO] [1795064141.598638843] [world_sim]: sim 450 s, wall 450 s, render 45 ms per camera frame
+[nav_node-5] [INFO] [1795064142.350677593] [duck_nav]: [t=450.8 s] slam weak
+[nav_node-5] [INFO] [1795064144.549845007] [duck_nav]: [t=453.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064146.507872911] [duck_nav]: [t=455.0 s] slam weak
+[nav_node-5] [INFO] [1795064148.542152233] [duck_nav]: [t=457.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064150.362065625] [duck_nav]: [t=458.8 s] slam weak
+[nav_node-5] [INFO] [1795064152.542639554] [duck_nav]: [t=461.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064154.359931384] [duck_nav]: [t=462.8 s] slam weak
+[nav_node-5] [INFO] [1795064156.554727419] [duck_nav]: [t=465.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064160.409375155] [duck_nav]: [t=466.8 s] slam weak
+[nav_node-5] [INFO] [1795064162.606678209] [duck_nav]: [t=469.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064164.395479373] [duck_nav]: [t=470.8 s] slam weak
+[nav_node-5] [INFO] [1795064166.607917796] [duck_nav]: [t=473.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064168.398954180] [duck_nav]: [t=474.8 s] slam weak
+[nav_node-5] [INFO] [1795064170.597672957] [duck_nav]: [t=477.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064172.410370477] [duck_nav]: [t=478.8 s] slam weak
+[yolo_node-3] [INFO] [1795064173.593757592] [duck_yolo]: 2399 frames, 18 ms/inference, detections so far: {'beacon': 0, 'box': 1013}
+[world_sim-1] [INFO] [1795064173.637733317] [world_sim]: sim 480 s, wall 480 s, render 42 ms per camera frame
+[nav_node-5] [INFO] [1795064174.609331443] [duck_nav]: [t=481.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064176.413961111] [duck_nav]: [t=482.8 s] slam weak
+[nav_node-5] [INFO] [1795064178.596514134] [duck_nav]: [t=485.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064180.408413694] [duck_nav]: [t=486.8 s] slam weak
+[nav_node-5] [INFO] [1795064182.599169947] [duck_nav]: [t=489.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064184.402253913] [duck_nav]: [t=490.8 s] slam weak
+[nav_node-5] [INFO] [1795064186.594809051] [duck_nav]: [t=493.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064188.494994553] [duck_nav]: [t=494.9 s] slam weak
+[nav_node-5] [INFO] [1795064190.595335953] [duck_nav]: [t=497.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064194.377690857] [duck_nav]: [t=498.7 s] slam weak
+[nav_node-5] [INFO] [1795064196.675110826] [duck_nav]: [t=501.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064198.464049020] [duck_nav]: [t=502.8 s] slam weak
+[nav_node-5] [INFO] [1795064200.694755665] [duck_nav]: [t=505.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064202.568238446] [duck_nav]: [t=506.9 s] slam weak
+[nav_node-5] [INFO] [1795064204.677430322] [duck_nav]: [t=509.0 s] robot is outside the map: stopping
+[yolo_node-3] [INFO] [1795064205.660286749] [duck_yolo]: 2549 frames, 18 ms/inference, detections so far: {'beacon': 0, 'box': 1091}
+[world_sim-1] [INFO] [1795064205.707222010] [world_sim]: sim 510 s, wall 510 s, render 44 ms per camera frame
+[nav_node-5] [INFO] [1795064206.588379693] [duck_nav]: [t=510.9 s] slam weak
+[nav_node-5] [INFO] [1795064208.678118571] [duck_nav]: [t=513.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064210.565078377] [duck_nav]: [t=514.9 s] slam weak
+[nav_node-5] [INFO] [1795064212.661939713] [duck_nav]: [t=517.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064214.575290806] [duck_nav]: [t=518.9 s] slam weak
+[nav_node-5] [INFO] [1795064216.666244867] [duck_nav]: [t=521.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064218.572939395] [duck_nav]: [t=522.9 s] slam weak
+[nav_node-5] [INFO] [1795064220.665308164] [duck_nav]: [t=525.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064222.590033836] [duck_nav]: [t=526.9 s] slam weak
+[nav_node-5] [INFO] [1795064224.675144335] [duck_nav]: [t=529.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064228.691010279] [duck_nav]: [t=531.0 s] slam weak
+[nav_node-5] [INFO] [1795064230.729467043] [duck_nav]: [t=533.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064232.538898347] [duck_nav]: [t=534.8 s] slam weak
+[nav_node-5] [INFO] [1795064234.753680295] [duck_nav]: [t=537.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064236.633676718] [duck_nav]: [t=538.9 s] slam weak
+[yolo_node-3] [INFO] [1795064237.727513041] [duck_yolo]: 2699 frames, 19 ms/inference, detections so far: {'beacon': 0, 'box': 1170}
+[world_sim-1] [INFO] [1795064237.775631247] [world_sim]: sim 540 s, wall 540 s, render 45 ms per camera frame
+[nav_node-5] [INFO] [1795064238.731326654] [duck_nav]: [t=541.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064240.679904977] [duck_nav]: [t=542.9 s] slam weak
+[nav_node-5] [INFO] [1795064242.743166697] [duck_nav]: [t=545.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064244.741583253] [duck_nav]: [t=547.0 s] slam weak
+[nav_node-5] [INFO] [1795064246.740837040] [duck_nav]: [t=549.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064248.642417297] [duck_nav]: [t=550.9 s] slam weak
+[nav_node-5] [INFO] [1795064250.793748480] [duck_nav]: [t=553.1 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064252.697170507] [duck_nav]: [t=554.9 s] slam weak
+[nav_node-5] [INFO] [1795064254.742941355] [duck_nav]: [t=557.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064256.695021754] [duck_nav]: [t=559.0 s] slam weak
+[nav_node-5] [INFO] [1795064258.765012798] [duck_nav]: [t=561.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064262.725153428] [duck_nav]: [t=562.9 s] slam weak
+[nav_node-5] [INFO] [1795064264.810348350] [duck_nav]: [t=565.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064266.887605111] [duck_nav]: [t=567.0 s] slam weak
+[nav_node-5] [INFO] [1795064268.819829596] [duck_nav]: [t=569.0 s] robot is outside the map: stopping
+[yolo_node-3] [INFO] [1795064269.804849970] [duck_yolo]: 2849 frames, 18 ms/inference, detections so far: {'beacon': 0, 'box': 1250}
+[world_sim-1] [INFO] [1795064269.851279375] [world_sim]: sim 570 s, wall 570 s, render 43 ms per camera frame
+[nav_node-5] [INFO] [1795064270.806283211] [duck_nav]: [t=571.0 s] slam weak
+[nav_node-5] [INFO] [1795064272.842474891] [duck_nav]: [t=573.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064274.912040238] [duck_nav]: [t=575.1 s] slam weak
+[nav_node-5] [INFO] [1795064276.805683693] [duck_nav]: [t=577.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064278.821691831] [duck_nav]: [t=579.0 s] slam weak
+[nav_node-5] [INFO] [1795064280.815973042] [duck_nav]: [t=581.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064282.885323122] [duck_nav]: [t=583.1 s] slam weak
+[nav_node-5] [INFO] [1795064284.821142204] [duck_nav]: [t=585.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064286.819897860] [duck_nav]: [t=587.0 s] slam weak
+[nav_node-5] [INFO] [1795064288.847078017] [duck_nav]: [t=589.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064290.806106339] [duck_nav]: [t=591.0 s] slam weak
+[nav_node-5] [INFO] [1795064292.833316355] [duck_nav]: [t=593.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064296.889946081] [duck_nav]: [t=595.0 s] slam weak
+[nav_node-5] [INFO] [1795064298.930093815] [duck_nav]: [t=597.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064301.040136865] [duck_nav]: [t=599.1 s] slam weak
+[yolo_node-3] [INFO] [1795064301.885909506] [duck_yolo]: 2999 frames, 19 ms/inference, detections so far: {'beacon': 0, 'box': 1325}
+[world_sim-1] [INFO] [1795064301.927964931] [world_sim]: sim 600 s, wall 600 s, render 42 ms per camera frame
+[score_node-6] [INFO] [1795064302.508074975] [duck_score]: RUN FINISHED
+[score_node-6] exploration         : TIMEOUT at 600 s (not complete)
+[score_node-6] beacon              : NOT reached (closest 3.839 m)
+[score_node-6] beacon estimate     : None, true (4.0, 1.3), error None m
+[score_node-6] SLAM position error : mean 1.844 m, max 3.446 m, final 3.392 m (29868 stamp-matched samples)
+[score_node-6] path walked         : 12.9 m, falls 0
+[score_node-6] YOLO                : 3002 frames, detections {'box': 1328}
+[score_node-6] room coverage       : 38% of the room interior classified
+[score_node-6] events:
+[score_node-6]      0.0 s  waiting for observations
+[score_node-6]      0.0 s  slam weak
+[score_node-6]      7.1 s  exploring
+[score_node-6]     13.0 s  path clearance guard: turning in place and replanning
+[score_node-6]     13.1 s  exploring
+[score_node-6]     14.4 s  slam weak
+[score_node-6]     15.1 s  exploring
+[score_node-6]     19.0 s  path clearance guard: turning in place and replanning
+[score_node-6]     19.1 s  exploring
+[score_node-6]     19.9 s  slam weak
+[score_node-6]     21.1 s  exploring
+[score_node-6]     23.6 s  slam weak
+[score_node-6]     24.2 s  exploring
+[score_node-6]     29.5 s  slam weak
+[score_node-6]     30.2 s  exploring
+[score_node-6]     31.4 s  slam weak
+[score_node-6]     33.1 s  exploring
+[score_node-6]     33.2 s  slam weak
+[score_node-6]     34.2 s  exploring
+[score_node-6]     34.8 s  slam weak
+[score_node-6]     37.2 s  exploring
+[score_node-6]     45.0 s  slam weak
+[score_node-6]     49.2 s  exploring
+[score_node-6]     49.5 s  slam weak
+[score_node-6]     57.3 s  exploring
+[score_node-6]     57.3 s  slam weak
+[score_node-6]     59.2 s  exploring
+[score_node-6]     59.2 s  slam weak
+[score_node-6]     61.2 s  exploring
+[score_node-6]     61.3 s  slam weak
+[score_node-6]     63.2 s  exploring
+[score_node-6]     63.3 s  slam weak
+[score_node-6]     65.3 s  exploring
+[score_node-6]     65.6 s  slam weak
+[score_node-6]     69.2 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]     69.3 s  path clearance guard: turning in place and replanning
+[score_node-6]     69.8 s  slam weak
+[score_node-6]     73.2 s  exploring
+[score_node-6]     73.8 s  slam weak
+[score_node-6]     74.2 s  exploring
+[score_node-6]     74.8 s  slam weak
+[score_node-6]     77.2 s  exploring
+[score_node-6]     77.3 s  slam weak
+[score_node-6]     78.2 s  exploring
+[score_node-6]     78.4 s  slam weak
+[score_node-6]     82.3 s  exploring
+[score_node-6]     82.7 s  slam weak
+[score_node-6]     85.2 s  exploring
+[score_node-6]     86.8 s  slam weak
+[score_node-6]     90.3 s  exploring
+[score_node-6]     90.5 s  slam weak
+[score_node-6]     94.2 s  exploring
+[score_node-6]     94.5 s  slam weak
+[score_node-6]     98.2 s  exploring
+[score_node-6]     98.6 s  slam weak
+[score_node-6]    107.2 s  exploring
+[score_node-6]    107.4 s  slam weak
+[score_node-6]    108.2 s  exploring
+[score_node-6]    109.9 s  slam weak
+[score_node-6]    111.3 s  exploring
+[score_node-6]    119.3 s  slam weak
+[score_node-6]    120.2 s  exploring
+[score_node-6]    121.4 s  slam weak
+[score_node-6]    123.2 s  exploring
+[score_node-6]    123.7 s  slam weak
+[score_node-6]    126.0 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    126.9 s  slam weak
+[score_node-6]    129.0 s  no reachable frontier
+[score_node-6]    129.1 s  slam weak
+[score_node-6]    130.0 s  no reachable frontier
+[score_node-6]    130.7 s  slam weak
+[score_node-6]    132.2 s  exploring
+[score_node-6]    132.4 s  slam weak
+[score_node-6]    141.3 s  exploring
+[score_node-6]    141.7 s  slam weak
+[score_node-6]    142.2 s  exploring
+[score_node-6]    142.7 s  slam weak
+[score_node-6]    144.3 s  exploring
+[score_node-6]    147.4 s  slam weak
+[score_node-6]    148.3 s  exploring
+[score_node-6]    149.3 s  slam weak
+[score_node-6]    152.2 s  exploring
+[score_node-6]    152.8 s  slam weak
+[score_node-6]    156.3 s  exploring
+[score_node-6]    156.6 s  slam weak
+[score_node-6]    159.3 s  exploring
+[score_node-6]    159.6 s  slam weak
+[score_node-6]    160.3 s  exploring
+[score_node-6]    161.0 s  slam weak
+[score_node-6]    164.3 s  exploring
+[score_node-6]    164.7 s  slam weak
+[score_node-6]    167.3 s  exploring
+[score_node-6]    168.4 s  slam weak
+[score_node-6]    170.3 s  exploring
+[score_node-6]    170.4 s  slam weak
+[score_node-6]    173.2 s  exploring
+[score_node-6]    175.3 s  slam weak
+[score_node-6]    183.3 s  exploring
+[score_node-6]    183.8 s  slam weak
+[score_node-6]    189.3 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    189.4 s  slam weak
+[score_node-6]    193.3 s  exploring
+[score_node-6]    193.7 s  slam weak
+[score_node-6]    195.3 s  exploring
+[score_node-6]    195.3 s  slam weak
+[score_node-6]    198.3 s  exploring
+[score_node-6]    198.6 s  path clearance guard: turning in place and replanning
+[score_node-6]    199.2 s  slam weak
+[score_node-6]    201.3 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    201.4 s  slam weak
+[score_node-6]    205.3 s  exploring
+[score_node-6]    205.9 s  slam weak
+[score_node-6]    215.0 s  robot cell is mapped occupied or boxed in: stopping
+[score_node-6]    215.2 s  slam weak
+[score_node-6]    218.3 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    218.4 s  path clearance guard: turning in place and replanning
+[score_node-6]    218.7 s  slam weak
+[score_node-6]    222.3 s  exploring
+[score_node-6]    222.5 s  slam weak
+[score_node-6]    231.3 s  exploring
+[score_node-6]    231.4 s  path clearance guard: turning in place and replanning
+[score_node-6]    231.8 s  slam weak
+[score_node-6]    242.4 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    242.9 s  slam weak
+[score_node-6]    254.2 s  exploring
+[score_node-6]    254.3 s  slam weak
+[score_node-6]    258.3 s  exploring
+[score_node-6]    259.0 s  slam weak
+[score_node-6]    269.0 s  robot cell is mapped occupied or boxed in: stopping
+[score_node-6]    269.2 s  slam weak
+[score_node-6]    270.0 s  robot cell is mapped occupied or boxed in: stopping
+[score_node-6]    270.7 s  slam weak
+[score_node-6]    282.3 s  exploring
+[score_node-6]    282.6 s  slam weak
+[score_node-6]    283.2 s  exploring
+[score_node-6]    283.3 s  slam weak
+[score_node-6]    285.3 s  exploring
+[score_node-6]    285.5 s  slam weak
+[score_node-6]    289.3 s  exploring
+[score_node-6]    289.7 s  slam weak
+[score_node-6]    294.2 s  exploring
+[score_node-6]    294.4 s  path clearance guard: turning in place and replanning
+[score_node-6]    294.5 s  slam weak
+[score_node-6]    295.3 s  exploring
+[score_node-6]    295.7 s  slam weak
+[score_node-6]    309.3 s  exploring
+[score_node-6]    309.3 s  slam weak
+[score_node-6]    329.2 s  exploring
+[score_node-6]    329.7 s  slam weak
+[score_node-6]    330.3 s  exploring
+[score_node-6]    331.5 s  slam weak
+[score_node-6]    334.3 s  exploring
+[score_node-6]    335.9 s  slam weak
+[score_node-6]    342.3 s  exploring
+[score_node-6]    342.7 s  slam weak
+[score_node-6]    346.2 s  exploring
+[score_node-6]    346.4 s  slam weak
+[score_node-6]    350.3 s  exploring
+[score_node-6]    350.6 s  slam weak
+[score_node-6]    354.3 s  exploring
+[score_node-6]    354.6 s  slam weak
+[score_node-6]    361.3 s  exploring
+[score_node-6]    361.6 s  slam weak
+[score_node-6]    363.3 s  exploring
+[score_node-6]    363.7 s  slam weak
+[score_node-6]    365.3 s  exploring
+[score_node-6]    365.7 s  slam weak
+[score_node-6]    367.3 s  exploring
+[score_node-6]    367.4 s  slam weak
+[score_node-6]    369.4 s  exploring
+[score_node-6]    369.4 s  slam weak
+[score_node-6]    377.0 s  robot is outside the map: stopping
+[score_node-6]    378.7 s  slam weak
+[score_node-6]    382.0 s  robot is outside the map: stopping
+[score_node-6]    382.8 s  slam weak
+[score_node-6]    386.0 s  robot is outside the map: stopping
+[score_node-6]    386.7 s  slam weak
+[score_node-6]    389.0 s  robot is outside the map: stopping
+[score_node-6]    390.7 s  slam weak
+[score_node-6]    394.0 s  robot is outside the map: stopping
+[score_node-6]    394.7 s  slam weak
+[score_node-6]    398.0 s  robot is outside the map: stopping
+[score_node-6]    398.7 s  slam weak
+[score_node-6]    402.0 s  robot is outside the map: stopping
+[score_node-6]    402.7 s  slam weak
+[score_node-6]    405.0 s  robot is outside the map: stopping
+[score_node-6]    406.7 s  slam weak
+[score_node-6]    409.0 s  robot is outside the map: stopping
+[score_node-6]    410.8 s  slam weak
+[score_node-6]    414.0 s  robot is outside the map: stopping
+[score_node-6]    414.7 s  slam weak
+[score_node-6]    417.0 s  robot is outside the map: stopping
+[score_node-6]    418.9 s  slam weak
+[score_node-6]    421.0 s  robot is outside the map: stopping
+[score_node-6]    422.7 s  slam weak
+[score_node-6]    425.0 s  robot is outside the map: stopping
+[score_node-6]    426.8 s  slam weak
+[score_node-6]    429.0 s  robot is outside the map: stopping
+[score_node-6]    430.8 s  slam weak
+[score_node-6]    434.0 s  robot is outside the map: stopping
+[score_node-6]    434.8 s  slam weak
+[score_node-6]    437.0 s  robot is outside the map: stopping
+[score_node-6]    438.7 s  slam weak
+[score_node-6]    441.0 s  robot is outside the map: stopping
+[score_node-6]    443.0 s  slam weak
+[score_node-6]    445.0 s  robot is outside the map: stopping
+[score_node-6]    446.7 s  slam weak
+[score_node-6]    449.0 s  robot is outside the map: stopping
+[score_node-6]    450.8 s  slam weak
+[score_node-6]    453.0 s  robot is outside the map: stopping
+[score_node-6]    455.0 s  slam weak
+[score_node-6]    457.0 s  robot is outside the map: stopping
+[score_node-6]    458.8 s  slam weak
+[score_node-6]    461.0 s  robot is outside the map: stopping
+[score_node-6]    462.8 s  slam weak
+[score_node-6]    465.0 s  robot is outside the map: stopping
+[score_node-6]    466.8 s  slam weak
+[score_node-6]    469.0 s  robot is outside the map: stopping
+[score_node-6]    470.8 s  slam weak
+[score_node-6]    473.0 s  robot is outside the map: stopping
+[score_node-6]    474.8 s  slam weak
+[score_node-6]    477.0 s  robot is outside the map: stopping
+[score_node-6]    478.8 s  slam weak
+[score_node-6]    481.0 s  robot is outside the map: stopping
+[score_node-6]    482.8 s  slam weak
+[score_node-6]    485.0 s  robot is outside the map: stopping
+[score_node-6]    486.8 s  slam weak
+[score_node-6]    489.0 s  robot is outside the map: stopping
+[score_node-6]    490.8 s  slam weak
+[score_node-6]    493.0 s  robot is outside the map: stopping
+[score_node-6]    494.9 s  slam weak
+[score_node-6]    497.0 s  robot is outside the map: stopping
+[score_node-6]    498.7 s  slam weak
+[score_node-6]    501.0 s  robot is outside the map: stopping
+[score_node-6]    502.8 s  slam weak
+[score_node-6]    505.0 s  robot is outside the map: stopping
+[score_node-6]    506.9 s  slam weak
+[score_node-6]    509.0 s  robot is outside the map: stopping
+[score_node-6]    510.9 s  slam weak
+[score_node-6]    513.0 s  robot is outside the map: stopping
+[score_node-6]    514.9 s  slam weak
+[score_node-6]    517.0 s  robot is outside the map: stopping
+[score_node-6]    518.9 s  slam weak
+[score_node-6]    521.0 s  robot is outside the map: stopping
+[score_node-6]    522.9 s  slam weak
+[score_node-6]    525.0 s  robot is outside the map: stopping
+[score_node-6]    526.9 s  slam weak
+[score_node-6]    529.0 s  robot is outside the map: stopping
+[score_node-6]    531.0 s  slam weak
+[score_node-6]    533.0 s  robot is outside the map: stopping
+[score_node-6]    534.8 s  slam weak
+[score_node-6]    537.0 s  robot is outside the map: stopping
+[score_node-6]    538.9 s  slam weak
+[score_node-6]    541.0 s  robot is outside the map: stopping
+[score_node-6]    542.9 s  slam weak
+[score_node-6]    545.0 s  robot is outside the map: stopping
+[score_node-6]    547.0 s  slam weak
+[score_node-6]    549.0 s  robot is outside the map: stopping
+[score_node-6]    550.9 s  slam weak
+[score_node-6]    553.1 s  robot is outside the map: stopping
+[score_node-6]    555.0 s  slam weak
+[score_node-6]    557.0 s  robot is outside the map: stopping
+[score_node-6]    559.0 s  slam weak
+[score_node-6]    561.0 s  robot is outside the map: stopping
+[score_node-6]    562.9 s  slam weak
+[score_node-6]    565.0 s  robot is outside the map: stopping
+[score_node-6]    567.1 s  slam weak
+[score_node-6]    569.0 s  robot is outside the map: stopping
+[score_node-6]    571.0 s  slam weak
+[score_node-6]    573.0 s  robot is outside the map: stopping
+[score_node-6]    575.1 s  slam weak
+[score_node-6]    577.0 s  robot is outside the map: stopping
+[score_node-6]    579.0 s  slam weak
+[score_node-6]    581.0 s  robot is outside the map: stopping
+[score_node-6]    583.1 s  slam weak
+[score_node-6]    585.0 s  robot is outside the map: stopping
+[score_node-6]    587.0 s  slam weak
+[score_node-6]    589.0 s  robot is outside the map: stopping
+[score_node-6]    591.0 s  slam weak
+[score_node-6]    593.0 s  robot is outside the map: stopping
+[score_node-6]    595.0 s  slam weak
+[score_node-6]    597.0 s  robot is outside the map: stopping
+[score_node-6]    599.1 s  slam weak
+[nav_node-5] [INFO] [1795064302.899217612] [duck_nav]: [t=601.0 s] robot is outside the map: stopping
+[nav_node-5] [INFO] [1795064305.000925466] [duck_nav]: [t=603.1 s] slam weak
+[robot_state_publisher-2] [INFO] [1795064306.375792275] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[INFO] [robot_state_publisher-2]: process has finished cleanly [pid 2570]
+[INFO] [yolo_node-3]: process has finished cleanly [pid 2571]
+[INFO] [score_node-6]: process has finished cleanly [pid 2574]
+[INFO] [slam_node-4]: process has finished cleanly [pid 2572]
+[INFO] [nav_node-5]: process has finished cleanly [pid 2573]
+[INFO] [world_sim-1]: process has finished cleanly [pid 2569]

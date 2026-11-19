@@ -1,5 +1,7 @@
 # Post-merge review and implementation handoff
 
+> **Simulation check after delivery (19 Nov 2026):** [SIM_VALIDATION.md](SIM_VALIDATION.md). Default path: no measurable change (inside the large run-to-run spread). `loop_closure:=true` made every live and replayed trial worse and never accepted a closure: keep it off.
+
 18 November 2026 (America/Los_Angeles; work began 17 November). Reviewed merge **d08af6c0b4de31e31b8721592c1bd4317a017c6d** and its tracked source, tests, summaries and logs. Three GPT-6.1 Sol workers handled localisation, trial/replay tooling, and failure/hardware analysis; the orchestrator reviewed their code and requested corrections. This update is software work and offline validation, not a successful robot deployment or a new closed-loop accuracy result.
 
 ## What changed

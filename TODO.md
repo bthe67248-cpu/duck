@@ -57,7 +57,7 @@ Everything in this repo runs in simulation on estimated numbers. These steps mak
 ## 7. Open software work
 
 Post-merge implementation and validation status: [review handoff](results/post_merge/HANDOFF.md).
-Experimental pose-graph closure is opt-in; offline tests do not close the realistic-trial accuracy gap.
+Experimental pose-graph closure is opt-in and measured worse in simulation (live and replay; it never closed a loop), so keep it off ([sim check](results/post_merge/SIM_VALIDATION.md)).
 The new trial runner and replay-set tools are in the repository, but the historical bags and the original
 Windows-only `job2.sh`/`patch_ort.py` were not supplied. Ten-seed/layout and paired 1x/2x trials remain unrun.
 
