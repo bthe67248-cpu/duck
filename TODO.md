@@ -56,8 +56,13 @@ Everything in this repo runs in simulation on estimated numbers. These steps mak
 
 ## 7. Open software work
 
+Post-merge implementation and validation status: [review handoff](results/post_merge/HANDOFF.md).
+Experimental pose-graph closure is opt-in; offline tests do not close the realistic-trial accuracy gap.
+The new trial runner and replay-set tools are in the repository, but the historical bags and the original
+Windows-only `job2.sh`/`patch_ort.py` were not supplied. Ten-seed/layout and paired 1x/2x trials remain unrun.
+
 - [x] Scan matching that keeps the duck exploring with the 8×8 ToF: correlative matcher over the head sweep, slip estimation, stop when the match is weak ([SLAM tuning](results/slam_tuning/README.md))
-- [ ] Loop closure / pose graph: realistic runs still drift late in long runs (up to 2.4 m at 600 s)
+- [ ] Validate experimental loop closure / pose graph on recorded and closed-loop trials: realistic baseline runs still drift late (up to 2.4 m at 600 s); implementation alone is not evidence of improved accuracy
 - [ ] Re-localise after a fall: local relocalisation (±0.8 m / ±25° after 3 s unhealthy) exists; a global one does not
 - [ ] Stop the escape / plan loop near walls (pure pursuit cuts corners into the clearance margin)
 - [ ] Roll (sideways) balance: only pitch is controlled now

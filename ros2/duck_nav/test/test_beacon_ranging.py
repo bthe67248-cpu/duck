@@ -80,3 +80,22 @@ def test_clipped_box_has_no_size_range(node):
     assert node.size_depth(cy=10.0, h=30.0) is None        # top edge cut off by the image border
     assert node.size_depth(cy=120.0, h=5.0) is None        # too small to trust
     assert node.size_depth(cy=120.0, h=40.0) == pytest.approx(node.K.fy * 0.28 / 40.0)
+
+
+def test_graph_revision_discards_map_frame_beacon_caches(node, monkeypatch):
+    from collections import deque
+    from duck_nav import slam_node
+    monkeypatch.setattr(slam_node, 'String', lambda **kwargs: SimpleNamespace(**kwargs))
+    node.frames = SimpleNamespace(d={1: 'old frame'})
+    node.pending_dets = deque([1]); node.candidates = [1]
+    node.goal = (1., 2.); node.goal_n = 2
+    node.loc = SimpleNamespace(graph=SimpleNamespace(revision=2))
+    node.now_ns = lambda: 100
+    events = []; maps = []
+    node.pub_revision = SimpleNamespace(publish=events.append)
+    node.publish_map = lambda: maps.append(True)
+    node.invalidate_map_caches()
+    assert not node.frames.d and not node.pending_dets and not node.candidates
+    assert node.goal is None and node.goal_n == 0
+    assert events[0].data == '2:100'
+    assert maps == [True]

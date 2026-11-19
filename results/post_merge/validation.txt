@@ -1,0 +1,27 @@
+Post-merge validation, completed 18 November 2026
+Base: d08af6c0b4de31e31b8721592c1bd4317a017c6d
+Upstream model assets: microduck_rl 0daab160d3fb1c2cbaba16a4a19052f36709dd9e
+Dependencies: requirements-test.txt (including requirements-sim.txt)
+
+Baseline before edits, with upstream model assets: 106 passed.
+Final command: python -m pytest tests ros2/duck_nav/test -q
+Final result: 135 passed in 15.71s; no skips or failures.
+
+python -m compileall -q scripts ros2/duck_nav/duck_nav ros2/duck_nav/launch ros2/duck_nav/tools: PASS
+bash -n ros2/setup_nav.sh: PASS
+git diff --check: PASS
+
+Additional independent synthetic graph exercise: real ICP, consecutive confirmation
+and anchored optimization reduced endpoint error from 0.08 m to about 0.0204 m on
+one noiseless synthetic L-corner revisit. This is now a regression test, not a
+recorded-room or closed-loop accuracy result.
+
+Hardware review executed strict contact gate: EXPECTED FAIL (12 operating-envelope
+clash pairs, 6000 samples, seed 1). See contact_check.txt and pcb_target_check.json.
+No collision masks, physical masses, CAD or installed calibrations were changed.
+
+Trial plan: 20 entries, seeds 0..9 x rates 1 and 2, default room; all PLANNED.
+Historical bag manifest: missing files explicitly reported; no bags trimmed.
+No ROS 2 installation, live ROS launch, hardware test or policy retraining here.
+No new evidence that 2x agrees with real time, or that loop closure improves the
+retained realistic trials. Feature is opt-in and bounded.

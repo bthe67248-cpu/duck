@@ -1,0 +1,94 @@
+{
+  "seed": 1,
+  "operating_envelope_head_rad": {
+    "neck_pitch": 0.4,
+    "head_pitch": 0.6,
+    "head_yaw": 1.2,
+    "head_roll": 0.44
+  },
+  "operating_envelope_legs_rad": 0.3,
+  "method": "Static random poses; shield collision proxies only resized/repositioned; guarded case expands box half-sizes. No CAD, PCB routing, mass or dynamics changed.",
+  "source_sha256": {
+    "model/duck_v3_gc.xml": "27c55826bb6be920fe96a6d4f2cfb1f92961c8b4997f66239062777e7bfc7256",
+    "model/duck_v3_gc_scene.xml": "19160eca7bd27bb4d46c6a59ea2d94374bc6f454b82ade391d53ceda68b365af",
+    "scripts/collision_proxies.json": "941159a5329a053e50fa6088b2b9255675ac6057fabf2086049b6ed24c302f57"
+  },
+  "candidates": [
+    {
+      "samples": 6000,
+      "guard_inflation_mm": 0,
+      "pcb_length_mm": 110,
+      "pcb_width_mm": 53.34,
+      "shield_center_mm": [
+        -50,
+        0,
+        20
+      ],
+      "bad_poses": 1132,
+      "worst_penetration_mm": 24.28,
+      "pairs": {
+        "('head_lower_collision', 'shield_side_l_collision')": 633,
+        "('head_lower_collision', 'shield_back_collision')": 868,
+        "('head_lower_collision', 'shield_side_r_collision')": 640,
+        "('head_dome_collision', 'shield_side_r_collision')": 44,
+        "('head_upper_skirt_collision', 'shield_back_collision')": 375,
+        "('head_upper_skirt_collision', 'shield_side_r_collision')": 157,
+        "('head_dome_collision', 'shield_back_collision')": 156,
+        "('head_upper_skirt_collision', 'shield_side_l_collision')": 147,
+        "('leg_2', 'shield_side_r_collision')": 7,
+        "('head_dome_collision', 'shield_side_l_collision')": 46,
+        "('leg', 'shield_side_l_collision')": 7
+      }
+    },
+    {
+      "samples": 6000,
+      "guard_inflation_mm": 0,
+      "pcb_length_mm": 70,
+      "pcb_width_mm": 53.34,
+      "shield_center_mm": [
+        -50,
+        0,
+        20
+      ],
+      "bad_poses": 332,
+      "worst_penetration_mm": 15.64,
+      "pairs": {
+        "('head_lower_collision', 'shield_back_collision')": 266,
+        "('head_upper_skirt_collision', 'shield_back_collision')": 37,
+        "('head_lower_collision', 'shield_side_r_collision')": 73,
+        "('head_lower_collision', 'shield_side_l_collision')": 86,
+        "('head_upper_skirt_collision', 'shield_side_r_collision')": 3,
+        "('head_upper_skirt_collision', 'shield_side_l_collision')": 5,
+        "('head_dome_collision', 'shield_back_collision')": 1
+      }
+    },
+    {
+      "samples": 6000,
+      "guard_inflation_mm": 0,
+      "pcb_length_mm": 70,
+      "pcb_width_mm": 53.34,
+      "shield_center_mm": [
+        -70,
+        0,
+        0
+      ],
+      "bad_poses": 0,
+      "worst_penetration_mm": 0,
+      "pairs": {}
+    },
+    {
+      "samples": 6000,
+      "guard_inflation_mm": 3,
+      "pcb_length_mm": 70,
+      "pcb_width_mm": 53.34,
+      "shield_center_mm": [
+        -70,
+        0,
+        0
+      ],
+      "bad_poses": 0,
+      "worst_penetration_mm": 0,
+      "pairs": {}
+    }
+  ]
+}
