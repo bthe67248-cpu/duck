@@ -43,6 +43,8 @@ def nodes(context):
                           "sensor_mode": "depth" if sensors == "ideal" else "tof",
                           "loop_closure": ParameterValue(LaunchConfiguration("loop_closure"), value_type=bool),
                           "attitude_filter": LaunchConfiguration("attitude_filter"),  # quaternion | tilt
+                          "translation": LaunchConfiguration("translation"),  # command | flow | flow_or_command
+                          "flow_method": LaunchConfiguration("flow_method"),
                           "gyro_calib_s": ParameterValue(LaunchConfiguration("gyro_calib_s"), value_type=float),
                           "graph_max_nodes": ParameterValue(LaunchConfiguration("graph_max_nodes"), value_type=int),
                           "matcher": LaunchConfiguration("matcher"),  # correlative | grid
@@ -73,6 +75,8 @@ def generate_launch_description():
         DeclareLaunchArgument("room", default_value="[-0.67, 4.47, -1.97, 1.97]"),
         DeclareLaunchArgument("loop_closure", default_value="false"),
         DeclareLaunchArgument("attitude_filter", default_value="quaternion"),
+        DeclareLaunchArgument("translation", default_value="command"),
+        DeclareLaunchArgument("flow_method", default_value="rect_or_image"),
         DeclareLaunchArgument("gyro_calib_s", default_value="0.0"),
         DeclareLaunchArgument("graph_max_nodes", default_value="160"),
         DeclareLaunchArgument("rviz", default_value="true"),

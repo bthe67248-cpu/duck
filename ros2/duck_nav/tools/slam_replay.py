@@ -16,7 +16,7 @@ Config keys (defaults = current slam_node behaviour):
   fresh     current-frame agreement check      attitude quaternion (default) | tilt (older TiltFilter)
   translation  command (default) | flow | flow_or_command
                command: body translation = gait command x gain x online slip (current slam_node behaviour).
-               flow / flow_or_command: translation from camera floor optical flow (tools/flow_odom.py; needs
+               flow / flow_or_command: translation from camera floor optical flow (duck_nav/flowodom.py; needs
                /camera/image_raw, /camera/pose_level, /camera/camera_info in the bag); slip scaling is off.
                Heading still comes from the attitude filter and the fall gate still applies. Between images
                the pose advances at the last measured body velocity (constant-velocity extrapolation, flow
@@ -27,7 +27,7 @@ Config keys (defaults = current slam_node behaviour):
                command (model displacement over the window, and as the extrapolation velocity until the next
                good pair). Flow uses no ground truth.
   flow_latency seconds from the second image's stamp until its estimate is usable (default 0.03)
-  flow_method  image (default) | rect | rect_or_image: per-pair tracker (see flow_odom.estimate)
+  flow_method  image (default) | rect | rect_or_image: per-pair tracker (see duck_nav.flowodom.estimate)
   Historical map/kw/slip options require --legacy. Offline ordering does not reproduce ROS queueing.
 """
 import argparse
@@ -91,6 +91,7 @@ if need_flow and args.legacy:
     ap.error("translation flow modes require the shared policy (omit --legacy)")
 if need_flow:
     import flow_odom  # noqa: E402  (tools/; needs cv2)
+    from duck_nav import flowodom  # noqa: E402
     import cv2  # noqa: E402
 cam = dict(imgs={}, poses={}, K=None)
 
@@ -183,27 +184,6 @@ if need_flow:                                         # image-pair estimates, co
     del cam["imgs"]
 
 
-class Track:
-    """Cumulative world-frame displacement over time with linear interpolation (for window differences)."""
-
-    def __init__(self):
-        self.t, self.x, self.y = [], [], []
-
-    def add(self, t, dx, dy):
-        self.t.append(t)
-        self.x.append((self.x[-1] if self.x else 0.0) + dx)
-        self.y.append((self.y[-1] if self.y else 0.0) + dy)
-
-    def at(self, t):
-        i = bisect.bisect_left(self.t, t)
-        if i <= 0:
-            return np.array([self.x[0], self.y[0]]) if self.t else np.zeros(2)
-        if i >= len(self.t):
-            return np.array([self.x[-1], self.y[-1]])
-        w = (t - self.t[i - 1]) / max(self.t[i] - self.t[i - 1], 1e-9)
-        return np.array([self.x[i - 1] + w * (self.x[i] - self.x[i - 1]), self.y[i - 1] + w * (self.y[i] - self.y[i - 1])])
-
-
 def truth_err(t, x, y):
     i = bisect.bisect_left(gts, t)
     if i < len(gt) and abs(gts[i] - t) < 0.011:
@@ -246,31 +226,18 @@ def run(cfg):
     next_err_t = 0.0
     # flow modes: odo / cmd_model = cumulative world displacement actually applied / the gait-command model's
     # (no slip) at every IMU step; v_flow = body velocity used between images (set by the latest good pair)
-    odo, cmd_model, v_flow, v_flow_t, bad_t = Track(), Track(), None, -1e9, -1e9
+    flow = flowodom.FlowTranslation(mode) if use_flow else None   # shared with slam_node
     evs = events
     if use_flow:
         evs = sorted(events + [(s1 + c["flow_latency"], 3, (s0, s1, est)) for s0, s1, est in flow_pairs[c["flow_method"]]
                                if s1 + c["flow_latency"] < start_t + args.duration], key=lambda e: (e[0], e[1]))
-    flow_ok = flow_missing = 0
     for t, kind, data in evs:
         if kind == 3:                                    # a flow pair (s0, s1) becomes available at s1 + latency
             s0, s1, est = data
             k0 = hist_keys[max(bisect.bisect_left(hist_keys, s0) - 1, 0)] if hist_keys else None
-            if k0 is None or bad_t >= s0:                # no history yet, or the body was not upright in the window
-                v_flow = None
+            resid = flow.on_pair(s0, s1, est, hist[k0][2]) if k0 is not None else None
+            if resid is None:
                 continue
-            ext = odo.at(s1) - odo.at(s0)                # what the extrapolation applied over [s0, s1]
-            if est is not None:
-                th0 = hist[k0][2]
-                cth, sth = math.cos(th0), math.sin(th0)
-                meas = np.array([cth * est[0] - sth * est[1], sth * est[0] + cth * est[1]])
-                v_flow, v_flow_t = (est[0] / (s1 - s0), est[1] / (s1 - s0)), s1
-                flow_ok += 1
-            else:
-                flow_missing += 1
-                v_flow = None
-                meas = (cmd_model.at(s1) - cmd_model.at(s0)) if mode == "flow_or_command" else np.zeros(2)
-            resid = meas - ext
             slam.pose[:2] += resid
             for kk in hist_keys[bisect.bisect_right(hist_keys, s1):]:
                 hist[kk] = hist[kk] + np.array([resid[0], resid[1], 0.0])
@@ -296,27 +263,20 @@ def run(cfg):
                         state = "ok"
                 else:
                     upright_since = None
-            if state != "ok":
-                bad_t = t
+            if state != "ok" and flow is not None:
+                flow.mark_not_ok(t)
             if 0 < dt < 0.2:
                 vx, vy = cmd if t - cmd_t < 0.5 and state == "ok" else (0.0, 0.0)
                 if not use_flow:
                     slam.predict(vx, tilt.heading_rate(gyro, dt), dt, cmd_vy=vy)
                 else:
                     cb = slam.body_velocity(vx, vy)
-                    if state != "ok":
-                        vb = (0.0, 0.0)
-                    elif v_flow is not None and t - v_flow_t < 0.5:
-                        vb = v_flow
-                    else:
-                        vb = cb if mode == "flow_or_command" else (0.0, 0.0)
+                    vb = flow.body_velocity(t, cb, state == "ok")
                     before = slam.pose[:2].copy()
                     slam.predict_measured(vb[0], vb[1], tilt.heading_rate(gyro, dt), dt)
-                    d = slam.pose[:2] - before
-                    odo.add(t, d[0], d[1])
                     cth, sth = math.cos(slam.pose[2]), math.sin(slam.pose[2])
-                    cmd_model.add(t, (cth * cb[0] - sth * cb[1]) * dt if state == "ok" else 0.0,
-                                  (sth * cb[0] + cth * cb[1]) * dt if state == "ok" else 0.0)
+                    cw = (cth * cb[0] - sth * cb[1], sth * cb[0] + cth * cb[1]) if state == "ok" else (0.0, 0.0)
+                    flow.record(t, slam.pose[:2] - before, (cw[0] * dt, cw[1] * dt))
             hist[t] = slam.pose.copy(); hist_keys.append(t)
             if t >= next_err_t:
                 next_err_t = t + 0.1
@@ -408,7 +368,7 @@ def run(cfg):
                    samples=len(e), error_m={"mean": float(e.mean()) if len(e) else None,
                    "median": float(np.median(e)) if len(e) else None, "max": float(e.max()) if len(e) else None},
                    motion_gate_ok_pct=float(100 * np.mean(oks)) if oks else None,
-                   flow_pairs_used=flow_ok, flow_pairs_missing=flow_missing,
+                   flow_pairs_used=flow.n_ok if flow else 0, flow_pairs_missing=flow.n_missing if flow else 0,
                    recovery_entries=recoveries, relocalizing_frames=relocs, accepted_frames=int(n_acc),
                    frames=n_frames, match_mean_ms=float(1e3 * np.mean(match_s)) if match_s else None,
                    match_reasons=reasons)

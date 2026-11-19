@@ -1,6 +1,8 @@
 """slam_node -- DuckSLAM as a ROS 2 node.
 
-Subscribes  /imu (gyro + accel -> complementary attitude filter), /cmd_vel (gait command, expires after 0.5 s),
+Subscribes  /imu (gyro + accel -> attitude filter), /cmd_vel (gait command, expires after 0.5 s),
+            translation:=flow | flow_or_command: /camera/image_raw (+ /camera/pose_level, same stamp) for floor
+            optical-flow translation (duck_nav.flowodom) instead of the gait command,
             sensor_mode:=depth (ideal profile): /camera/depth + /camera/pose_level (same stamp) + /camera/camera_info
             sensor_mode:=tof   (realistic):     /tof/zones (PointCloud2) + /tof/pose_level (same stamp),
                                                 /camera/pose_level + /camera/camera_info for detection association
@@ -16,6 +18,7 @@ and any scan-match correction is carried forward to the current pose. Detections
 the sensor frame with their stamp; unmatched ones expire.
 """
 import math
+import time
 from collections import deque
 
 import numpy as np
@@ -89,6 +92,10 @@ class SlamNode(Node):
         self.declare_parameter("fresh_check", False)          # also require the newest frame alone to agree
         self.declare_parameter("slip_estimation", True)       # scale gait odometry by observed/modelled motion
         self.declare_parameter("relocalize_after", 3.0)       # s without healthy localisation -> widen the search
+        # translation for dead reckoning: command (gait command x gain x slip) | flow | flow_or_command (camera floor
+        # optical flow, command where flow finds no fit; offline replay: lower error on 9/12 bags, results/floor_flow)
+        self.declare_parameter("translation", "command")
+        self.declare_parameter("flow_method", "rect_or_image")   # rect | image | rect_or_image (duck_nav.flowodom)
         self.declare_parameter("attitude_filter", "quaternion")  # quaternion (AttitudeFilter) | tilt (older)
         self.declare_parameter("gyro_calib_s", 0.0)           # >0: measure gyro bias over the first N s (robot held still)
         self.declare_parameter("fall_tilt_deg", 35.0)         # filtered tilt above this -> "recovering"
@@ -136,6 +143,19 @@ class SlamNode(Node):
         self.recovery_started = None; self.recovery_warned = False
         self.map_revision_ns = -1
         self.K = None
+        tr = self.get_parameter("translation").value
+        if tr not in ("command", "flow", "flow_or_command"):
+            raise ValueError("translation must be 'command', 'flow' or 'flow_or_command'")
+        self.flow = None
+        if tr != "command":
+            from . import flowodom                               # needs OpenCV; only imported when used
+            self.flowodom = flowodom
+            self.flow = flowodom.FlowTranslation(tr)
+            self.flow_method = self.get_parameter("flow_method").value
+            if self.flow_method not in flowodom.METHODS:
+                raise ValueError(f"flow_method must be one of {flowodom.METHODS}")
+            self.flow_prev = None; self.flow_pending = deque(maxlen=3); self.flow_rng = np.random.default_rng(0)
+            self.flow_ms = 0.0
         self.pose_hist = StampBuffer(200)                     # 4 s of 50 Hz poses
         self.cam_poses = StampBuffer(20); self.sensor_poses = StampBuffer(30)
         self.pending_frames = deque(maxlen=6)                 # sensor frames waiting for their pose
@@ -159,6 +179,8 @@ class SlamNode(Node):
         else:
             self.create_subscription(PoseStamped, "tof/pose_level", self.on_sensor_pose, 10)
             self.create_subscription(PointCloud2, "tof/zones", self.on_frame, 5)
+        if self.flow is not None:
+            self.create_subscription(Image, "camera/image_raw", self.on_image, 2)
         self.create_subscription(Detection2DArray, "yolo/detections", self.on_det, 5)
         self.create_timer(1.0, self.publish_map)
         self.create_timer(0.2, self.flush_detections)
@@ -216,7 +238,19 @@ class SlamNode(Node):
             # the gait command and map updates are suspended while recovering
             fresh = t - self.cmd_t < self.get_parameter("cmd_timeout").value and self.state == "ok"
             vx, vy = self.cmd if fresh else (0.0, 0.0)
-            self.slam.predict(vx, self.tilt.heading_rate(gyro, dt), dt, cmd_vy=vy)
+            if self.flow is None:
+                self.slam.predict(vx, self.tilt.heading_rate(gyro, dt), dt, cmd_vy=vy)
+            else:                                            # measured translation (duck_nav.flowodom.FlowTranslation)
+                ok = self.state == "ok"
+                if not ok:
+                    self.flow.mark_not_ok(t)
+                cb = self.slam.body_velocity(vx, vy)
+                vb = self.flow.body_velocity(t, cb, ok)
+                before = self.slam.pose[:2].copy()
+                self.slam.predict_measured(vb[0], vb[1], self.tilt.heading_rate(gyro, dt), dt)
+                c, s_ = math.cos(self.slam.pose[2]), math.sin(self.slam.pose[2])
+                cw = (c * cb[0] - s_ * cb[1], s_ * cb[0] + c * cb[1]) if ok else (0.0, 0.0)
+                self.flow.record(t, self.slam.pose[:2] - before, (cw[0] * dt, cw[1] * dt))
         self.pose_hist.put(stamp_ns(msg.header), self.slam.pose.copy())
         x, y, th = self.slam.pose
         tf = TransformStamped(); tf.header.stamp = msg.header.stamp; tf.header.frame_id = "map"; tf.child_frame_id = "base_level"
@@ -240,6 +274,11 @@ class SlamNode(Node):
 
     def on_cam_pose(self, msg):
         self.cam_poses.put(stamp_ns(msg.header), self._pose(msg))
+        if self.flow is not None and self.flow_pending:
+            for item in list(self.flow_pending):
+                if self.cam_poses.get(item[0]) is not None:
+                    self.flow_pending.remove(item)
+                    self.flow_step(*item)
         if self.mode == "depth":
             self.retry_pending()
 
@@ -318,6 +357,40 @@ class SlamNode(Node):
         if m not in ("correlative", "grid"):
             raise ValueError("matcher must be 'correlative' or 'grid'")
         return m
+
+    # 2b. floor optical flow (translation:=flow | flow_or_command) ----------------------------------
+    def on_image(self, msg):
+        ns = stamp_ns(msg.header)
+        a = np.frombuffer(msg.data, np.uint8).reshape(msg.height, msg.width, -1)
+        cv2 = self.flowodom.cv2
+        gray = cv2.cvtColor(a, cv2.COLOR_BGR2GRAY if msg.encoding == "bgr8" else cv2.COLOR_RGB2GRAY)             if a.shape[2] == 3 else a[:, :, 0]
+        if self.cam_poses.get(ns) is None:
+            self.flow_pending.append((ns, gray))                # pose not here yet: on_cam_pose retries
+            return
+        self.flow_step(ns, gray)
+
+    def flow_step(self, ns, gray):
+        """Estimate the body motion since the previous image and apply the residual to the current pose."""
+        pose = self.cam_poses.get(ns)
+        prev, self.flow_prev = self.flow_prev, (ns, gray, pose)
+        if prev is None or self.K is None or not 0.1 < (ns - prev[0]) * 1e-9 < 0.3:
+            return
+        K = np.array([[self.K.fx, 0.0, self.K.cx], [0.0, self.K.fy, self.K.cy], [0.0, 0.0, 1.0]])
+        t0 = time.perf_counter()
+        est = self.flowodom.estimate(prev[1], gray, prev[2], pose, K, self.flow_rng, self.flow_method)
+        self.flow_ms = 0.9 * self.flow_ms + 0.1 * (time.perf_counter() - t0) * 1000
+        _, p0 = self.pose_hist.nearest(prev[0], 30_000_000)
+        if p0 is None:
+            return
+        resid = self.flow.on_pair(prev[0] * 1e-9, ns * 1e-9, est, p0[2])
+        if resid is None:
+            return
+        self.slam.pose[:2] += resid
+        for k in [k for k in self.pose_hist.d if k > ns]:     # newer history entries carry the correction too
+            self.pose_hist.d[k] = self.pose_hist.d[k] + np.array([resid[0], resid[1], 0.0])
+        if (self.flow.n_ok + self.flow.n_missing) % 300 == 0:
+            self.get_logger().info(f"floor flow: {self.flow.n_ok} pairs with a fit, {self.flow.n_missing} without, "
+                                   f"{self.flow_ms:.0f} ms per pair")
 
     @staticmethod
     def read_tof(msg):

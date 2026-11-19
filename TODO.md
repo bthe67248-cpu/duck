@@ -64,7 +64,8 @@ Windows-only `job2.sh`/`patch_ort.py` were not supplied. Ten-seed/layout and pai
 - [x] Scan matching that keeps the duck exploring with the 8×8 ToF: correlative matcher over the head sweep, slip estimation, stop when the match is weak ([SLAM tuning](results/slam_tuning/README.md))
 - [ ] Validate experimental loop closure / pose graph on recorded and closed-loop trials: realistic baseline runs still drift late (up to 2.4 m at 600 s); implementation alone is not evidence of improved accuracy
 - [x] Heading from a full attitude filter (quaternion + gyro bias calibration): realistic seeds 0-5 mean error 0.40 m vs 1.34 m, beacon 6/6 vs 3/6 ([heading](results/heading/README.md))
-- [ ] Measured forward motion instead of gait-command odometry: offline, camera floor optical flow with command fallback cut replay SLAM error on 9/12 bags (mean 0.60 → 0.47 m, [floor flow](results/floor_flow/REPLAY.md)); next: run it inside `slam_node` in closed loop, and check feature counts on real floor images
+- [ ] Measured forward motion: floor optical flow runs in `slam_node` (`translation:=flow_or_command`, opt-in). Offline it beat the command on 9/12 bags; in closed loop it reached the beacon 4/6 vs 2/6 but mean error was not better, with failures from scan matching rather than flow ([live](results/floor_flow/LIVE.md)). Next: diagnose where the ToF scan matcher loses track; run a 10+ seed matrix before changing the default; check real floor texture
+- [ ] Scan-matcher failures in some trajectories (error grows to 1-3.7 m in the first minutes with either odometry, results/floor_flow/LIVE.md)
 - [ ] Re-localise after a fall: local relocalisation (±0.8 m / ±25° after 3 s unhealthy) exists; a global one does not
 - [ ] Stop the escape / plan loop near walls (pure pursuit cuts corners into the clearance margin)
 - [ ] Roll (sideways) balance: only pitch is controlled now
