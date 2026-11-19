@@ -184,7 +184,9 @@ def test_replay_shared_defaults_recovery_and_machine_metrics(tmp_path, monkeypat
             return np.array([0., 0., 1.])
         def tilt(self):
             return np.deg2rad(40 if self.count == 2 else 0)
-    monkeypatch.setattr(ds, 'TiltFilter', ScriptedTilt)
+        def heading_rate(self, gyro, dt):
+            return 0.0
+    monkeypatch.setattr(ds, 'make_attitude_filter', lambda mode='quaternion': ScriptedTilt())
     output = tmp_path / 'replay.json'
     monkeypatch.setattr(sys, 'argv', ['slam_replay.py', 'fake_ros_bag', '--output', str(output)])
     runpy.run_path(str(TOOLS / 'slam_replay.py'), run_name='__main__')

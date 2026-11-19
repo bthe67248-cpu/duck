@@ -42,6 +42,8 @@ def nodes(context):
              parameters=[{"scan_matching": ParameterValue(LaunchConfiguration("scan_matching"), value_type=bool),
                           "sensor_mode": "depth" if sensors == "ideal" else "tof",
                           "loop_closure": ParameterValue(LaunchConfiguration("loop_closure"), value_type=bool),
+                          "attitude_filter": LaunchConfiguration("attitude_filter"),  # quaternion | tilt
+                          "gyro_calib_s": ParameterValue(LaunchConfiguration("gyro_calib_s"), value_type=float),
                           "graph_max_nodes": ParameterValue(LaunchConfiguration("graph_max_nodes"), value_type=int),
                           "matcher": LaunchConfiguration("matcher"),  # correlative | grid
                           "depth_sweep": ParameterValue(LaunchConfiguration("depth_sweep"), value_type=bool),
@@ -70,6 +72,8 @@ def generate_launch_description():
         DeclareLaunchArgument("beacon_y", default_value="1.3"),
         DeclareLaunchArgument("room", default_value="[-0.67, 4.47, -1.97, 1.97]"),
         DeclareLaunchArgument("loop_closure", default_value="false"),
+        DeclareLaunchArgument("attitude_filter", default_value="quaternion"),
+        DeclareLaunchArgument("gyro_calib_s", default_value="0.0"),
         DeclareLaunchArgument("graph_max_nodes", default_value="160"),
         DeclareLaunchArgument("rviz", default_value="true"),
         DeclareLaunchArgument("scan_matching", default_value="true"),
