@@ -54,9 +54,9 @@ beacon reached.
 
 The new filter is clearly better on seeds 0, 1, 3 and 4 and level on 2 and 5. Earlier old-filter runs on
 seeds 0–2 (`results/post_fix`, `results/post_merge/sim_runs`) spread from 0.12 to 1.84 m mean error, so single
-runs remain noisy; six paired seeds in one room is still a modest sample. Falls are unchanged (the new filter
-does not affect walking): 5 of 6 new runs and 2 of 6 old runs had a fall, so that comparison is no evidence
-either way.
+runs remain noisy; six paired seeds in one room is still a modest sample. Falls: 4 of 6 new runs and 2 of 6
+old runs had at least one fall. The filter cannot change the gait; the new runs walked further (mean 25 m vs
+18 m), which gives more chances to trip, so this is no evidence of a heading effect.
 
 Offline SLAM replay of the four older bags (`runs/replay/`) was mixed (one bag much worse, one better, two
 level): replay is open loop, so one early wrong match changes the whole map. Closed-loop trials are the
