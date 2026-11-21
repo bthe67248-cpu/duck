@@ -92,6 +92,8 @@ class SlamNode(Node):
         self.declare_parameter("fresh_check", False)          # also require the newest frame alone to agree
         self.declare_parameter("slip_estimation", True)       # scale gait odometry by observed/modelled motion
         self.declare_parameter("relocalize_after", 3.0)       # s without healthy localisation -> widen the search
+        self.declare_parameter("reloc_window", 0.8)           # m; +- translation searched when relocalising
+        self.declare_parameter("reloc_ang", math.radians(25))  # rad; +- heading searched when relocalising
         # translation for dead reckoning: command (gait command x gain x slip) | flow | flow_or_command (camera floor
         # optical flow, command where flow finds no fit; offline replay: lower error on 9/12 bags, results/floor_flow)
         self.declare_parameter("translation", "command")
@@ -133,10 +135,14 @@ class SlamNode(Node):
             use_sweep=self.mode == "tof" or bool(self.get_parameter("depth_sweep").value),
             gain=float(self.get_parameter("match_gain").value), fresh=bool(self.get_parameter("fresh_check").value),
             slip=bool(self.get_parameter("slip_estimation").value),
-            relocalize_after=float(self.get_parameter("relocalize_after").value), map_move=0.0, map_turn=0.0,
+            relocalize_after=float(self.get_parameter("relocalize_after").value),
+            reloc_window=float(self.get_parameter("reloc_window").value),
+            reloc_ang=float(self.get_parameter("reloc_ang").value), map_move=0.0, map_turn=0.0,
             scan_timeout=float(self.get_parameter("scan_timeout").value),
             match_timeout=float(self.get_parameter("match_timeout").value))
         self.health = self.loc.health
+        self.get_logger().info(f"relocalisation window +-{self.loc.reloc_window:.2f} m / "
+                               f"+-{math.degrees(self.loc.reloc_ang):.1f} deg after {self.loc.relocalize_after:.1f} s unhealthy")
         self.last_frame_ns = -1
         self.cmd = (0.0, 0.0); self.cmd_t = -1e9; self.last_imu_t = None
         self.state = "ok"; self.upright_since = None

@@ -1,5 +1,6 @@
 """ros2 launch duck_nav duck_nav.launch.py [sensors:=ideal|realistic] [rviz:=false] [autonomous:=false]
                                           [scan_matching:=false] [matcher:=correlative|grid] [depth_sweep:=true]
+                                          [reloc_window:=0.8] [reloc_ang:=0.436]
                                           [real_time:=false] [rt_factor:=1.0] [timeout:=600.0] [out_dir:=...] [seed:=0]
 sensors:=ideal      perfect 320x240 RGB-D camera (the original simulation; an upper bound, not the real robot)
 sensors:=realistic  noisy RGB camera + simulated VL53L5CX 8x8 ToF (45 x 45 deg, 10 Hz, 2 m usable, dropouts,
@@ -49,6 +50,8 @@ def nodes(context):
                           "graph_max_nodes": ParameterValue(LaunchConfiguration("graph_max_nodes"), value_type=int),
                           "matcher": LaunchConfiguration("matcher"),  # correlative | grid
                           "depth_sweep": ParameterValue(LaunchConfiguration("depth_sweep"), value_type=bool),
+                          "reloc_window": ParameterValue(LaunchConfiguration("reloc_window"), value_type=float),  # m
+                          "reloc_ang": ParameterValue(LaunchConfiguration("reloc_ang"), value_type=float),  # rad
                           "target_radius": 0.04,                    # the sim beacon is a known 4 cm-radius,
                           "target_height": 0.28},                  # 28 cm tall cylinder
                          sim_time]),
@@ -85,6 +88,8 @@ def generate_launch_description():
         DeclareLaunchArgument("real_time", default_value="true"),   # false: as fast as the simulator can step
         DeclareLaunchArgument("rt_factor", default_value="1.0"),
         DeclareLaunchArgument("depth_sweep", default_value="true"),
+        DeclareLaunchArgument("reloc_window", default_value="0.8"),          # m, relocalisation search
+        DeclareLaunchArgument("reloc_ang", default_value="0.4363323129985824"),   # rad (25 deg)
         DeclareLaunchArgument("autonomous", default_value="true"),
         DeclareLaunchArgument("timeout", default_value="600.0"),
         DeclareLaunchArgument("seed", default_value="0"),

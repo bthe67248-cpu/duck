@@ -67,6 +67,7 @@ Windows-only `job2.sh`/`patch_ort.py` were not supplied. Ten-seed/layout and pai
 - [ ] Measured forward motion: floor optical flow runs in `slam_node` (`translation:=flow_or_command`, opt-in). Offline it beat the command on 9/12 bags; in closed loop it reached the beacon 4/6 vs 2/6 but mean error was not better, with failures from scan matching rather than flow ([live](results/floor_flow/LIVE.md)). Next: diagnose where the ToF scan matcher loses track; run a 10+ seed matrix before changing the default; check real floor texture
 - [ ] Scan-matcher failures in some trajectories (error grows to 1-3.7 m in the first minutes with either odometry, results/floor_flow/LIVE.md)
 - [ ] Re-localise after a fall: local relocalisation (±0.8 m / ±25° after 3 s unhealthy) exists; a global one does not
+- [ ] Relocalisation window (`reloc_window`, `reloc_ang` launch args): in closed loop, seeds 0-8, ±0.4 m / ±10° lowered SLAM error (mean 1.31 → 0.92 m, median 1.26 → 0.79 m, no heading jumps > 10°) but reached the beacon 6/9 vs 7/9 and covered less; default unchanged ([matcher diag](results/matcher_diag/README.md)). Next: try ±0.6 m / ±10°, or confirm a jump with a second sweep before applying it
 - [ ] Stop the escape / plan loop near walls (pure pursuit cuts corners into the clearance margin)
 - [ ] Roll (sideways) balance: only pitch is controlled now
 - [ ] YOLO: domain randomization, then fine-tune on real labelled camera photos

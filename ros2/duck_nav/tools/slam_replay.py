@@ -28,6 +28,7 @@ Config keys (defaults = current slam_node behaviour):
                good pair). Flow uses no ground truth.
   flow_latency seconds from the second image's stamp until its estimate is usable (default 0.03)
   flow_method  image (default) | rect | rect_or_image: per-pair tracker (see duck_nav.flowodom.estimate)
+  dump      path: write per-ToF-frame diagnostics (match reason, correction, true error before/after) as JSON
   Historical map/kw/slip options require --legacy. Offline ordering does not reproduce ROS queueing.
 """
 import argparse
@@ -162,7 +163,9 @@ for tp, m, t_rx in msgs:
     elif tp == "/slam/pose":
         live.append((stamp(m.header), m.pose.position.x, m.pose.position.y))
     elif tp == "/ground_truth/pose":
-        gt.append((stamp(m.header), m.pose.position.x, m.pose.position.y))
+        o = m.pose.orientation
+        gt.append((stamp(m.header), m.pose.position.x, m.pose.position.y,
+                   math.atan2(2 * (o.w * o.z + o.x * o.y), 1 - 2 * (o.y * o.y + o.z * o.z))))
 events.sort(key=lambda e: (e[0], e[1]))
 gt.sort(); gts = [g[0] for g in gt]
 if not events or not gt:
@@ -184,6 +187,15 @@ if need_flow:                                         # image-pair estimates, co
     del cam["imgs"]
 
 
+def truth_pose(t):
+    """Ground-truth (x, y, yaw) within 11 ms of t, or None (diagnostics only)."""
+    i = bisect.bisect_left(gts, t)
+    for j in (i, i - 1):
+        if 0 <= j < len(gt) and abs(gts[j] - t) < 0.011:
+            return np.array(gt[j][1:4])
+    return None
+
+
 def truth_err(t, x, y):
     i = bisect.bisect_left(gts, t)
     if i < len(gt) and abs(gts[i] - t) < 0.011:
@@ -192,7 +204,7 @@ def truth_err(t, x, y):
 
 
 def run(cfg):
-    allowed = set(DEFAULT) | {"debug", "trace", "slip", "slip_kw", "attitude"}
+    allowed = set(DEFAULT) | {"debug", "trace", "slip", "slip_kw", "attitude", "dump"}
     if set(cfg) - allowed:
         ap.error("unknown config keys: " + ", ".join(sorted(set(cfg) - allowed)))
     if not args.legacy and set(cfg) & {"map", "kw", "slip", "slip_kw"}:
@@ -224,6 +236,7 @@ def run(cfg):
     if loc is not None:
         health = loc.health
     next_err_t = 0.0
+    dump = [] if c.get("dump") else None
     # flow modes: odo / cmd_model = cumulative world displacement actually applied / the gait-command model's
     # (no slip) at every IMU step; v_flow = body velocity used between images (set by the latest good pair)
     flow = flowodom.FlowTranslation(mode) if use_flow else None   # shared with slam_node
@@ -306,6 +319,22 @@ def run(cfg):
             t0 = time.perf_counter()
             accepted, corr = loc.step(ts, pose_acq, ang, r, hit)
             match_s.append(time.perf_counter() - t0)
+            if dump is not None:                         # per-frame diagnostics against ground truth
+                tp = truth_pose(ts)
+                if tp is not None:
+                    after = pose_acq + corr
+                    cov = slam.match_cov
+                    dump.append(dict(
+                        t=round(ts - start_t, 3), reason=slam.match_reason, accepted=bool(accepted),
+                        reloc=bool(loc.relocalizing), overlap=round(float(slam.match_overlap), 3),
+                        hits=int(hit.sum()), occ=int((slam.logodds > 0.8).sum()),
+                        corr=[round(float(v), 4) for v in corr],
+                        err_before=round(float(np.hypot(*(pose_acq[:2] - tp[:2]))), 4),
+                        err_after=round(float(np.hypot(*(after[:2] - tp[:2]))), 4),
+                        hdg_before=round(math.degrees(abs((pose_acq[2] - tp[2] + math.pi) % (2 * math.pi) - math.pi)), 2),
+                        hdg_after=round(math.degrees(abs((after[2] - tp[2] + math.pi) % (2 * math.pi) - math.pi)), 2),
+                        std_xy=None if cov is None else round(float(math.sqrt(max(np.linalg.eigvalsh(cov[:2, :2])))), 4),
+                        state=state))
             reasons[slam.match_reason] = reasons.get(slam.match_reason, 0) + 1
             n_acc += bool(accepted); slips.append(slam.slip)
             relocs += loc.relocalizing
@@ -352,6 +381,9 @@ def run(cfg):
             slam.observe_slip(**c.get("slip_kw", {}))
             slips.append(slam.slip)
     e = np.array(errs)
+    if dump is not None:
+        with open(c["dump"], "w") as f_:
+            json.dump(dump, f_)
     if c.get("trace"):
         w = int(20 / 0.1)
         if slips:
