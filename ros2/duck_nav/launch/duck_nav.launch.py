@@ -32,7 +32,15 @@ def nodes(context):
     # known free space, no unconfirmed partial relocalisation, small relocalisation corrections applied directly
     body = sensors == "realistic" and LaunchConfiguration("body_slam").perform(context).lower() in ("true", "1")
     body_params = dict(map_move=0.1, map_turn=0.17, unknown_ll=-1.125, reloc_partial=False,
-                       confirm_free_xy=0.08, confirm_free_th=0.07) if body else {}
+                       confirm_free_xy=0.08, confirm_free_th=0.07,
+                       # second-peak match test (FrameLocalizer): off, closed loop showed no net gain (design/v4/README.md,
+                       # "Late drift and the yaw sweep"); reloc_peak_margin:=1.0 is the variant worth trying
+                       peak_margin=0.0, map_min_gap=0.0, reloc_peak_margin=0.0, partial_tracks=False) if body else {}
+    as_bool = lambda v: v.lower() in ("true", "1")  # noqa: E731
+    for k, cast in (("peak_margin", float), ("map_min_gap", float), ("reloc_peak_margin", float), ("partial_tracks", as_bool)):
+        v = LaunchConfiguration(k).perform(context)
+        if v != "":                                      # explicit launch argument overrides the profile
+            body_params[k] = cast(v)
     return [
         Node(package="duck_nav", executable="world_sim", output="screen",
              parameters=[{"mjcf": LaunchConfiguration("mjcf").perform(context) or os.path.join(share, "mjcf", "duck_v4_gc_world.xml"),
@@ -133,6 +141,10 @@ def generate_launch_description():
         DeclareLaunchArgument("weak_look_after", default_value="3.0"),      # s weak before looking around (body depth)
         DeclareLaunchArgument("body_slam", default_value="true"),           # body-sensor mapping policy (realistic)
         DeclareLaunchArgument("yaw_sweep_rate", default_value="0.0"),       # rad/s body yaw oscillation while walking
+        DeclareLaunchArgument("peak_margin", default_value=""),             # "" = body_slam profile value
+        DeclareLaunchArgument("map_min_gap", default_value=""),
+        DeclareLaunchArgument("partial_tracks", default_value=""),
+        DeclareLaunchArgument("reloc_peak_margin", default_value=""),
         DeclareLaunchArgument("corner_handling", default_value="true"),     # false: plain pure pursuit + clearance guard
         DeclareLaunchArgument("autonomous", default_value="true"),
         DeclareLaunchArgument("timeout", default_value="600.0"),
