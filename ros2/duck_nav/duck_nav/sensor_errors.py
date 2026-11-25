@@ -112,6 +112,14 @@ class Jitter:
         return s
 
 
+def robot_kinematics(m, d):
+    """Forward kinematics for the robot's own model: body, site AND camera poses. mj_kinematics alone leaves
+    cam_xpos/cam_xmat untouched (mj_camlight computes them), which once published a camera pose stuck at the origin."""
+    import mujoco
+    mujoco.mj_kinematics(m, d)
+    mujoco.mj_camlight(m, d)
+
+
 def level_pose(R_trunk, z_trunk, R_rel, p_rel):
     """Sensor pose in the level body frame (heading removed, origin on the floor below the torso) from the torso
     orientation (world), torso height and the sensor pose relative to the torso. Same convention as world_sim's

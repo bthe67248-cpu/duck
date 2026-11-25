@@ -63,7 +63,7 @@ from visualization_msgs.msg import Marker, MarkerArray
 
 from .actuation import ServoDelay, model_servo_delay
 from .duckslam import tof_zone_rays
-from .sensor_errors import EncoderErrors, ImuErrors, Jitter, level_pose, perturb
+from .sensor_errors import EncoderErrors, ImuErrors, Jitter, level_pose, perturb, robot_kinematics
 
 # realistic-profile sensor error parameters and defaults (ESTIMATES; replace with bench measurements)
 SENSOR_ERROR_DEFAULTS = dict(
@@ -248,21 +248,23 @@ class WorldSim(Node):
         if self.profile != "realistic" or not self.get_parameter("sensor_errors").value:
             p = {k: 0.0 for k in p}
         self.err = p
+        # own generator: the error draws never shift world_sim's main stream (ToF/camera noise match main per seed)
+        erng = self.err_rng = np.random.default_rng([int(self.get_parameter("seed").value), 1])
         rad = math.radians
-        self.imu_err = ImuErrors(self.rng, p["imu_gyro_noise"], p["imu_gyro_bias"], p["imu_gyro_bias_walk"],
+        self.imu_err = ImuErrors(erng, p["imu_gyro_noise"], p["imu_gyro_bias"], p["imu_gyro_bias_walk"],
                                  p["imu_accel_noise"], p["imu_accel_bias"], p["imu_accel_bias_walk"],
                                  rad(p["imu_misalign_deg"]), rad(p["attitude_noise_deg"]))
         res = 2 * math.pi / p["enc_counts_per_rev"] if p["enc_counts_per_rev"] > 0 else 0.0
-        self.enc_err = EncoderErrors(self.rng, len(self.qadr), rad(p["enc_offset_deg"]), rad(p["enc_noise_deg"]), res,
+        self.enc_err = EncoderErrors(erng, len(self.qadr), rad(p["enc_offset_deg"]), rad(p["enc_noise_deg"]), res,
                                      p["enc_vel_noise"])
-        self.jit = {s: Jitter(self.rng, p[f"{s}_stamp_jitter"]) for s in ("imu", "cam", "tof")}
-        self.jit["joints"] = Jitter(self.rng, p["imu_stamp_jitter"])
+        self.jit = {s: Jitter(erng, p[f"{s}_stamp_jitter"]) for s in ("imu", "cam", "tof")}
+        self.jit["joints"] = Jitter(erng, p["imu_stamp_jitter"])
         self.m_nom = copy.deepcopy(self.m)
         self.d_meas = mujoco.MjData(self.m_nom)
         self.extrinsic_error = {}
         for kind, idx, pos, quat in (("tof", self.tof_site, self.m.site_pos, self.m.site_quat),
                                      ("cam", self.cam, self.m.cam_pos, self.m.cam_quat)):
-            dR, dt = perturb(self.rng, rad(p[f"{kind}_extrinsic_deg"]), p[f"{kind}_extrinsic_mm"] / 1000.0)
+            dR, dt = perturb(erng, rad(p[f"{kind}_extrinsic_deg"]), p[f"{kind}_extrinsic_mm"] / 1000.0)
             R = np.zeros(9); mujoco.mju_quat2Mat(R, quat[idx]); R = R.reshape(3, 3)
             pos[idx] = pos[idx] + R @ dt                     # true mount = nominal composed with (dR, dt)
             q = np.zeros(4); mujoco.mju_mat2Quat(q, (R @ dR).flatten()); quat[idx] = q
@@ -286,7 +288,7 @@ class WorldSim(Node):
         q, v = self.enc_err.measure(self.d.qpos[self.qadr], self.d.qvel[self.vadr])
         self.d_meas.qpos[:] = self.d.qpos
         self.d_meas.qpos[self.qadr] = q
-        mujoco.mj_kinematics(self.m_nom, self.d_meas)
+        robot_kinematics(self.m_nom, self.d_meas)          # bodies, sites AND cameras
         return q, v
 
     def trunk_estimate(self):
@@ -513,7 +515,7 @@ class WorldSim(Node):
                 Rn = self.d_meas.site_xmat[self.tof_site].reshape(3, 3)
                 pn = self.d_meas.site_xpos[self.tof_site] + Rn[:, 0] * float(self.get_parameter("tof_origin_offset").value)
                 self.pub_tpose.publish(pose_msg(stamp, "base_level", *self.believed_pose(Rn, pn)))
-                due = sim_t + float(self.get_parameter("tof_latency").value) + self.rng.uniform(0.0, self.err["tof_latency_jitter"])
+                due = sim_t + float(self.get_parameter("tof_latency").value) + (self.err_rng.uniform(0.0, self.err["tof_latency_jitter"]) if self.err["tof_latency_jitter"] > 0 else 0.0)
                 due = max(due, self.tof_queue[-1][0] if self.tof_queue else due)     # frames stay in order
                 self.tof_queue.append((due, self.tof_frame(stamp)))
             while self.tof_queue and self.tof_queue[0][0] <= sim_t + 1e-9:

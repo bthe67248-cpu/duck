@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from duck_nav.sensor_errors import G, EncoderErrors, ImuErrors, Jitter, level_pose, perturb, rotvec_to_mat
+from duck_nav.sensor_errors import G, EncoderErrors, ImuErrors, Jitter, level_pose, perturb, robot_kinematics, rotvec_to_mat
 
 
 def rng(seed=0):
@@ -123,3 +123,17 @@ def test_tilt_error_moves_the_published_sensor_pose_by_the_tilt_angle():
     R_est, _ = level_pose(np.eye(3) @ E.T, 0.12, R_rel, p_rel)
     ang = math.degrees(math.acos(np.clip((np.trace(R_true.T @ R_est) - 1) / 2, -1, 1)))
     assert ang == pytest.approx(math.degrees(0.17 / G), rel=1e-3)
+
+
+def test_robot_kinematics_includes_cameras():
+    """world_sim's own-kinematics copy (d_meas) must give the same camera and site poses as mj_forward: with
+    mj_kinematics alone the published /camera/pose_level sat at the origin (beacon never reached on PR #11)."""
+    mujoco = pytest.importorskip("mujoco")
+    m = mujoco.MjModel.from_xml_string(
+        '<mujoco><worldbody><body pos="0.1 0.2 0.3"><joint type="hinge" axis="0 0 1"/><geom size="0.05"/>'
+        '<camera name="c" pos="0.05 0 0.02"/><site name="s" pos="0 0.04 0"/></body></worldbody></mujoco>')
+    d = mujoco.MjData(m); d.qpos[0] = 0.7; mujoco.mj_forward(m, d)
+    k = mujoco.MjData(m); k.qpos[:] = d.qpos; robot_kinematics(m, k)
+    np.testing.assert_allclose(k.cam_xpos, d.cam_xpos); np.testing.assert_allclose(k.cam_xmat, d.cam_xmat)
+    np.testing.assert_allclose(k.site_xpos, d.site_xpos)
+    assert np.linalg.norm(k.cam_xpos[0]) > 0.3
