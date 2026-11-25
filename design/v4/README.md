@@ -207,8 +207,11 @@ stiffness on a print first).
   The head pairs need the neck at its upper limit (0.70 rad, +0.35 from STAND) together with the head pitched about
   0.6 rad; no single head joint reaches the body over its full range. `check_v4_fit.py` (mesh against mesh) finds no
   head–body clash in its envelope, so the boxes are conservative here, but they are what the simulation collides.
-  Either a command limit on that neck/head-pitch corner or tighter proxies is needed; the shank against the connector
-  well's box needs a look at the well's lower edge. Not fixed here.
+  **Not fixed here; decided approach** (head-assembly work): tighten the proxies where mesh checks confirm real
+  clearance while keeping conservative coverage of the shells; verify the combined neck/head-pitch sweep (both joints
+  together, not each alone) and shank clearance by mesh and by proxy; add a coupled neck/head-pitch limit only if the
+  real mechanism needs it, never an independent limit on either joint. Until then the gate is expected to fail on these
+  pairs, and motion/navigation results on this geometry are development comparisons, not a reference baseline.
 - **Mesh build.** `head_lower_v4.stl` held a zero-volume pair of triangles (an n-gon the STL writer folded into two
   back-to-back faces, invisible to `drop_slivers` before triangulation). `build_v4.py` now triangulates before and after
   cleaning and refuses to export a part with an edge not shared by exactly two faces; the head parts were rebuilt
