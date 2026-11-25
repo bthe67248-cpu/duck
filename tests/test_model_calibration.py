@@ -105,7 +105,7 @@ def test_lipo_replaces_the_upstream_battery_at_its_v4_location(built):
     added = sum(ledger["parts"][n]["mass_g"] for n in ("body_shell_v4", "pcb_stack_v4", "a010_v4", "xt60_v4", "battery_v4"))
     assert torso["new_mass_g"] == pytest.approx(torso["remainder_g"] + added, abs=0.2)
     assert base.body("trunk_base").mass[0] * 1000 == pytest.approx(torso["new_mass_g"], abs=0.1)
-    # lighter (55 g pack for a ~115 g upstream battery) and the torso COM moves back towards the pack
+    # lighter (55 g pack for a ~100 g upstream battery) and the torso COM moves back towards the pack
     assert torso["new_mass_g"] < torso["upstream_mass_g"] + added - 100
     assert torso["com_mm"][0] < torso["upstream_com_mm"][0]
 

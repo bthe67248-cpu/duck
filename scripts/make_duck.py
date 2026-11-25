@@ -52,10 +52,11 @@ PART_MASS_G = {"head_upper_v4": None, "head_lower_v4": None, "jaw_v4": None, "bo
 # Bought parts (grams). ESTIMATES until weighed.
 BOUGHT_G = {"pcb_stack_v4": 45.0, "a010_v4": 10.0, "xt60_v4": 6.0, "mouth_servo_v4": 18.0}
 PLA_DENSITY_G_MM3 = 0.00124
-# The upstream torso's battery (np_f970 part) is inside its inertial; V4 replaces it with the 2S LiPo. ESTIMATE of what
-# it contributes: the torso mass left after its other parts at the masses implied by the upstream neck, shank and hip
-# links (XL330 17.9 g, printed parts 1.08 g/cm3, bearing 1.4 g) is 123 g; fitting the torso COM gives 103-125 g.
-UPSTREAM_BATTERY_G = 115.0
+# The upstream torso's battery (np_f970 part) is inside its inertial; V4 replaces it with the 2S LiPo. The part is a
+# Sony NP-F550/F570-size 2S Li-ion camcorder pack (mesh 38.6 x 20.6 x 70.8 mm; the F970 is 51 mm thick); retail
+# listings for that size give about 100 g. The mass fit (torso remainder after the other parts at the masses implied
+# by the upstream neck, shank and hip links: 123 g; torso COM fit: 103-125 g) agrees. Weigh the real pack to replace it.
+UPSTREAM_BATTERY_G = 100.0
 # Servo command delay (s): the servos act on the target sent this long ago. ESTIMATE: the upstream policies are trained
 # with 3-6 physics steps (15-30 ms) of actuator lag (microduck_rl microduck_constants.py). A measured servo.delay_s in
 # the calibration file replaces it.

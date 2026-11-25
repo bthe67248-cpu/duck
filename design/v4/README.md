@@ -16,7 +16,7 @@ STLs and the V3 generator have been deleted (they are in git history).
 | Mouth | fixed bill | lower half of the beak is a `jaw` on a `mouth` hinge (0–30°), position actuator `mouth` (actuator 16, after the push motors), XL330-size servo under the forehead |
 | Limits | upstream | neck pitch capped at 0.70 rad (was 1.047): beyond that, with the head tipped back, the back of the head reaches the board bay |
 
-Mass (`model/mass_ledger.json`, estimates): robot 0.760 (upstream) → 0.789 kg. Torso 243 g (body shell about 71 g,
+Mass (`model/mass_ledger.json`, estimates): robot 0.760 (upstream) → 0.804 kg. Torso 258 g (body shell about 71 g,
 boards 45 g, 2S LiPo 55 g). See "Mechanical validation and dynamics" below for the battery, head budget and servo delay.
 
 ## Mechanical validation and dynamics (review fixes, 24 November 2026)
@@ -132,17 +132,19 @@ Cable bends and routes (no envelope yet)
 ### Mass: battery and head budget
 
 **2S LiPo (`make_duck.py`).** The upstream torso inertial includes its battery (`np_f970`); before, V4 kept that mass
-and only assumed the 2S pack weighed the same. Its contribution is not published, so it is estimated: the upstream neck,
-shank and hip links imply an XL330 of 17.9 g and printed parts at 1.08 g/cm³, which leaves 123 g of the 199 g torso
-for the battery; fits to the torso COM give 103–125 g. `UPSTREAM_BATTERY_G = 115` (ESTIMATE) is now subtracted at the
+and only assumed the 2S pack weighed the same. Its mass is not published, but the part is a real 2S battery: the mesh
+is 38.6 × 20.6 × 70.8 mm, the size of a Sony NP-F550/F570 Li-ion camcorder pack (the NP-F970 in its name is 51 mm
+thick), and retail listings for that size give about 100 g. A mass fit agrees (the upstream neck, shank and hip links
+imply an XL330 of 17.9 g and printed parts at 1.08 g/cm³, which leaves 123 g of the 199 g torso; fits to the torso
+COM give 103–125 g). `UPSTREAM_BATTERY_G = 100` (until the pack is weighed; it was a 115 g estimate) is now subtracted at the
 battery's pose (uniform density over its mesh) and the LiPo is added as a 55 g uniform box at its V4 location
 (`v4_params.json` `battery`, COM (−37.5, 0, 5.0) mm in the torso frame; principal inertia 4.6, 17.5, 20.1 kg·mm²).
 
 | | before | after |
 |-|-|-|
-| Torso link | 302.6 g, COM (−31.4, 0, 2.7) mm | 242.6 g, COM (−30.6, 0, 6.4) mm |
-| Torso inertia Ixx / Iyy / Izz | 232 / 489 / 431 kg·mm² | 304 / 549 / 452 kg·mm² |
-| Robot | 0.849 kg, COM height 139.0 mm | 0.789 kg, COM height 141.6 mm |
+| Torso link | 302.6 g, COM (−31.4, 0, 2.7) mm | 257.6 g, COM (−30.9, 0, 5.8) mm |
+| Torso inertia Ixx / Iyy / Izz | 232 / 489 / 431 kg·mm² | 298 / 544 / 451 kg·mm² |
+| Robot | 0.849 kg, COM height 139.0 mm | 0.804 kg, COM height 141.1 mm |
 
 The inertia rises although the torso is lighter: the 60 mm-tall pack sits higher and further from the torso COM than the
 flat upstream battery it replaces. Weigh the real pack and the torso link (`config/robot_measurements.example.json`).
@@ -242,8 +244,9 @@ domains, every run sim = wall throughout):
 | (a) main `c1cf128` | 4/6 | 0.35 / 1.21 m | 27.5 m, 32.1 m | 82 % | 1 | 187 / 85 |
 | (b) this branch before the camera fix, errors off | 0/6 | 0.26 / 0.54 m | 14.2 m, 14.6 m | 61 % | 0 | 402 / 22 |
 | (c) same, `sensor_errors:=true` | 0/6 | 0.34 / 1.01 m | 15.4 m, 15.0 m | 63 % | 1 | 344 / 29 |
-| (f) this branch, fixed, errors off (default) | 2/6 | 0.25 / 0.44 m | 10.4 m, 8.8 m | 51 % | 0 | 442 / 21 |
-| (g) this branch, fixed, `sensor_errors:=true` | 1/6 | 0.55 / 1.13 m | 14.8 m, 14.2 m | 64 % | 0 | 368 / 28 |
+| (f) camera fixed, 115 g upstream-battery estimate, errors off | 2/6 | 0.25 / 0.44 m | 10.4 m, 8.8 m | 51 % | 0 | 442 / 21 |
+| (g) same, `sensor_errors:=true` | 1/6 | 0.55 / 1.13 m | 14.8 m, 14.2 m | 64 % | 0 | 368 / 28 |
+| **(h) this branch: camera fixed, 100 g NP-F570 battery, errors off (default)** | **4/6** | 0.29 / 1.07 m | 27.9 m, 26.4 m | 87 % | 1 | 220 / 32 |
 
 Isolation runs on seeds 0, 2, 3 (before the camera fix):
 
@@ -255,14 +258,14 @@ Isolation runs on seeds 0, 2, 3 (before the camera fix):
 
 Per seed (beacon time or "no" / SLAM mean error / walked):
 
-| seed | (a) main | (f) fixed, errors off | (g) fixed, errors on |
-|-|-|-|-|
-| 0 | 184 s / 0.22 m / 38.0 m | no / 0.31 m / 10.3 m | no / 0.34 m / 15.3 m |
-| 1 | no / 0.24 m / 17.6 m (1 fall) | no / 0.15 m / 6.0 m | 77 s / 0.08 m / 13.2 m |
-| 2 | 308 s / 0.26 m / 30.2 m | no / 0.17 m / 7.3 m | no / 0.99 m / 14.1 m |
-| 3 | 194 s / 0.29 m / 34.8 m | 130 s / 0.25 m / 15.3 m | no / 1.26 m / 14.4 m |
-| 4 | 216 s / 0.84 m / 33.9 m | no / 0.28 m / 6.4 m | no / 0.47 m / 24.4 m |
-| 5 | no / 0.28 m / 10.7 m | 209 s / 0.34 m / 17.0 m | no / 0.13 m / 7.6 m |
+| seed | (a) main | (f) 115 g, errors off | (g) 115 g, errors on | (h) 100 g, errors off |
+|-|-|-|-|-|
+| 0 | 184 s / 0.22 m / 38.0 m | no / 0.31 m / 10.3 m | no / 0.34 m / 15.3 m | no / 0.62 m / 22.2 m |
+| 1 | no / 0.24 m / 17.6 m (1 fall) | no / 0.15 m / 6.0 m | 77 s / 0.08 m / 13.2 m | 147 s / 0.16 m / 41.6 m (stopped at 570 s, 97 % mapped) |
+| 2 | 308 s / 0.26 m / 30.2 m | no / 0.17 m / 7.3 m | no / 0.99 m / 14.1 m | no / 0.24 m / 18.1 m (1 fall) |
+| 3 | 194 s / 0.29 m / 34.8 m | 130 s / 0.25 m / 15.3 m | no / 1.26 m / 14.4 m | 96 s / 0.36 m / 26.6 m |
+| 4 | 216 s / 0.84 m / 33.9 m | no / 0.28 m / 6.4 m | no / 0.47 m / 24.4 m | 228 s / 0.20 m / 33.0 m (stopped at 450 s, 96 % mapped) |
+| 5 | no / 0.28 m / 10.7 m | 209 s / 0.34 m / 17.0 m | no / 0.13 m / 7.6 m | 95 s / 0.17 m / 26.1 m |
 
 What the trials found:
 
@@ -272,21 +275,22 @@ What the trials found:
    (`test_robot_kinematics_includes_cameras`). The sensor-error models also drew from world_sim's main generator,
    shifting the ToF and camera noise against main for the same seed; they now have their own.
 2. **The servo delay is not the cause:** (d) with no delay is no better than (b).
-3. **The explicit LiPo is:** with main's robot model (e) the "slam weak" rate is main's (174 vs 198) and the duck walks
-   twice as far as (b)/(d). The model's only change is the trunk: 60 g lighter (0.303 → 0.243 kg, the
-   `UPSTREAM_BATTERY_G` = 115 g ESTIMATE out, the 55 g LiPo in) with the centre of mass 3.8 mm higher. The walking
-   policy was trained on the upstream mass and walks less straight on the lighter trunk: `motions.py walk`, 0.3 m/s,
-   no delay, same speed (0.086 vs 0.085 m/s) but lateral drift 0.24 → 0.43 m and heading change 42 → 58° in 8 s.
-   Nav corrects more, SLAM reports "slam weak" about twice as often, and the duck covers 51–64 % of the room
-   instead of 82 %.
-4. **Sensor errors** (g vs f): SLAM mean error 0.25 → 0.55 m (two seeds near or above 1 m mean); distance and
-   coverage are no worse. They stay off by default.
+3. **The trunk mass is:** with main's robot model (e) the "slam weak" rate is main's (174 vs 198) and the duck walks
+   twice as far as (b)/(d). The model's only change is the trunk inertial. With the upstream battery taken as a 115 g
+   estimate the trunk was 60 g lighter than main's (0.303 → 0.243 kg) and (f) navigated far worse than main. The
+   upstream battery part is a real 2S pack (NP-F550/F570 size, about 100 g in retail listings; "Mass: battery and head
+   budget" above); with 100 g the trunk is 45 g lighter (0.258 kg) and (h) matches main: beacon 4/6, 27.9 m walked,
+   87 % coverage. Two (h) runs ended early because the explorer ran out of frontiers with 96–97 % of the room mapped.
+   An earlier open-loop check (`motions.py walk` at one speed) suggested the lighter trunk walks less straight; a sweep
+   over 0.25–0.5 m/s does not separate main, 115 g and 100 g (mean heading change 49°, 55°, 68° in 8 s, single runs
+   ranging 19–122°), so that check is too noisy to rank them.
+4. **Sensor errors** (g vs f, 115 g model): SLAM mean error 0.25 → 0.55 m (two seeds near or above 1 m mean); distance
+   and coverage are no worse. They stay off by default; (g) has not been repeated with the 100 g model.
 
-So with the fix the branch still navigates worse than main, because the robot model is now lighter than the one the
-policy learned on. Whether the real duck is that light depends on the 115 g upstream-battery estimate: weigh the
-upstream battery (or the assembled V4) before trusting either number. Until then, nav trials that should be
-comparable with main can pass main's model (`mjcf:=`), and the policy should be retrained or fine-tuned on the V4
-mass once it is measured.
+So with the camera fix and the 100 g battery this branch navigates as well as main. The closed loop is sensitive to
+the trunk mass (15 g separates (f) from (h)), so weigh the upstream battery or the assembled V4 and set
+`UPSTREAM_BATTERY_G` / `battery.mass_g` from the scale before trusting either; if the real trunk is much lighter than
+main's, the walking policy should be fine-tuned on the measured mass.
 
 ## SLAM for a body-fixed depth sensor (`ros2/duck_nav`)
 

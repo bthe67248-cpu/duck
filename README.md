@@ -86,7 +86,7 @@ Then, from `C:\dev\duckling_sim`:
 
 **Estimates you must replace with measurements** (top block of `make_duck.py`):
 - **Print masses, PROVISIONAL** (`PART_MASS_G`): head shells, jaw and body shell from the wall-proxy formula with the `print` settings in `design\v4\v4_params.json` (1.2 mm walls, 30 % infill). Slice and weigh the real parts.
-- **Bought parts, ESTIMATES** (`BOUGHT_G`): UNO Q + HAT 45 g, A010 10 g, XT60 pair 6 g, mouth servo 18 g; 2S LiPo 55 g (`v4_params.json` `battery.mass_g`). The upstream battery it replaces is estimated at 115 g (`UPSTREAM_BATTERY_G`, see `design\v4\README.md`).
+- **Bought parts, ESTIMATES** (`BOUGHT_G`): UNO Q + HAT 45 g, A010 10 g, XT60 pair 6 g, mouth servo 18 g; 2S LiPo 55 g (`v4_params.json` `battery.mass_g`). The upstream battery it replaces is an NP-F570-size 2S Li-ion pack, taken as 100 g from retail listings (`UPSTREAM_BATTERY_G`, see `design\v4\README.md`).
 - **Servo delay, ESTIMATE** (`SERVO_DELAY_S`, 20 ms, the middle of the upstream training lag): written into the model and applied by `motions.py` and `world_sim`. A measured `servo.delay_s` in the calibration file replaces it.
 - **Replaced upstream parts:** estimated from mesh volume at solid density. Weighing complete links (`MEASURED_MASS`) replaces this.
 - Head position: front flush with the upstream face, bottom at the upstream shell's bottom. `HEAD_SHIFT` nudges it. Check against the real robot.
