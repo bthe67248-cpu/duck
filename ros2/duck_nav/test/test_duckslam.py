@@ -645,3 +645,36 @@ def test_partial_matches_along_a_wall_do_not_start_relocalisation_when_tracking(
             loc.step(0.1 * i, np.array([0.0, 0.1, 0.0]), a, r, h)
             reloc = reloc or loc.relocalizing
         assert reloc != tracks
+
+
+def test_ambiguous_scan_rejected_while_healthy_does_not_enter_the_map():
+    """A tracker that was healthy rejects an aliased scan (second peak): the pose is not corrected, and the frame must
+    not be mapped through the 'still healthy' path either."""
+    a, r, h = wall_and_stub_scan()
+    s = aliased_reference()
+    loc = ds.FrameLocalizer(s, use_sweep=False, match_kw=dict(peak_margin=1.0), map_move=0.0, map_turn=0.0)
+    loc.bootstrap = False; loc.last_ok = 0.0
+    loc.health.observe(0.0, True); loc.health.observe(0.05, True)      # healthy before this frame
+    assert loc.health.state(0.1) == "ok"
+    v0 = s.map_version
+    acc, corr = loc.step(0.1, np.array([0.0, 0.26, 0.0]), a, r, h)
+    assert not acc and s.match_reason == "second_peak", s.match_reason
+    assert s.map_version == v0 and not np.any(corr)
+
+
+def test_tof_scan_uses_the_published_calibrated_points():
+    """A calibrated beam 10 deg left of the pinhole ray: the scan follows the publisher's xyz, not the ideal ray."""
+    import sys as _sys, os as _os
+    _sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), ".."))
+    from duck_nav.sensor_contract import TofFrame, tof_records
+    rays = np.tile([1.0, 0.0, 0.0], (4, 1)); rays[0] = [math.cos(math.radians(10)), math.sin(math.radians(10)), 0.0]
+    rec = np.array(tof_records(TofFrame(1, np.full(4, 1.0), np.zeros(4, int)), "radial", zones=2, rays=rays))
+    xyz, ranges, valid = rec[:, :3], rec[:, 3], rec[:, 4] == 0
+    np.testing.assert_allclose(xyz[0], [0.985, 0.174, 0.0], atol=1e-3)
+    s = ds.DuckSLAM(min_hits=1, max_r=2.5)
+    pinhole = ds.tof_zone_rays(2, 45.0, 45.0)
+    ang_cal, _, hit_cal = s.scan_from_tof(ranges, valid, pinhole, np.eye(3), np.zeros(3), fov_h_deg=45.0, n=2,
+                                          points=xyz[valid])
+    ang_pin, _, _ = s.scan_from_tof(ranges, valid, pinhole, np.eye(3), np.zeros(3), fov_h_deg=45.0, n=2)
+    assert np.degrees(ang_cal).max() > 5 and np.degrees(ang_pin).max() > 5    # left column in both...
+    assert not np.allclose(np.sort(ang_cal), np.sort(ang_pin))                 # ...but at the calibrated bearing

@@ -370,11 +370,14 @@ class SlamNode(Node):
             ang, r, hit = self.slam.scan_from_depth(depth, R, t, self.K)
             data = depth
         else:
-            ranges, valid = self.read_tof(msg, self.tof_n * self.tof_n)
+            ranges, valid, xyz = self.read_tof(msg, self.tof_n * self.tof_n)
+            # the publisher's xyz (calibrated rays on hardware, exact rays in world_sim) when every valid zone has
+            # it; otherwise rebuild from range + this node's pinhole rays
+            pts = xyz[valid] if xyz is not None and np.isfinite(xyz[valid]).all() else                 ds.tof_points(ranges, valid, self.tof_rays, self.get_parameter("tof_range_convention").value)
             ang, r, hit = self.slam.scan_from_tof(ranges, valid, self.tof_rays, R, t,
                                                   self.get_parameter("tof_range_convention").value,
-                                                  fov_h_deg=float(self.get_parameter("tof_fov_deg").value), n=self.tof_n)
-            pts = ds.tof_points(ranges, valid, self.tof_rays, self.get_parameter("tof_range_convention").value)
+                                                  fov_h_deg=float(self.get_parameter("tof_fov_deg").value), n=self.tof_n,
+                                                  points=pts)
             data = (pts @ R.T + t, ranges[valid] if len(pts) else np.zeros(0))   # level-frame points + ranges
         accepted = False
         if len(ang):
@@ -468,13 +471,21 @@ class SlamNode(Node):
 
     @staticmethod
     def read_tof(msg, n=64):
+        """-> ranges (n,), valid (n,), xyz (n, 3) in the sensor frame as published (None if the cloud has no x/y/z)."""
         from sensor_msgs_py import point_cloud2
-        rec = point_cloud2.read_points(msg, field_names=("range", "status", "zone"), skip_nans=False)
+        names = {f.name for f in msg.fields}
+        has_xyz = {"x", "y", "z"} <= names
+        rec = point_cloud2.read_points(msg, field_names=("range", "status", "zone") + (("x", "y", "z") if has_xyz else ()),
+                                       skip_nans=False)
         ranges = np.full(n, np.nan); valid = np.zeros(n, bool)
         z = np.asarray(rec["zone"]).astype(int); r = np.asarray(rec["range"], float); s = np.asarray(rec["status"])
         k = (z >= 0) & (z < n)
         ranges[z[k]] = r[k]; valid[z[k]] = (s[k] == 0) & np.isfinite(r[k])
-        return ranges, valid
+        xyz = None
+        if has_xyz:
+            xyz = np.full((n, 3), np.nan)
+            xyz[z[k]] = np.column_stack([np.asarray(rec[c], float) for c in "xyz"])[k]
+        return ranges, valid, xyz
 
     # 3. beacon position from YOLO boxes + range --------------------------------------------
     def on_det(self, msg):

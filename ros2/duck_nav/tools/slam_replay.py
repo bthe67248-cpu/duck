@@ -164,11 +164,17 @@ def sim_time(t_rx):                                   # receive (wall) time -> s
 
 
 def read_tof(msg):
-    ranges = np.full(NZ * NZ, np.nan); valid = np.zeros(NZ * NZ, bool)
-    for rng, st, z in point_cloud2.read_points(msg, field_names=("range", "status", "zone"), skip_nans=False):
+    """-> (ranges, valid, xyz or None): xyz is the published sensor-frame point (calibrated rays on hardware), used
+    instead of rebuilding it from range + ideal rays, as slam_node does."""
+    ranges = np.full(NZ * NZ, np.nan); valid = np.zeros(NZ * NZ, bool); xyz = np.full((NZ * NZ, 3), np.nan)
+    has_xyz = False
+    for row in point_cloud2.read_points(msg, field_names=("range", "status", "zone", "x", "y", "z"), skip_nans=False):
+        rng, st, z = row[0], row[1], row[2]          # rows are numpy records in ROS, tuples in the test shim
         if st == 0 and np.isfinite(rng) and 0 <= int(z) < NZ * NZ:
             ranges[int(z)] = rng; valid[int(z)] = True
-    return ranges, valid
+            if len(row) >= 6:
+                xyz[int(z)] = (row[3], row[4], row[5]); has_xyz = True
+    return ranges, valid, (xyz if has_xyz and np.isfinite(xyz[valid]).all() else None)
 
 
 events, tof_pose, gt, live = [], {}, [], []
@@ -318,7 +324,7 @@ def run(cfg, dump=None):
         if kind == 1:
             cmd, cmd_t = data, t
             continue
-        key, (ranges, valid) = data
+        key, (ranges, valid, xyz) = data
         ts = t - 1e-6
         sp = tof_pose.get(key)
         i = bisect.bisect_left(hist_keys, ts)
@@ -328,7 +334,8 @@ def run(cfg, dump=None):
         k = min(cand, key=lambda q: abs(q - ts))
         pose_acq = hist[k].copy()
         R, tt = sp
-        ang, r, hit = slam.scan_from_tof(ranges, valid, rays, R, tt, "radial", fov_h_deg=PROF["fov"], n=NZ)
+        ang, r, hit = slam.scan_from_tof(ranges, valid, rays, R, tt, "radial", fov_h_deg=PROF["fov"], n=NZ,
+                                         points=xyz[valid] if xyz is not None else None)
         n_frames += 1
         if not len(ang):                                 # empty frames are not health observations (slam_node too)
             continue

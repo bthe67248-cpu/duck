@@ -88,7 +88,9 @@ class TofNode(Node):
     def status(self):
         now = self.get_clock().now().nanoseconds
         fresh = acquisition_is_fresh(self.last_stamp, now, self.max_age)
-        self.pub_status.publish(String(data="ok" if fresh else "stale"))
+        extra = getattr(self.backend, "stats", None)          # backend diagnostics, e.g. A010 superseded/seq_gaps
+        text = "ok" if fresh else "stale"
+        self.pub_status.publish(String(data=f"{text} {json.dumps(extra)}" if extra else text))
 
     def destroy_node(self):
         try:
