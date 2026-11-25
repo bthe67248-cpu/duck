@@ -230,11 +230,63 @@ Uncapped stamp jitter put about half of the `/imu` stamps (and so the SLAM poses
 with "stale pose" (23 and 36 times in the two uncapped runs, 2 without errors, 0 on main). With stamps capped at
 the publication time, `mech_clamp_s0` logged 0.
 
-Both start, survey, explore and stay localised, with no falls; neither reaches the beacon in 300 s (the earlier
-600 s trials needed 153–495 s). The run with errors fell behind real time, and one seed is within run-to-run noise, so
-how much the errors cost SLAM is still open. That needs paired 600 s trials on seeds 0–5 (`sensor_errors:=true` vs
-`false`) held in real time. `gyro_calib_s` (off by default in the launch file) would remove most of the 0.005 rad/s
-gyro turn-on bias.
+These smoke runs predate the camera-pose fix below (they ran with `/camera/pose_level` at the origin); they show
+that the stack runs, not how well. `gyro_calib_s` (off by default in the launch file) would remove most of the
+0.005 rad/s gyro turn-on bias.
+
+**Paired 600 s closed-loop trials** (seeds 0–5, realistic profile, launch defaults, three runs at a time on separate ROS
+domains, every run sim = wall throughout):
+
+| Version | beacon | SLAM mean / max error | walked (mean, median) | coverage | falls | "slam weak" / "exploring" events |
+|-|-|-|-|-|-|-|
+| (a) main `c1cf128` | 4/6 | 0.35 / 1.21 m | 27.5 m, 32.1 m | 82 % | 1 | 187 / 85 |
+| (b) this branch before the camera fix, errors off | 0/6 | 0.26 / 0.54 m | 14.2 m, 14.6 m | 61 % | 0 | 402 / 22 |
+| (c) same, `sensor_errors:=true` | 0/6 | 0.34 / 1.01 m | 15.4 m, 15.0 m | 63 % | 1 | 344 / 29 |
+| (f) this branch, fixed, errors off (default) | 2/6 | 0.25 / 0.44 m | 10.4 m, 8.8 m | 51 % | 0 | 442 / 21 |
+| (g) this branch, fixed, `sensor_errors:=true` | 1/6 | 0.55 / 1.13 m | 14.8 m, 14.2 m | 64 % | 0 | 368 / 28 |
+
+Isolation runs on seeds 0, 2, 3 (before the camera fix):
+
+| Version | beacon | SLAM mean / max | walked | "slam weak" / "exploring" |
+|-|-|-|-|-|
+| (a) main, same seeds | 3/3 | 0.26 / 1.09 m | 34.3 m | 198 / 30 |
+| (d) this branch, `servo_delay:=0` | 0/3 | 0.28 / 0.47 m | 8.3 m | 445 / 16 |
+| (e) this branch's code with main's robot model (`mjcf:=`), no delay | 0/3 | 0.34 / 1.09 m | 20.6 m | 174 / 52 |
+
+Per seed (beacon time or "no" / SLAM mean error / walked):
+
+| seed | (a) main | (f) fixed, errors off | (g) fixed, errors on |
+|-|-|-|-|
+| 0 | 184 s / 0.22 m / 38.0 m | no / 0.31 m / 10.3 m | no / 0.34 m / 15.3 m |
+| 1 | no / 0.24 m / 17.6 m (1 fall) | no / 0.15 m / 6.0 m | 77 s / 0.08 m / 13.2 m |
+| 2 | 308 s / 0.26 m / 30.2 m | no / 0.17 m / 7.3 m | no / 0.99 m / 14.1 m |
+| 3 | 194 s / 0.29 m / 34.8 m | 130 s / 0.25 m / 15.3 m | no / 1.26 m / 14.4 m |
+| 4 | 216 s / 0.84 m / 33.9 m | no / 0.28 m / 6.4 m | no / 0.47 m / 24.4 m |
+| 5 | no / 0.28 m / 10.7 m | 209 s / 0.34 m / 17.0 m | no / 0.13 m / 7.6 m |
+
+What the trials found:
+
+1. **Bug, fixed (4c99e77):** world_sim computed the published sensor poses from its own kinematics copy with
+   `mj_kinematics`, which does not compute camera poses, so `/camera/pose_level` sat at the floor origin with sensor
+   errors on or off: the beacon was never reached in (b), (c), (d), (e). `robot_kinematics()` adds `mj_camlight`
+   (`test_robot_kinematics_includes_cameras`). The sensor-error models also drew from world_sim's main generator,
+   shifting the ToF and camera noise against main for the same seed; they now have their own.
+2. **The servo delay is not the cause:** (d) with no delay is no better than (b).
+3. **The explicit LiPo is:** with main's robot model (e) the "slam weak" rate is main's (174 vs 198) and the duck walks
+   twice as far as (b)/(d). The model's only change is the trunk: 60 g lighter (0.303 → 0.243 kg, the
+   `UPSTREAM_BATTERY_G` = 115 g ESTIMATE out, the 55 g LiPo in) with the centre of mass 3.8 mm higher. The walking
+   policy was trained on the upstream mass and walks less straight on the lighter trunk: `motions.py walk`, 0.3 m/s,
+   no delay, same speed (0.086 vs 0.085 m/s) but lateral drift 0.24 → 0.43 m and heading change 42 → 58° in 8 s.
+   Nav corrects more, SLAM reports "slam weak" about twice as often, and the duck covers 51–64 % of the room
+   instead of 82 %.
+4. **Sensor errors** (g vs f): SLAM mean error 0.25 → 0.55 m (two seeds near or above 1 m mean); distance and
+   coverage are no worse. They stay off by default.
+
+So with the fix the branch still navigates worse than main, because the robot model is now lighter than the one the
+policy learned on. Whether the real duck is that light depends on the 115 g upstream-battery estimate: weigh the
+upstream battery (or the assembled V4) before trusting either number. Until then, nav trials that should be
+comparable with main can pass main's model (`mjcf:=`), and the policy should be retrained or fine-tuned on the V4
+mass once it is measured.
 
 ## SLAM for a body-fixed depth sensor (`ros2/duck_nav`)
 
