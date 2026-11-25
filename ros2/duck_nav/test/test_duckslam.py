@@ -531,3 +531,48 @@ def test_bootstrap_mapping_lasts_until_the_body_has_turned():
         pose = np.array([0.0, 0.0, math.radians(5 * (i - 4))])
         loc.step(i * 0.1, pose, *corner_scan(np.linspace(-30, 100, 40)))
     assert loc.turned >= math.radians(90)
+
+
+def test_unknown_cells_score_above_known_free_space_when_enabled():
+    s = corner_reference(); s.logodds[INFO.cell(0.0, 0.0)] = -2          # one known-free cell
+    L, _, _ = s.likelihood_tables()
+    assert L[INFO.cell(0.0, 0.0)] == L[INFO.cell(-0.5, -0.5)]           # off: unknown scores like free space
+    s.unknown_ll = -1.0
+    L, _, _ = s.likelihood_tables()
+    assert L[INFO.cell(-0.5, -0.5)] == pytest.approx(-1.0)               # never observed: the floor
+    assert L[INFO.cell(0.0, 0.0)] < -1.0                                 # known free space: still penalised
+    assert L[INFO.cell(1.0, 0.0)] == pytest.approx(0.0)                  # on a wall: unchanged
+
+
+def test_map_max_std_maps_only_tightly_accepted_frames_after_bootstrap():
+    a, r, h = corner_scan(np.linspace(-30, 100, 40))
+    wall = corner_scan(np.linspace(-20, 20, 40))                         # one straight wall: a partial match
+    mapped = {}
+    for std in (0.0, 0.03):
+        s = corner_reference(); loc = ds.FrameLocalizer(s, use_sweep=False, map_move=0.0, map_turn=0.0, map_max_std=std)
+        for i in range(5):
+            loc.step(i * 0.1, np.zeros(3), a, r, h)
+        assert not loc.bootstrap
+        v = s.map_version
+        loc.step(0.5, np.zeros(3), a, r, h)                              # corner: accepted, tight -> mapped
+        assert s.match_reason == "accepted" and s.map_version == v + 1
+        v = s.map_version
+        loc.step(0.6, np.zeros(3), *wall)                                # health was still "ok" before this frame
+        assert s.match_reason == "partial"
+        mapped[std] = s.map_version - v
+    assert mapped == {0.0: 1, 0.03: 0}
+
+
+def test_partial_match_is_not_applied_while_relocalising_when_disabled():
+    a, r, h = corner_scan(np.linspace(-30, 100, 40))
+    wall = corner_scan(np.linspace(-20, 20, 40))
+    for allow in (True, False):
+        s = corner_reference(); loc = ds.FrameLocalizer(s, relocalize_after=1.0, use_sweep=False, reloc_partial=allow)
+        for i in range(5):
+            loc.step(i * 0.1, np.zeros(3), a, r, h)
+        pose = np.array([0.04, 0.0, math.radians(4)]); t = 0.5; applied = []
+        for _ in range(40):
+            acc, corr = loc.step(t, pose, *wall); pose = pose + corr; t += 0.1
+            if loc.relocalizing and s.match_reason == "partial":
+                applied.append(bool(np.any(corr)))
+        assert applied and all(applied) == allow and any(applied) == allow

@@ -228,6 +228,11 @@ class DuckSLAM:
         self.slip = 1.0
         self._slip_num = self._slip_den = 0.0
         self._raw_fwd = 0.0              # model forward distance since the last slip update (unscaled, signed)
+        # log-likelihood floor for returns landing in never-observed cells (None = same as known free space, the
+        # clamp). A body-fixed sensor that turns keeps seeing just past the mapped end of a wall; scored like free
+        # space, those returns pull the pose sideways onto the mapped end, the frame is mapped there, and the next
+        # frame repeats it (replay: 5 mm per frame while turning in place).
+        self.unknown_ll = None
 
     def body_velocity(self, cmd_vx, cmd_vy):
         g = self.gains
@@ -387,12 +392,15 @@ class DuckSLAM:
         block-max table, Lb[i, j] = max(L[i:i+block, j:j+block]), which upper-bounds the score of every fine
         translation inside a coarse block, so the coarse-to-fine search returns the brute-force optimum.
         Cached until the map changes."""
-        key = (self.map_version, sigma, block)
+        key = (self.map_version, sigma, block, self.unknown_ll)
         if self._tables is not None and self._tables[0] == key:
             return self._tables[1:]
         occ = self.logodds > 0.8
         d = ndimage.distance_transform_edt(~occ) * self.info.res if occ.any() else np.full(occ.shape, 1e3)
         L = (-0.5 * np.minimum(d / sigma, 2.5) ** 2).astype(np.float32)
+        if self.unknown_ll is not None:
+            unknown = (self.logodds > -0.5) & ~occ
+            L[unknown] = np.maximum(L[unknown], np.float32(self.unknown_ll))
         pad = np.pad(L, ((0, block - 1), (0, block - 1)), constant_values=L.min())
         Lb = np.lib.stride_tricks.sliding_window_view(pad, (block, block)).max(axis=(-1, -2))
         self._tables = (key, L, Lb, d)
@@ -547,8 +555,18 @@ class FrameLocalizer:
                  relocalize_after=3.0, reloc_window=0.8, reloc_ang=math.radians(25), map_move=0.03,
                  map_turn=math.radians(3), scan_timeout=0.75, match_timeout=1.5, use_sweep=True,
                  loop_closure=False, graph_max_nodes=160, reloc_confirm=False, confirm_xy=0.06,
-                 confirm_th=math.radians(4), bootstrap_turn=0.0):
+                 confirm_th=math.radians(4), bootstrap_turn=0.0, map_max_std=0.0, map_accepted_only=False,
+                 reloc_partial=True, unknown_ll=None, confirm_free_xy=0.0, confirm_free_th=0.0):
         self.slam = slam
+        slam.unknown_ll = unknown_ll
+        # map_max_std (m, 0 = off): after bootstrap, map a frame only when its match was accepted with the larger
+        # position std of the match covariance at most this. Each accepted match moves the pose by the mean of a
+        # posterior that may be several cm wide; mapping the frame at that pose writes the error into the map, and the
+        # next frame matches the shifted map (map and pose ratchet together: body-sensor replay, 5 mm per frame).
+        # map_accepted_only: do not also map frames that were not accepted while the health state was still "ok".
+        # reloc_partial=False: a partial (one-direction + heading) match while relocalising is not applied; with the
+        # wide relocalisation prior it swung the heading by 10-30 deg per frame without any confirmation.
+        self.map_max_std, self.map_accepted_only, self.reloc_partial = map_max_std, map_accepted_only, reloc_partial
         # bootstrap_turn (rad): stay in bootstrap mapping (every frame is mapped) until the body has also turned this
         # much. A body-fixed sensor has no head sweep, so the start-up map is built by turning in place; after
         # bootstrap only accepted frames are mapped, and a partly new view is rarely accepted.
@@ -556,6 +574,11 @@ class FrameLocalizer:
         # reloc_confirm: a relocalisation correction is applied only when the next relocalisation match proposes
         # the same correction (within confirm_xy m / confirm_th rad); one confident wrong jump is the failure mode
         self.reloc_confirm, self.confirm_xy, self.confirm_th = reloc_confirm, confirm_xy, confirm_th
+        # a relocalisation match whose correction is within confirm_free_xy m / confirm_free_th rad is applied without
+        # confirmation (it is no jump: the pose was already right). Holding those too reset the accepted streak on every
+        # other frame, so health never returned to "ok" and the search stayed wide (body-sensor replay: 85 % of frames
+        # relocalising at 0.2 m error).
+        self.confirm_free_xy, self.confirm_free_th = confirm_free_xy, confirm_free_th
         self.pending_reloc = None
         self.matcher, self.gain, self.fresh, self.slip = matcher, gain, fresh, slip
         self.relocalize_after, self.reloc_window, self.reloc_ang = relocalize_after, reloc_window, reloc_ang
@@ -600,6 +623,8 @@ class FrameLocalizer:
                 before = slam.pose.copy()
                 accepted = slam.match_correlative(*cons, current_scan=fresh, gain=1.0 if self.relocalizing else self.gain,
                                                   **kw)
+                if self.relocalizing and not self.reloc_partial and slam.match_reason == "partial":
+                    slam.pose = before; slam.last_offset = None
                 if not self.relocalizing:
                     self.pending_reloc = None
                 elif accepted and self.reloc_confirm:
@@ -608,7 +633,8 @@ class FrameLocalizer:
                     p = self.pending_reloc           # (delta, time); consecutive sweeps share frames: need >= 0.5 s
                     if p is not None and not 0.5 <= ts - p[1] <= 3.0:
                         p = None if ts - p[1] > 3.0 else p
-                    agree = p is not None and ts - p[1] >= 0.5 and math.hypot(*(delta[:2] - p[0][:2])) <= self.confirm_xy \
+                    small = math.hypot(*delta[:2]) <= self.confirm_free_xy and abs(delta[2]) <= self.confirm_free_th
+                    agree = small or p is not None and ts - p[1] >= 0.5 and math.hypot(*(delta[:2] - p[0][:2])) <= self.confirm_xy \
                         and abs((delta[2] - p[0][2] + math.pi) % (2 * math.pi) - math.pi) <= self.confirm_th
                     if not agree:                    # hold it: wait for an independent confirmation
                         if p is None or ts - p[1] >= 0.5:
@@ -626,7 +652,11 @@ class FrameLocalizer:
         moved = self.last_map_pose is None or (
             math.hypot(*(slam.pose[:2] - self.last_map_pose[:2])) >= self.map_move
             or abs((slam.pose[2] - self.last_map_pose[2] + math.pi) % (2 * math.pi) - math.pi) >= self.map_turn)
-        should_map = self.bootstrap or slam.match_reason == "map_not_ready" or ((accepted or healthy) and moved)
+        good = accepted or (healthy and not self.map_accepted_only)
+        if good and self.map_max_std > 0 and not self.bootstrap:
+            cov = slam.match_cov
+            good = accepted and cov is not None and math.sqrt(float(np.linalg.eigvalsh(cov[:2, :2])[1])) <= self.map_max_std
+        should_map = self.bootstrap or slam.match_reason == "map_not_ready" or (good and moved)
         if self.graph is not None:
             # The graph owns every mapped scan: rebuilding must never discard untracked evidence.
             should_map = should_map and (moved or self.bootstrap or slam.match_reason == "map_not_ready")

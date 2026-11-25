@@ -28,6 +28,11 @@ def nodes(context):
         raise RuntimeError(f"sensors:={sensors} -- use ideal or realistic")
     sim_time = {"use_sim_time": True}
     seed = int(LaunchConfiguration("seed").perform(context))
+    # body-fixed depth sensor mapping policy (design/v4/README.md): keyframe mapping, never-observed cells scored above
+    # known free space, no unconfirmed partial relocalisation, small relocalisation corrections applied directly
+    body = sensors == "realistic" and LaunchConfiguration("body_slam").perform(context).lower() in ("true", "1")
+    body_params = dict(map_move=0.1, map_turn=0.17, unknown_ll=-1.125, reloc_partial=False,
+                       confirm_free_xy=0.08, confirm_free_th=0.07) if body else {}
     return [
         Node(package="duck_nav", executable="world_sim", output="screen",
              parameters=[{"mjcf": LaunchConfiguration("mjcf").perform(context) or os.path.join(share, "mjcf", "duck_v4_gc_world.xml"),
@@ -67,13 +72,15 @@ def nodes(context):
                           "tof_fov_deg": ParameterValue(LaunchConfiguration("tof_fov_deg"), value_type=float),
                           "tof_fov_v_deg": ParameterValue(LaunchConfiguration("tof_fov_v_deg"), value_type=float),
                           "tof_max_range": ParameterValue(LaunchConfiguration("tof_max_range"), value_type=float),
+                          **body_params,
                           "target_radius": 0.04,                    # the sim beacon is a known 4 cm-radius,
                           "target_height": 0.28},                  # 28 cm tall cylinder
                          sim_time]),
         Node(package="duck_nav", executable="nav_node", output="screen",
              parameters=[{"autonomous": ParameterValue(LaunchConfiguration("autonomous"), value_type=bool),
                           "survey_turn": ParameterValue(LaunchConfiguration("survey_turn"), value_type=float),
-                          "weak_look_after": ParameterValue(LaunchConfiguration("weak_look_after"), value_type=float)},
+                          "weak_look_after": ParameterValue(LaunchConfiguration("weak_look_after"), value_type=float),
+                          "yaw_sweep_rate": ParameterValue(LaunchConfiguration("yaw_sweep_rate"), value_type=float)},
                          sim_time]),
         Node(package="duck_nav", executable="score_node", output="screen",
              parameters=[{"timeout": ParameterValue(LaunchConfiguration("timeout"), value_type=float),
@@ -123,6 +130,8 @@ def generate_launch_description():
         DeclareLaunchArgument("reloc_confirm", default_value="true"),
         DeclareLaunchArgument("survey_turn", default_value="6.6"),          # rad turned in place at start; SLAM maps every frame meanwhile
         DeclareLaunchArgument("weak_look_after", default_value="3.0"),      # s weak before looking around (body depth)
+        DeclareLaunchArgument("body_slam", default_value="true"),           # body-sensor mapping policy (realistic)
+        DeclareLaunchArgument("yaw_sweep_rate", default_value="0.0"),       # rad/s body yaw oscillation while walking
         DeclareLaunchArgument("autonomous", default_value="true"),
         DeclareLaunchArgument("timeout", default_value="600.0"),
         DeclareLaunchArgument("seed", default_value="0"),

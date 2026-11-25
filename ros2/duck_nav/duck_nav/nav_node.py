@@ -49,6 +49,10 @@ class NavNode(Node):
         self.declare_parameter("survey_turn", 0.0)        # rad of in-place turning before exploring (2*pi = full turn)
         self.declare_parameter("survey_rate", 0.5)        # turn command during the survey / look-around
         self.declare_parameter("weak_look_after", 0.0)    # s of "slam weak" before turning in place to look around
+        # body yaw oscillation while walking (head-sweep substitute for a body-fixed sensor): +- yaw_sweep_rate rad/s
+        # added to the steering command, period yaw_sweep_period s. 0 = off.
+        self.declare_parameter("yaw_sweep_rate", 0.0)
+        self.declare_parameter("yaw_sweep_period", 3.0)
         self.survey_done = False; self.survey_last = None; self.survey_acc = 0.0; self.weak_since = None
         for name in ("pose_timeout", "map_timeout", "slam_state_timeout", "speed_bound_mps"):
             ds.positive_finite(self.get_parameter(name).value, name)
@@ -311,6 +315,10 @@ class NavNode(Node):
                 cmd.angular.z = 1.2 * float(np.sign(e))
             else:
                 cmd.linear.x = float(self.get_parameter("walk_cmd").value); cmd.angular.z = float(np.clip(2.0 * e, -1.0, 1.0))
+                sweep = float(self.get_parameter("yaw_sweep_rate").value)
+                if sweep > 0 and self.mode != "escape":
+                    period = max(float(self.get_parameter("yaw_sweep_period").value), 0.5)
+                    cmd.angular.z = float(np.clip(cmd.angular.z + sweep * math.sin(2 * math.pi * t / period), -1.2, 1.2))
                 if not ds.motion_clear(self.grid, self.pose, float(self.get_parameter("speed_bound_mps").value),
                                        cmd.angular.z, info=self.info,
                                        clearance=float(self.get_parameter("clearance").value),
