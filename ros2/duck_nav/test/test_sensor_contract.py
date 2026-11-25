@@ -173,3 +173,42 @@ def test_a010_backend_converts_depth_and_marks_no_target():
     assert b"AT+BINN=4\r" in dev.written
     rec = tof_records(f, "axial", 70.0, 0.05, 2.5, zones=25, fov_v_deg=60.0)
     assert len(rec) == 625 and rec[0][4] == 1 and np.isnan(rec[0][0])
+
+
+def run_backend(chunks, read_error=None):
+    from duck_nav.a010_backend import A010Backend
+    import time as _t
+    data = list(chunks)
+
+    class FakeSerial:
+        def write(self, b):
+            pass
+        def read(self, n):
+            if data:
+                return data.pop(0)
+            if read_error is not None:
+                raise read_error
+            _t.sleep(0.005); return b""
+        def close(self):
+            pass
+    clock = iter(range(1_000_000_000, 10_000_000_000, 100_000_000))
+    b = A010Backend({"binning": 4, "latency_s": 0.0}, serial_factory=FakeSerial, clock_ns=lambda: next(clock))
+    _t.sleep(0.2)
+    return b
+
+
+def test_a010_keeps_only_the_newest_frame_of_a_read_and_counts_gaps():
+    img = np.full((25, 25), 51)
+    b = run_backend([a010_bytes(img, 1) + a010_bytes(img, 2), a010_bytes(img, 5)])
+    frames = [f for f in (b.read(), b.read(), b.read()) if f is not None]
+    b.close()
+    assert len(frames) == 2                                       # 1 superseded by 2 in the same read
+    assert frames[0].stamp_ns < frames[1].stamp_ns                # never two frames with the same stamp
+    assert b.stats["superseded"] == 1 and b.stats["seq_gaps"] == 1 and b.stats["frames"] == 3
+
+
+def test_a010_reader_failure_is_raised_by_read():
+    b = run_backend([], read_error=OSError("device unplugged"))
+    with pytest.raises(RuntimeError, match="unplugged"):
+        b.read()
+    b.stop.set()

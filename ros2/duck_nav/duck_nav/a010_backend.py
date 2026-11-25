@@ -13,7 +13,11 @@ Depth: with AT+UNIT=0 the pixel p maps to (p / 5.1)^2 mm (fine near, coarse far)
 p = 0 and p = 255 are treated as no target (status 1).
 
 Acquisition time = host receive time of the frame's last byte minus `latency_s` (exposure + readout + USB; measure
-it, e.g. against a light or motion event). Host time must be the ROS clock the consumer uses.
+it, e.g. against a light or motion event). Host time must be the ROS clock the consumer uses. That stamp is only right
+for the newest frame of a read, so when one read holds several complete frames (the host fell behind) only the newest
+is kept; the rest are counted in `stats["superseded"]`. Gaps in the sensor's frame id are counted in
+`stats["seq_gaps"]` (frames lost on the link or dropped by the sensor). A failure in the reader thread is kept and
+re-raised by read(), so duck_tof logs it instead of going quietly stale.
 """
 import queue
 import threading
@@ -100,12 +104,20 @@ class A010Backend:
             self.dev.write((c + "\r").encode())
             time.sleep(0.05)
         self.q = queue.Queue(maxsize=2)
-        self.dropped = self.wrong_size = 0
+        self.stats = dict(frames=0, superseded=0, queue_dropped=0, wrong_size=0, seq_gaps=0)
+        self.last_id = None
+        self.error = None
         self.stop = threading.Event()
         self.thread = threading.Thread(target=self._run, daemon=True)
         self.thread.start()
 
     def _run(self):
+        try:
+            self._loop()
+        except Exception as exc:                             # noqa: BLE001  surfaced by read()
+            self.error = exc
+
+    def _loop(self):
         buf = bytearray()
         while not self.stop.is_set():
             chunk = self.dev.read(4096)
@@ -115,15 +127,34 @@ class A010Backend:
             buf += chunk
             frames, rest = parse_frames(buf)
             buf = bytearray(rest)
-            for rows, cols, _, img in frames:
+            good = []
+            for rows, cols, fid, img in frames:
                 if rows != self.side or cols != self.side:
-                    self.wrong_size += 1; continue
-                fr = frame_from_pixels(img, t - self.latency_ns, self.unit, self.flip_lr, self.flip_ud)
-                if self.q.full():
-                    self.q.get_nowait(); self.dropped += 1   # keep the newest acquisitions
-                self.q.put_nowait(fr)
+                    self.stats["wrong_size"] += 1; continue
+                if self.last_id is not None and fid != (self.last_id + 1) & 0xFFFF:
+                    self.stats["seq_gaps"] += 1
+                self.last_id = fid
+                good.append(img)
+            if not good:
+                continue
+            self.stats["frames"] += len(good)
+            self.stats["superseded"] += len(good) - 1       # only the newest has a correct receive-time stamp
+            fr = frame_from_pixels(good[-1], t - self.latency_ns, self.unit, self.flip_lr, self.flip_ud)
+            if self.q.full():
+                self.q.get_nowait(); self.stats["queue_dropped"] += 1   # keep the newest acquisitions
+            self.q.put_nowait(fr)
+
+    @property
+    def dropped(self):
+        return self.stats["queue_dropped"]
+
+    @property
+    def wrong_size(self):
+        return self.stats["wrong_size"]
 
     def read(self):
+        if self.error is not None:
+            raise RuntimeError(f"A010 reader thread failed: {self.error!r}")
         try:
             return self.q.get_nowait()
         except queue.Empty:

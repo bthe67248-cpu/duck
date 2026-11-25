@@ -323,10 +323,11 @@ class DuckSLAM:
         pc = np.stack([u * d / K.fx, -v * d / K.fy, -d], -1)[ok]
         return self.scan_from_points(pc @ R_bc.T + t_bc, min_bin_points=3)
 
-    def scan_from_tof(self, ranges, valid, rays, R_bs, t_bs, convention="radial", fov_h_deg=45.0, n=8):
+    def scan_from_tof(self, ranges, valid, rays, R_bs, t_bs, convention="radial", fov_h_deg=45.0, n=8, points=None):
         """Sparse ToF zones -> scan, one bearing bin per zone column. Invalid / no-return zones are dropped:
-        they are NOT free space."""
-        ps = tof_points(ranges, valid, rays, convention)
+        they are NOT free space. `points` (sensor-frame xyz of the valid zones, as the publisher computed them, e.g.
+        from calibrated rays) replaces the reconstruction from `ranges` and the ideal `rays`."""
+        ps = tof_points(ranges, valid, rays, convention) if points is None else np.asarray(points, float).reshape(-1, 3)
         ps = ps[np.linalg.norm(ps, axis=1) < self.max_r]
         return self.scan_from_points(ps @ R_bs.T + t_bs, min_bin_points=1, bin_deg=fov_h_deg / n,
                                      bin_offset=0.5 if n % 2 == 0 else 0.0)     # one bin per zone column
@@ -734,8 +735,11 @@ class FrameLocalizer:
                 accepted = slam.match(*cons, current_scan=fresh)
         if accepted and self.sweep is not None:
             self.sweep.correct(pose_acq, slam.pose)
+        # a frame rejected because it may be wrong (not merely uninformative) never enters the map on the strength of
+        # an earlier healthy state: an ambiguous second peak or an unconfirmed relocalisation is exactly such a frame
         healthy = self.health.state(ts) == "ok" and slam.match_reason not in (
-            "fresh_scan_disagrees", "search_boundary", "ambiguous", "ambiguous_heading")
+            "fresh_scan_disagrees", "search_boundary", "ambiguous", "ambiguous_heading", "second_peak",
+            "reloc_unconfirmed")
         moved = self.last_map_pose is None or (
             math.hypot(*(slam.pose[:2] - self.last_map_pose[:2])) >= self.map_move
             or abs((slam.pose[2] - self.last_map_pose[2] + math.pi) % (2 * math.pi) - math.pi) >= self.map_turn)
