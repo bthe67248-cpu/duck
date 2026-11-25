@@ -524,6 +524,20 @@ for the next step: a minimum number of hits in the *newest frame* (not only in t
 the pose; bounding along-wall corrections by the measured motion; keeping raw keyframes so a region can be rebuilt after a
 relocalisation (loop closure stays off). None of them is in this branch.
 
+## Baseline of the merged code
+
+All of the above merged together (main at 1bb43b3), 600 s, seeds 0–5, full table and runs in
+[`results/merged_baseline/`](../../results/merged_baseline/README.md):
+
+| Configuration | Beacon | SLAM mean error (median) | Worst max | Coverage |
+|-|-|-|-|-|
+| Layout A, sensor errors off (default) | 5/6 | 0.33 m (0.26 m) | 1.82 m | 84 % |
+| Layout A, sensor errors on | 4/6 | 0.57 m (0.29 m) | 3.99 m | 78 % |
+| Layout B, errors off | 2/6 | 0.78 m (0.51 m) | 2.83 m | 56 % |
+| Layout B, errors on | 2/6 | 0.83 m (0.82 m) | 3.09 m | 63 % |
+
+Earlier tables in this file come from individual branches and are not measurements of this combination.
+
 ## Files
 
 - `v4_params.json`: all dimensions (mm). Body, boards, A010, battery and XT60 in the torso frame; head parts in the

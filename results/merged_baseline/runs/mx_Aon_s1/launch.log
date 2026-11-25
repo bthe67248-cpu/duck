@@ -1,0 +1,1681 @@
+[INFO] [launch]: All log files can be found below ~/.ros/log/2026-11-25-09-09-31-111002-DESKTOP-D7NMGD0-2652
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [world_sim-1]: process started with pid [2662]
+[INFO] [robot_state_publisher-2]: process started with pid [2663]
+[INFO] [yolo_node-3]: process started with pid [2664]
+[INFO] [slam_node-4]: process started with pid [2665]
+[INFO] [nav_node-5]: process started with pid [2666]
+[INFO] [score_node-6]: process started with pid [2667]
+[robot_state_publisher-2] [WARN] [1795626571.253081803] [kdl_parser]: The root link trunk_base has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
+[robot_state_publisher-2] [INFO] [1795626571.253196814] [robot_state_publisher]: Robot initialized
+[yolo_node-3] [INFO] [1795626572.152377579] [duck_yolo]: YOLO input 320x256, classes ['beacon', 'box']
+[slam_node-4] [INFO] [1795626572.295202571] [duck_slam]: relocalisation window +-0.80 m / +-25.0 deg after 3.0 s unhealthy, confirm True, bootstrap until turned 6.6 rad; map keyframes 0.10 m / 10 deg, unknown_ll -1.125, reloc partial False, unconfirmed reloc up to 0.08 m; peak margin 0, map min gap 0, partial tracks False, reloc peak margin 0
+[world_sim-1] Dropped Escape call with ulEscapeCode : 0x03007703
+[world_sim-1] [INFO] [1795626573.729840597] [world_sim]: world_sim up (realistic sensors): 50 Hz policy, 200 Hz physics, servo delay 20 ms, camera 320x240 at 5 Hz, ToF 25x25 at 17 Hz, latency 0.06 s, FOV 70x60 deg, range 0.2-2.5 m, mount body
+[world_sim-1] [INFO] [1795626573.731004956] [world_sim]: sensor errors: gyro bias [0.0027 0.0062 0.0009] rad/s, accel bias [0.022 0.057 0.023] m/s2, encoder offsets up to 0.88 deg, extrinsic error ToF 1.74 deg / 5.9 mm, camera 2.05 deg / 4.2 mm, stamp jitter imu/cam/tof 0.5/3.0/2.0 ms
+[nav_node-5] [INFO] [1795626573.822022068] [duck_nav]: [t=0.1 s] waiting for observations
+[nav_node-5] [INFO] [1795626574.730288029] [duck_nav]: [t=1.1 s] survey: turning in place to map all round
+[nav_node-5] [INFO] [1795626575.680500440] [duck_nav]: [t=2.0 s] slam weak
+[nav_node-5] [INFO] [1795626576.721614941] [duck_nav]: [t=3.0 s] exploring
+[nav_node-5] [INFO] [1795626577.666792990] [duck_nav]: [t=4.0 s] slam weak
+[nav_node-5] [INFO] [1795626578.693910032] [duck_nav]: [t=5.0 s] exploring
+[nav_node-5] [INFO] [1795626584.670357080] [duck_nav]: [t=11.0 s] slam weak
+[nav_node-5] [INFO] [1795626585.677574090] [duck_nav]: [t=12.0 s] exploring
+[nav_node-5] [INFO] [1795626586.709024372] [duck_nav]: [t=13.0 s] slam weak
+[nav_node-5] [INFO] [1795626587.683593141] [duck_nav]: [t=14.0 s] exploring
+[slam_node-4] [INFO] [1795626592.610913523] [duck_slam]: frame processing: mean 20.4 ms, p95 28.7 ms, max 36.3 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795626593.100832124] [duck_nav]: [t=18.6 s] survey done
+[nav_node-5] [INFO] [1795626593.621458702] [duck_nav]: [t=19.1 s] exploring
+[yolo_node-3] [INFO] [1795626604.508563433] [duck_yolo]: 149 frames, 19 ms/inference, detections so far: {'beacon': 0, 'box': 48}
+[world_sim-1] [INFO] [1795626604.552021314] [world_sim]: sim 30 s, wall 30 s, render 41 ms per camera frame
+[nav_node-5] [INFO] [1795626606.013250742] [duck_nav]: [t=31.5 s] near an obstacle: steering on a clear arc
+[nav_node-5] [INFO] [1795626606.533670991] [duck_nav]: [t=32.0 s] exploring
+[nav_node-5] [INFO] [1795626610.534657343] [duck_nav]: [t=36.0 s] no reachable frontier
+[slam_node-4] [INFO] [1795626610.608884695] [duck_slam]: frame processing: mean 14.1 ms, p95 24.8 ms, max 31.8 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795626611.532576501] [duck_nav]: [t=37.0 s] exploring
+[nav_node-5] [INFO] [1795626616.477307283] [duck_nav]: [t=42.0 s] near an obstacle: steering on a clear arc
+[nav_node-5] [INFO] [1795626616.517694130] [duck_nav]: [t=42.0 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795626616.583235381] [duck_nav]: [t=42.1 s] exploring
+[nav_node-5] [INFO] [1795626619.937087037] [duck_nav]: [t=45.4 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795626620.532169264] [duck_nav]: [t=46.0 s] exploring
+[slam_node-4] [INFO] [1795626629.438354482] [duck_slam]: frame processing: mean 16.3 ms, p95 26.2 ms, max 30.1 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795626631.910262756] [duck_nav]: [t=56.6 s] near an obstacle: steering on a clear arc
+[nav_node-5] [INFO] [1795626631.939414311] [duck_nav]: [t=56.6 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795626632.354720607] [duck_nav]: [t=57.0 s] exploring
+[nav_node-5] [INFO] [1795626632.406020925] [duck_nav]: [t=57.1 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795626633.354962592] [duck_nav]: [t=58.0 s] exploring
+[nav_node-5] [INFO] [1795626633.401774906] [duck_nav]: [t=58.1 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795626633.708654499] [duck_nav]: [t=58.4 s] slam weak
+[yolo_node-3] [INFO] [1795626635.336537849] [duck_yolo]: 299 frames, 21 ms/inference, detections so far: {'beacon': 0, 'box': 197}
+[world_sim-1] [INFO] [1795626635.382152932] [world_sim]: sim 60 s, wall 60 s, render 43 ms per camera frame
+[nav_node-5] [INFO] [1795626636.737446025] [duck_nav]: [t=61.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626637.341023285] [duck_nav]: [t=62.0 s] slam weak
+[nav_node-5] [INFO] [1795626637.342171043] [duck_nav]: [t=62.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626638.207036023] [duck_nav]: [t=62.9 s] slam weak
+[nav_node-5] [INFO] [1795626640.221994235] [duck_nav]: [t=64.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626640.337868598] [duck_nav]: [t=65.0 s] slam weak
+[nav_node-5] [INFO] [1795626640.338671413] [duck_nav]: [t=65.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626641.337141080] [duck_nav]: [t=66.0 s] slam weak
+[nav_node-5] [INFO] [1795626641.338606223] [duck_nav]: [t=66.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626641.770138351] [duck_nav]: [t=66.4 s] slam weak
+[nav_node-5] [INFO] [1795626642.308463478] [duck_nav]: [t=67.0 s] slam blind
+[nav_node-5] [INFO] [1795626642.339181480] [duck_nav]: [t=67.0 s] slam weak
+[nav_node-5] [INFO] [1795626643.739009755] [duck_nav]: [t=68.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626644.344058006] [duck_nav]: [t=69.0 s] slam weak
+[nav_node-5] [INFO] [1795626644.345444440] [duck_nav]: [t=69.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626645.240755393] [duck_nav]: [t=69.9 s] slam weak
+[nav_node-5] [INFO] [1795626646.605134957] [duck_nav]: [t=71.3 s] slam blind
+[nav_node-5] [INFO] [1795626646.706084572] [duck_nav]: [t=71.4 s] slam weak
+[nav_node-5] [INFO] [1795626647.240053165] [duck_nav]: [t=71.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626647.338496548] [duck_nav]: [t=72.0 s] slam weak
+[nav_node-5] [INFO] [1795626647.340304927] [duck_nav]: [t=72.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626648.348081486] [duck_nav]: [t=73.0 s] slam weak
+[nav_node-5] [INFO] [1795626648.350263766] [duck_nav]: [t=73.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626648.739287967] [duck_nav]: [t=73.4 s] slam blind
+[nav_node-5] [INFO] [1795626648.808623808] [duck_nav]: [t=73.5 s] slam weak
+[slam_node-4] [INFO] [1795626649.088796132] [duck_slam]: frame processing: mean 40.4 ms, p95 68.3 ms, max 121.6 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795626650.742919088] [duck_nav]: [t=75.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626651.337580292] [duck_nav]: [t=76.0 s] slam weak
+[nav_node-5] [INFO] [1795626651.339316484] [duck_nav]: [t=76.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626652.239926003] [duck_nav]: [t=76.9 s] slam weak
+[nav_node-5] [INFO] [1795626654.238842734] [duck_nav]: [t=78.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626654.339540479] [duck_nav]: [t=79.0 s] slam weak
+[nav_node-5] [INFO] [1795626654.342421363] [duck_nav]: [t=79.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626655.362379202] [duck_nav]: [t=80.0 s] exploring
+[nav_node-5] [INFO] [1795626663.938150813] [duck_nav]: [t=87.8 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795626664.243793192] [duck_nav]: [t=88.0 s] exploring
+[nav_node-5] [INFO] [1795626665.475454082] [duck_nav]: [t=89.3 s] path clearance guard: turning in place and replanning
+[yolo_node-3] [INFO] [1795626666.173428802] [duck_yolo]: 449 frames, 26 ms/inference, detections so far: {'beacon': 0, 'box': 277}
+[nav_node-5] [INFO] [1795626666.227126497] [duck_nav]: [t=90.0 s] exploring
+[world_sim-1] [INFO] [1795626666.244325807] [world_sim]: sim 90 s, wall 90 s, render 58 ms per camera frame
+[slam_node-4] [INFO] [1795626668.989058190] [duck_slam]: frame processing: mean 30.2 ms, p95 66.5 ms, max 104.9 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795626674.773418744] [duck_nav]: [t=98.6 s] slam weak
+[nav_node-5] [INFO] [1795626676.203212694] [duck_nav]: [t=100.0 s] exploring
+[nav_node-5] [INFO] [1795626685.942938401] [duck_nav]: [t=109.8 s] slam weak
+[nav_node-5] [INFO] [1795626686.236027108] [duck_nav]: [t=110.1 s] exploring
+[slam_node-4] [INFO] [1795626686.975424145] [duck_slam]: frame processing: mean 16.5 ms, p95 32.4 ms, max 57.1 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795626687.777534520] [duck_nav]: [t=111.6 s] slam weak
+[nav_node-5] [INFO] [1795626688.203255568] [duck_nav]: [t=112.0 s] exploring
+[nav_node-5] [INFO] [1795626690.469581653] [duck_nav]: [t=113.5 s] slam weak
+[nav_node-5] [INFO] [1795626691.027290750] [duck_nav]: [t=114.0 s] exploring
+[yolo_node-3] [INFO] [1795626696.980422229] [duck_yolo]: 599 frames, 28 ms/inference, detections so far: {'beacon': 0, 'box': 399}
+[world_sim-1] [INFO] [1795626697.027383544] [world_sim]: sim 120 s, wall 120 s, render 52 ms per camera frame
+[slam_node-4] [INFO] [1795626700.680167864] [duck_slam]: beacon located by YOLO + tof: (3.97, 1.38) in the map
+[nav_node-5] [INFO] [1795626705.006692023] [duck_nav]: [t=128.0 s] heading for the beacon
+[slam_node-4] [INFO] [1795626705.788131355] [duck_slam]: frame processing: mean 17.7 ms, p95 32.1 ms, max 62.2 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795626716.983461704] [duck_nav]: [t=140.0 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795626723.974709567] [duck_nav]: [t=146.2 s] slam weak
+[slam_node-4] [INFO] [1795626724.592066392] [duck_slam]: frame processing: mean 20.6 ms, p95 38.0 ms, max 59.6 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795626727.007153630] [duck_nav]: [t=149.2 s] slam weak: looking around
+[yolo_node-3] [INFO] [1795626727.799562957] [duck_yolo]: 749 frames, 27 ms/inference, detections so far: {'beacon': 38, 'box': 455}
+[nav_node-5] [INFO] [1795626727.837430356] [duck_nav]: [t=150.0 s] beacon reached; exploring the rest of the room
+[world_sim-1] [INFO] [1795626727.855027247] [world_sim]: sim 150 s, wall 150 s, render 57 ms per camera frame
+[nav_node-5] [INFO] [1795626732.606771375] [duck_nav]: [t=154.8 s] slam weak
+[nav_node-5] [INFO] [1795626735.670700921] [duck_nav]: [t=157.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626735.812829244] [duck_nav]: [t=158.0 s] slam weak
+[nav_node-5] [INFO] [1795626735.819408868] [duck_nav]: [t=158.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626736.892791480] [duck_nav]: [t=159.1 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795626742.300536257] [duck_nav]: [t=164.5 s] slam weak
+[slam_node-4] [INFO] [1795626743.140487885] [duck_slam]: frame processing: mean 23.8 ms, p95 54.2 ms, max 144.9 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795626745.360135275] [duck_nav]: [t=167.6 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626745.807114060] [duck_nav]: [t=168.0 s] slam weak
+[nav_node-5] [INFO] [1795626745.808459233] [duck_nav]: [t=168.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626746.801313420] [duck_nav]: [t=169.0 s] slam weak
+[nav_node-5] [INFO] [1795626748.801769750] [duck_nav]: [t=171.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626749.806422879] [duck_nav]: [t=172.0 s] slam weak
+[nav_node-5] [INFO] [1795626749.808830673] [duck_nav]: [t=172.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626750.305964097] [duck_nav]: [t=172.5 s] slam weak
+[nav_node-5] [INFO] [1795626750.402143453] [duck_nav]: [t=172.6 s] slam blind
+[nav_node-5] [INFO] [1795626750.463393594] [duck_nav]: [t=172.7 s] slam weak
+[nav_node-5] [INFO] [1795626752.300242367] [duck_nav]: [t=174.5 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626752.832839583] [duck_nav]: [t=175.0 s] slam weak
+[nav_node-5] [INFO] [1795626752.833625368] [duck_nav]: [t=175.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626753.801682630] [duck_nav]: [t=176.0 s] slam weak
+[nav_node-5] [INFO] [1795626753.884584591] [duck_nav]: [t=176.1 s] slam blind
+[nav_node-5] [INFO] [1795626753.963644672] [duck_nav]: [t=176.2 s] slam weak
+[nav_node-5] [INFO] [1795626756.621993502] [duck_nav]: [t=178.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626757.622100510] [duck_nav]: [t=179.0 s] slam weak
+[nav_node-5] [INFO] [1795626757.623837137] [duck_nav]: [t=179.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626758.126487577] [duck_nav]: [t=179.5 s] slam weak
+[yolo_node-3] [INFO] [1795626758.616572084] [duck_yolo]: 899 frames, 21 ms/inference, detections so far: {'beacon': 46, 'box': 493}
+[world_sim-1] [INFO] [1795626758.664005833] [world_sim]: sim 180 s, wall 180 s, render 48 ms per camera frame
+[nav_node-5] [INFO] [1795626760.118268896] [duck_nav]: [t=181.5 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626760.617603982] [duck_nav]: [t=182.0 s] slam weak
+[nav_node-5] [INFO] [1795626760.619717164] [duck_nav]: [t=182.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626761.625393554] [duck_nav]: [t=183.0 s] slam weak
+[nav_node-5] [INFO] [1795626763.623435962] [duck_nav]: [t=185.0 s] slam weak: looking around
+[slam_node-4] [INFO] [1795626763.817225047] [duck_slam]: frame processing: mean 45.9 ms, p95 64.7 ms, max 94.2 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795626764.636984100] [duck_nav]: [t=186.0 s] slam weak
+[nav_node-5] [INFO] [1795626764.638341948] [duck_nav]: [t=186.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626765.144306786] [duck_nav]: [t=186.5 s] slam weak
+[nav_node-5] [INFO] [1795626767.148169416] [duck_nav]: [t=188.5 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626767.619954304] [duck_nav]: [t=189.0 s] slam weak
+[nav_node-5] [INFO] [1795626767.621054309] [duck_nav]: [t=189.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626768.616677893] [duck_nav]: [t=190.0 s] slam weak
+[nav_node-5] [INFO] [1795626770.627401411] [duck_nav]: [t=192.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626771.624207653] [duck_nav]: [t=193.0 s] slam weak
+[nav_node-5] [INFO] [1795626771.625332560] [duck_nav]: [t=193.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626772.116628539] [duck_nav]: [t=193.5 s] slam weak
+[nav_node-5] [INFO] [1795626772.296847031] [duck_nav]: [t=193.7 s] slam blind
+[nav_node-5] [INFO] [1795626772.382169945] [duck_nav]: [t=193.8 s] slam weak
+[nav_node-5] [INFO] [1795626774.126766448] [duck_nav]: [t=195.5 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626774.622646159] [duck_nav]: [t=196.0 s] slam weak
+[nav_node-5] [INFO] [1795626774.623653321] [duck_nav]: [t=196.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626775.623673084] [duck_nav]: [t=197.0 s] slam weak
+[nav_node-5] [INFO] [1795626777.622941501] [duck_nav]: [t=199.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626778.621173847] [duck_nav]: [t=200.0 s] slam weak
+[nav_node-5] [INFO] [1795626778.623850053] [duck_nav]: [t=200.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626779.146966964] [duck_nav]: [t=200.5 s] slam weak
+[nav_node-5] [INFO] [1795626780.478885064] [duck_nav]: [t=201.9 s] slam blind
+[nav_node-5] [INFO] [1795626780.617095492] [duck_nav]: [t=202.0 s] slam weak
+[nav_node-5] [INFO] [1795626781.076378350] [duck_nav]: [t=202.5 s] slam blind
+[nav_node-5] [INFO] [1795626781.117109431] [duck_nav]: [t=202.5 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626781.618036275] [duck_nav]: [t=203.0 s] slam weak
+[nav_node-5] [INFO] [1795626781.619514128] [duck_nav]: [t=203.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626782.647842378] [duck_nav]: [t=204.0 s] slam weak
+[slam_node-4] [INFO] [1795626784.560799446] [duck_slam]: frame processing: mean 51.8 ms, p95 69.1 ms, max 85.4 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795626784.664617066] [duck_nav]: [t=206.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626785.627485035] [duck_nav]: [t=207.0 s] slam weak
+[nav_node-5] [INFO] [1795626785.628401453] [duck_nav]: [t=207.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626786.121917246] [duck_nav]: [t=207.5 s] slam weak
+[nav_node-5] [INFO] [1795626786.623118153] [duck_nav]: [t=208.0 s] slam blind
+[nav_node-5] [INFO] [1795626786.678580039] [duck_nav]: [t=208.1 s] slam weak
+[nav_node-5] [INFO] [1795626788.916693469] [duck_nav]: [t=209.5 s] slam weak: looking around
+[yolo_node-3] [INFO] [1795626789.412259379] [duck_yolo]: 1049 frames, 22 ms/inference, detections so far: {'beacon': 46, 'box': 583}
+[nav_node-5] [INFO] [1795626789.413832757] [duck_nav]: [t=210.0 s] slam weak
+[nav_node-5] [INFO] [1795626789.415408714] [duck_nav]: [t=210.0 s] slam weak: looking around
+[world_sim-1] [INFO] [1795626789.461256270] [world_sim]: sim 210 s, wall 210 s, render 46 ms per camera frame
+[nav_node-5] [INFO] [1795626790.442566163] [duck_nav]: [t=211.0 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795626791.786455313] [duck_nav]: [t=212.4 s] slam weak
+[nav_node-5] [INFO] [1795626794.813880881] [duck_nav]: [t=215.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626795.467418895] [duck_nav]: [t=216.0 s] slam weak
+[nav_node-5] [INFO] [1795626795.468458172] [duck_nav]: [t=216.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626796.272990206] [duck_nav]: [t=216.9 s] slam weak
+[nav_node-5] [INFO] [1795626798.278836213] [duck_nav]: [t=218.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626798.419053084] [duck_nav]: [t=219.0 s] slam weak
+[nav_node-5] [INFO] [1795626798.420295555] [duck_nav]: [t=219.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626799.413144276] [duck_nav]: [t=220.0 s] slam weak
+[nav_node-5] [INFO] [1795626799.414803507] [duck_nav]: [t=220.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626799.781432615] [duck_nav]: [t=220.4 s] slam weak
+[nav_node-5] [INFO] [1795626800.576697611] [duck_nav]: [t=221.2 s] slam blind
+[nav_node-5] [INFO] [1795626800.674643371] [duck_nav]: [t=221.3 s] slam weak
+[nav_node-5] [INFO] [1795626801.777958011] [duck_nav]: [t=222.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626802.412293450] [duck_nav]: [t=223.0 s] slam weak
+[nav_node-5] [INFO] [1795626802.413140843] [duck_nav]: [t=223.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626803.280249093] [duck_nav]: [t=223.9 s] slam weak
+[nav_node-5] [INFO] [1795626803.386232730] [duck_nav]: [t=224.0 s] slam blind
+[nav_node-5] [INFO] [1795626803.432297696] [duck_nav]: [t=224.0 s] slam weak
+[nav_node-5] [INFO] [1795626805.277038057] [duck_nav]: [t=225.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626805.412840858] [duck_nav]: [t=226.0 s] slam weak
+[nav_node-5] [INFO] [1795626805.414133714] [duck_nav]: [t=226.0 s] slam weak: looking around
+[slam_node-4] [INFO] [1795626805.518771189] [duck_slam]: frame processing: mean 45.6 ms, p95 73.5 ms, max 105.3 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795626806.411890589] [duck_nav]: [t=227.0 s] slam weak
+[nav_node-5] [INFO] [1795626806.414723777] [duck_nav]: [t=227.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626806.789568582] [duck_nav]: [t=227.4 s] slam weak
+[nav_node-5] [INFO] [1795626808.774149566] [duck_nav]: [t=229.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626809.413851628] [duck_nav]: [t=230.0 s] slam weak
+[nav_node-5] [INFO] [1795626809.415355781] [duck_nav]: [t=230.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626810.272045599] [duck_nav]: [t=230.9 s] slam weak
+[nav_node-5] [INFO] [1795626811.641537741] [duck_nav]: [t=232.2 s] slam blind
+[nav_node-5] [INFO] [1795626811.774190902] [duck_nav]: [t=232.4 s] slam weak
+[nav_node-5] [INFO] [1795626811.813393634] [duck_nav]: [t=232.4 s] slam blind
+[nav_node-5] [INFO] [1795626811.913873968] [duck_nav]: [t=232.5 s] slam weak
+[nav_node-5] [INFO] [1795626812.278892899] [duck_nav]: [t=232.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626812.418201647] [duck_nav]: [t=233.0 s] slam weak
+[nav_node-5] [INFO] [1795626812.419496834] [duck_nav]: [t=233.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626813.413369141] [duck_nav]: [t=234.0 s] slam weak
+[nav_node-5] [INFO] [1795626813.414940132] [duck_nav]: [t=234.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626813.789126901] [duck_nav]: [t=234.4 s] slam weak
+[nav_node-5] [INFO] [1795626815.783601032] [duck_nav]: [t=236.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626816.422112838] [duck_nav]: [t=237.0 s] slam weak
+[nav_node-5] [INFO] [1795626816.428719555] [duck_nav]: [t=237.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626817.317819922] [duck_nav]: [t=237.9 s] slam weak
+[nav_node-5] [INFO] [1795626819.276519742] [duck_nav]: [t=239.9 s] slam weak: looking around
+[yolo_node-3] [INFO] [1795626819.411644349] [duck_yolo]: 1199 frames, 23 ms/inference, detections so far: {'beacon': 46, 'box': 640}
+[nav_node-5] [INFO] [1795626819.412184183] [duck_nav]: [t=240.0 s] slam blind
+[nav_node-5] [INFO] [1795626819.414672849] [duck_nav]: [t=240.0 s] slam weak: looking around
+[world_sim-1] [INFO] [1795626819.465656407] [world_sim]: sim 240 s, wall 240 s, render 55 ms per camera frame
+[nav_node-5] [INFO] [1795626820.421674938] [duck_nav]: [t=241.0 s] slam weak
+[nav_node-5] [INFO] [1795626820.438715642] [duck_nav]: [t=241.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626820.822186531] [duck_nav]: [t=241.4 s] slam weak
+[nav_node-5] [INFO] [1795626823.574850948] [duck_nav]: [t=243.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626824.213768650] [duck_nav]: [t=244.0 s] slam weak
+[nav_node-5] [INFO] [1795626824.215279549] [duck_nav]: [t=244.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626825.082069533] [duck_nav]: [t=244.9 s] slam weak
+[nav_node-5] [INFO] [1795626825.173410699] [duck_nav]: [t=245.0 s] slam blind
+[nav_node-5] [INFO] [1795626825.214955616] [duck_nav]: [t=245.0 s] slam weak
+[nav_node-5] [INFO] [1795626827.098236709] [duck_nav]: [t=246.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626827.229099183] [duck_nav]: [t=247.0 s] slam weak
+[nav_node-5] [INFO] [1795626827.230454384] [duck_nav]: [t=247.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626828.265676846] [duck_nav]: [t=248.0 s] slam weak
+[nav_node-5] [INFO] [1795626828.267377982] [duck_nav]: [t=248.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626828.573502557] [duck_nav]: [t=248.4 s] slam weak
+[slam_node-4] [INFO] [1795626828.987169871] [duck_slam]: frame processing: mean 59.5 ms, p95 80.5 ms, max 133.3 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795626829.442377405] [duck_nav]: [t=249.2 s] slam blind
+[nav_node-5] [INFO] [1795626829.572951311] [duck_nav]: [t=249.4 s] slam weak
+[nav_node-5] [INFO] [1795626830.573423567] [duck_nav]: [t=250.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626831.221003628] [duck_nav]: [t=251.0 s] slam weak
+[nav_node-5] [INFO] [1795626831.222524801] [duck_nav]: [t=251.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626832.074805396] [duck_nav]: [t=251.9 s] slam weak
+[nav_node-5] [INFO] [1795626833.574862995] [duck_nav]: [t=253.4 s] slam blind
+[nav_node-5] [INFO] [1795626833.682655644] [duck_nav]: [t=253.5 s] slam weak
+[nav_node-5] [INFO] [1795626834.112669114] [duck_nav]: [t=253.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626834.214614477] [duck_nav]: [t=254.0 s] slam weak
+[nav_node-5] [INFO] [1795626834.215756768] [duck_nav]: [t=254.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626835.213389567] [duck_nav]: [t=255.0 s] slam weak
+[nav_node-5] [INFO] [1795626835.214991038] [duck_nav]: [t=255.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626836.249081255] [duck_nav]: [t=256.0 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795626837.585922459] [duck_nav]: [t=257.4 s] slam weak
+[nav_node-5] [INFO] [1795626840.613472311] [duck_nav]: [t=260.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626841.213452337] [duck_nav]: [t=261.0 s] slam weak
+[nav_node-5] [INFO] [1795626841.215727794] [duck_nav]: [t=261.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626842.090863178] [duck_nav]: [t=261.9 s] slam blind
+[nav_node-5] [INFO] [1795626842.113161490] [duck_nav]: [t=261.9 s] slam weak
+[nav_node-5] [INFO] [1795626844.078357539] [duck_nav]: [t=263.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626844.212860773] [duck_nav]: [t=264.0 s] slam weak
+[nav_node-5] [INFO] [1795626844.214399596] [duck_nav]: [t=264.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626845.214533560] [duck_nav]: [t=265.0 s] slam weak
+[nav_node-5] [INFO] [1795626845.222884021] [duck_nav]: [t=265.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626845.573762211] [duck_nav]: [t=265.4 s] slam weak
+[nav_node-5] [INFO] [1795626847.015035828] [duck_nav]: [t=266.8 s] slam blind
+[nav_node-5] [INFO] [1795626847.074215405] [duck_nav]: [t=266.9 s] slam weak
+[nav_node-5] [INFO] [1795626847.573377032] [duck_nav]: [t=267.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626848.255313282] [duck_nav]: [t=268.0 s] slam weak
+[nav_node-5] [INFO] [1795626848.256228305] [duck_nav]: [t=268.0 s] slam weak: looking around
+[slam_node-4] [INFO] [1795626848.910689046] [duck_slam]: frame processing: mean 42.6 ms, p95 71.6 ms, max 87.7 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795626849.084369099] [duck_nav]: [t=268.9 s] slam weak
+[yolo_node-3] [INFO] [1795626850.211937472] [duck_yolo]: 1349 frames, 20 ms/inference, detections so far: {'beacon': 60, 'box': 697}
+[world_sim-1] [INFO] [1795626850.262060388] [world_sim]: sim 270 s, wall 270 s, render 46 ms per camera frame
+[nav_node-5] [INFO] [1795626851.082368159] [duck_nav]: [t=270.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626851.216261915] [duck_nav]: [t=271.0 s] slam weak
+[nav_node-5] [INFO] [1795626851.217618886] [duck_nav]: [t=271.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626852.219413805] [duck_nav]: [t=272.0 s] slam weak
+[nav_node-5] [INFO] [1795626852.220234714] [duck_nav]: [t=272.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626852.572057543] [duck_nav]: [t=272.4 s] slam weak
+[nav_node-5] [INFO] [1795626855.365323632] [duck_nav]: [t=274.1 s] slam blind
+[nav_node-5] [INFO] [1795626855.427128817] [duck_nav]: [t=274.2 s] slam weak
+[nav_node-5] [INFO] [1795626855.624517658] [duck_nav]: [t=274.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626856.265569940] [duck_nav]: [t=275.0 s] slam weak
+[nav_node-5] [INFO] [1795626856.268684718] [duck_nav]: [t=275.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626857.125696527] [duck_nav]: [t=275.9 s] slam weak
+[nav_node-5] [INFO] [1795626859.127672066] [duck_nav]: [t=277.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626859.265809211] [duck_nav]: [t=278.0 s] slam weak
+[nav_node-5] [INFO] [1795626859.267951121] [duck_nav]: [t=278.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626860.294783404] [duck_nav]: [t=279.0 s] slam weak
+[nav_node-5] [INFO] [1795626860.295919321] [duck_nav]: [t=279.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626860.625795254] [duck_nav]: [t=279.4 s] slam weak
+[nav_node-5] [INFO] [1795626862.627935438] [duck_nav]: [t=281.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626863.264519804] [duck_nav]: [t=282.0 s] slam weak
+[nav_node-5] [INFO] [1795626863.265835067] [duck_nav]: [t=282.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626864.124431806] [duck_nav]: [t=282.9 s] slam weak
+[nav_node-5] [INFO] [1795626866.124180214] [duck_nav]: [t=284.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626866.265315920] [duck_nav]: [t=285.0 s] slam weak
+[nav_node-5] [INFO] [1795626866.266543539] [duck_nav]: [t=285.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626867.269735986] [duck_nav]: [t=286.0 s] slam weak
+[nav_node-5] [INFO] [1795626867.271968447] [duck_nav]: [t=286.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626867.627744343] [duck_nav]: [t=286.4 s] slam weak
+[nav_node-5] [INFO] [1795626868.148951050] [duck_nav]: [t=286.9 s] slam blind
+[nav_node-5] [INFO] [1795626868.223811745] [duck_nav]: [t=287.0 s] slam weak
+[nav_node-5] [INFO] [1795626868.768100961] [duck_nav]: [t=287.5 s] slam blind
+[nav_node-5] [INFO] [1795626868.828874688] [duck_nav]: [t=287.6 s] slam weak
+[nav_node-5] [INFO] [1795626869.628263953] [duck_nav]: [t=288.4 s] slam weak: looking around
+[slam_node-4] [INFO] [1795626869.965653613] [duck_slam]: frame processing: mean 50.9 ms, p95 64.3 ms, max 83.3 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795626870.264444930] [duck_nav]: [t=289.0 s] slam weak
+[nav_node-5] [INFO] [1795626870.265714884] [duck_nav]: [t=289.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626871.149253791] [duck_nav]: [t=289.9 s] slam weak
+[nav_node-5] [INFO] [1795626871.196858754] [duck_nav]: [t=289.9 s] slam blind
+[nav_node-5] [INFO] [1795626871.268194573] [duck_nav]: [t=290.0 s] slam weak
+[nav_node-5] [INFO] [1795626873.135113215] [duck_nav]: [t=291.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626873.268691956] [duck_nav]: [t=292.0 s] slam weak
+[nav_node-5] [INFO] [1795626873.269806000] [duck_nav]: [t=292.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626874.268570781] [duck_nav]: [t=293.0 s] slam weak
+[nav_node-5] [INFO] [1795626874.270945732] [duck_nav]: [t=293.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626874.633610341] [duck_nav]: [t=293.4 s] slam weak
+[nav_node-5] [INFO] [1795626875.953965975] [duck_nav]: [t=294.7 s] slam blind
+[nav_node-5] [INFO] [1795626876.027393929] [duck_nav]: [t=294.7 s] slam weak
+[nav_node-5] [INFO] [1795626876.624006099] [duck_nav]: [t=295.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626877.279383225] [duck_nav]: [t=296.0 s] slam weak
+[nav_node-5] [INFO] [1795626877.280644455] [duck_nav]: [t=296.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626878.149222731] [duck_nav]: [t=296.9 s] slam weak
+[nav_node-5] [INFO] [1795626879.187632925] [duck_nav]: [t=297.9 s] slam blind
+[nav_node-5] [INFO] [1795626879.224874507] [duck_nav]: [t=298.0 s] slam weak
+[nav_node-5] [INFO] [1795626880.124689034] [duck_nav]: [t=298.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626880.266275176] [duck_nav]: [t=299.0 s] slam weak
+[nav_node-5] [INFO] [1795626880.267156790] [duck_nav]: [t=299.0 s] slam weak: looking around
+[yolo_node-3] [INFO] [1795626881.263182287] [duck_yolo]: 1499 frames, 20 ms/inference, detections so far: {'beacon': 68, 'box': 743}
+[nav_node-5] [INFO] [1795626881.266343314] [duck_nav]: [t=300.0 s] slam weak
+[nav_node-5] [INFO] [1795626881.267115855] [duck_nav]: [t=300.0 s] slam weak: looking around
+[world_sim-1] [INFO] [1795626881.314456037] [world_sim]: sim 300 s, wall 300 s, render 44 ms per camera frame
+[nav_node-5] [INFO] [1795626882.311745315] [duck_nav]: [t=301.0 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795626882.641561285] [duck_nav]: [t=301.4 s] slam weak
+[nav_node-5] [INFO] [1795626884.130931450] [duck_nav]: [t=302.9 s] slam blind
+[nav_node-5] [INFO] [1795626884.225307772] [duck_nav]: [t=303.0 s] slam weak
+[nav_node-5] [INFO] [1795626884.743606895] [duck_nav]: [t=303.5 s] slam blind
+[nav_node-5] [INFO] [1795626884.823990367] [duck_nav]: [t=303.6 s] slam weak
+[nav_node-5] [INFO] [1795626885.667807615] [duck_nav]: [t=304.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626886.277224938] [duck_nav]: [t=305.0 s] slam weak
+[nav_node-5] [INFO] [1795626886.278347431] [duck_nav]: [t=305.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626887.128805307] [duck_nav]: [t=305.9 s] slam weak
+[nav_node-5] [INFO] [1795626889.276052540] [duck_nav]: [t=307.1 s] slam blind
+[nav_node-5] [INFO] [1795626889.338147872] [duck_nav]: [t=307.2 s] slam weak
+[nav_node-5] [INFO] [1795626890.035411140] [duck_nav]: [t=307.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626890.179655825] [duck_nav]: [t=308.0 s] slam weak
+[nav_node-5] [INFO] [1795626890.180850101] [duck_nav]: [t=308.0 s] slam weak: looking around
+[slam_node-4] [INFO] [1795626890.471793653] [duck_slam]: frame processing: mean 40.2 ms, p95 66.2 ms, max 106.9 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795626891.179050935] [duck_nav]: [t=309.0 s] slam weak
+[nav_node-5] [INFO] [1795626891.179931825] [duck_nav]: [t=309.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626891.534867638] [duck_nav]: [t=309.4 s] slam weak
+[nav_node-5] [INFO] [1795626892.144235766] [duck_nav]: [t=310.0 s] slam blind
+[nav_node-5] [INFO] [1795626892.235578730] [duck_nav]: [t=310.1 s] slam weak
+[nav_node-5] [INFO] [1795626893.540302044] [duck_nav]: [t=311.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626894.174177682] [duck_nav]: [t=312.0 s] slam weak
+[nav_node-5] [INFO] [1795626894.175286985] [duck_nav]: [t=312.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626895.038530337] [duck_nav]: [t=312.9 s] slam weak
+[nav_node-5] [INFO] [1795626897.034060990] [duck_nav]: [t=314.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626897.174500958] [duck_nav]: [t=315.0 s] slam weak
+[nav_node-5] [INFO] [1795626897.176084539] [duck_nav]: [t=315.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626898.198687747] [duck_nav]: [t=316.0 s] slam weak
+[nav_node-5] [INFO] [1795626898.199685347] [duck_nav]: [t=316.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626898.546766961] [duck_nav]: [t=316.4 s] slam weak
+[nav_node-5] [INFO] [1795626900.537589382] [duck_nav]: [t=318.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626901.177251217] [duck_nav]: [t=319.0 s] slam blind
+[nav_node-5] [INFO] [1795626901.179247888] [duck_nav]: [t=319.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626902.043783958] [duck_nav]: [t=319.9 s] slam weak
+[nav_node-5] [INFO] [1795626903.335458425] [duck_nav]: [t=321.2 s] slam blind
+[nav_node-5] [INFO] [1795626903.381459628] [duck_nav]: [t=321.2 s] slam weak
+[nav_node-5] [INFO] [1795626904.040814667] [duck_nav]: [t=321.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626904.174565782] [duck_nav]: [t=322.0 s] slam weak
+[nav_node-5] [INFO] [1795626904.175786337] [duck_nav]: [t=322.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626905.174843224] [duck_nav]: [t=323.0 s] slam weak
+[nav_node-5] [INFO] [1795626905.176289398] [duck_nav]: [t=323.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626905.537593261] [duck_nav]: [t=323.4 s] slam weak
+[nav_node-5] [INFO] [1795626906.214014236] [duck_nav]: [t=324.0 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795626907.373539686] [duck_nav]: [t=325.2 s] slam weak
+[nav_node-5] [INFO] [1795626907.441648628] [duck_nav]: [t=325.3 s] slam blind
+[nav_node-5] [INFO] [1795626907.536067694] [duck_nav]: [t=325.4 s] slam weak
+[nav_node-5] [INFO] [1795626908.216644444] [duck_nav]: [t=326.0 s] beacon reached; exploring the rest of the room
+[slam_node-4] [INFO] [1795626909.769755704] [duck_slam]: frame processing: mean 41.1 ms, p95 60.9 ms, max 91.3 ms over 300 frames (625 zones)
+[yolo_node-3] [INFO] [1795626912.173050211] [duck_yolo]: 1649 frames, 23 ms/inference, detections so far: {'beacon': 76, 'box': 795}
+[world_sim-1] [INFO] [1795626912.221442328] [world_sim]: sim 330 s, wall 330 s, render 47 ms per camera frame
+[nav_node-5] [INFO] [1795626917.874731413] [duck_nav]: [t=335.7 s] slam weak
+[nav_node-5] [INFO] [1795626918.733521815] [duck_nav]: [t=336.6 s] slam blind
+[nav_node-5] [INFO] [1795626918.773184565] [duck_nav]: [t=336.6 s] slam weak
+[nav_node-5] [INFO] [1795626919.034151744] [duck_nav]: [t=336.9 s] slam blind
+[nav_node-5] [INFO] [1795626919.079138276] [duck_nav]: [t=336.9 s] slam weak
+[nav_node-5] [INFO] [1795626921.893075927] [duck_nav]: [t=338.8 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626922.120481643] [duck_nav]: [t=339.0 s] slam weak
+[nav_node-5] [INFO] [1795626922.122417583] [duck_nav]: [t=339.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626923.121414966] [duck_nav]: [t=340.0 s] slam weak
+[nav_node-5] [INFO] [1795626923.122756212] [duck_nav]: [t=340.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626923.324521656] [duck_nav]: [t=340.2 s] slam weak
+[nav_node-5] [INFO] [1795626925.205431156] [duck_nav]: [t=342.1 s] slam blind
+[nav_node-5] [INFO] [1795626925.295607505] [duck_nav]: [t=342.2 s] slam weak
+[nav_node-5] [INFO] [1795626925.321678196] [duck_nav]: [t=342.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626926.122725342] [duck_nav]: [t=343.0 s] slam weak
+[nav_node-5] [INFO] [1795626926.124081876] [duck_nav]: [t=343.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626926.830589952] [duck_nav]: [t=343.7 s] slam weak
+[nav_node-5] [INFO] [1795626928.841871597] [duck_nav]: [t=345.7 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626929.121672960] [duck_nav]: [t=346.0 s] slam weak
+[nav_node-5] [INFO] [1795626929.123320628] [duck_nav]: [t=346.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626930.126327515] [duck_nav]: [t=347.0 s] slam weak
+[nav_node-5] [INFO] [1795626930.127381966] [duck_nav]: [t=347.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626930.322796123] [duck_nav]: [t=347.2 s] slam weak
+[nav_node-5] [INFO] [1795626930.625949589] [duck_nav]: [t=347.5 s] slam blind
+[nav_node-5] [INFO] [1795626930.798735549] [duck_nav]: [t=347.7 s] slam weak
+[slam_node-4] [INFO] [1795626931.048293124] [duck_slam]: frame processing: mean 36.0 ms, p95 74.7 ms, max 91.7 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795626932.327062058] [duck_nav]: [t=349.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626933.120855847] [duck_nav]: [t=350.0 s] slam weak
+[nav_node-5] [INFO] [1795626933.122623939] [duck_nav]: [t=350.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626933.831210267] [duck_nav]: [t=350.7 s] slam weak
+[nav_node-5] [INFO] [1795626934.228890060] [duck_nav]: [t=351.1 s] slam blind
+[nav_node-5] [INFO] [1795626934.291777563] [duck_nav]: [t=351.2 s] slam weak
+[nav_node-5] [INFO] [1795626935.822233640] [duck_nav]: [t=352.7 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626936.122383704] [duck_nav]: [t=353.0 s] slam weak
+[nav_node-5] [INFO] [1795626936.124041960] [duck_nav]: [t=353.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626937.123124608] [duck_nav]: [t=354.0 s] slam weak
+[nav_node-5] [INFO] [1795626937.123916079] [duck_nav]: [t=354.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626937.324178413] [duck_nav]: [t=354.2 s] slam weak
+[nav_node-5] [INFO] [1795626938.426851975] [duck_nav]: [t=355.3 s] slam blind
+[nav_node-5] [INFO] [1795626938.487516638] [duck_nav]: [t=355.4 s] slam weak
+[nav_node-5] [INFO] [1795626939.327005401] [duck_nav]: [t=356.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626940.120887897] [duck_nav]: [t=357.0 s] slam weak
+[nav_node-5] [INFO] [1795626940.125041597] [duck_nav]: [t=357.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626940.827459107] [duck_nav]: [t=357.7 s] slam weak
+[nav_node-5] [INFO] [1795626941.721634746] [duck_nav]: [t=358.6 s] slam blind
+[nav_node-5] [INFO] [1795626941.791598345] [duck_nav]: [t=358.7 s] slam weak
+[nav_node-5] [INFO] [1795626941.896256027] [duck_nav]: [t=358.8 s] slam blind
+[nav_node-5] [INFO] [1795626942.009419164] [duck_nav]: [t=358.9 s] slam weak
+[nav_node-5] [INFO] [1795626942.823598967] [duck_nav]: [t=359.7 s] slam weak: looking around
+[yolo_node-3] [INFO] [1795626943.120189193] [duck_yolo]: 1799 frames, 23 ms/inference, detections so far: {'beacon': 77, 'box': 796}
+[nav_node-5] [INFO] [1795626943.121963204] [duck_nav]: [t=360.0 s] slam weak
+[nav_node-5] [INFO] [1795626943.123491714] [duck_nav]: [t=360.0 s] slam weak: looking around
+[world_sim-1] [INFO] [1795626943.174434437] [world_sim]: sim 360 s, wall 360 s, render 49 ms per camera frame
+[nav_node-5] [INFO] [1795626944.122158602] [duck_nav]: [t=361.0 s] slam weak
+[nav_node-5] [INFO] [1795626944.123952950] [duck_nav]: [t=361.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626944.326562130] [duck_nav]: [t=361.2 s] slam weak
+[nav_node-5] [INFO] [1795626946.096451287] [duck_nav]: [t=363.0 s] slam blind
+[nav_node-5] [INFO] [1795626946.281665260] [duck_nav]: [t=363.2 s] slam weak
+[nav_node-5] [INFO] [1795626946.321373975] [duck_nav]: [t=363.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626947.127791338] [duck_nav]: [t=364.0 s] slam weak
+[nav_node-5] [INFO] [1795626947.129090029] [duck_nav]: [t=364.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626947.822860846] [duck_nav]: [t=364.7 s] slam weak
+[nav_node-5] [INFO] [1795626948.190491018] [duck_nav]: [t=365.1 s] slam blind
+[nav_node-5] [INFO] [1795626948.284431798] [duck_nav]: [t=365.2 s] slam weak
+[nav_node-5] [INFO] [1795626949.792146679] [duck_nav]: [t=366.7 s] slam blind
+[nav_node-5] [INFO] [1795626949.831039641] [duck_nav]: [t=366.7 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626950.122634622] [duck_nav]: [t=367.0 s] slam weak
+[nav_node-5] [INFO] [1795626950.123817122] [duck_nav]: [t=367.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626951.154915190] [duck_nav]: [t=368.0 s] slam weak
+[nav_node-5] [INFO] [1795626951.156433216] [duck_nav]: [t=368.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626951.322031530] [duck_nav]: [t=368.2 s] slam weak
+[slam_node-4] [INFO] [1795626951.830595468] [duck_slam]: frame processing: mean 57.1 ms, p95 68.0 ms, max 80.5 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795626953.321262825] [duck_nav]: [t=370.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626955.105391360] [duck_nav]: [t=371.0 s] slam weak
+[nav_node-5] [INFO] [1795626955.106207385] [duck_nav]: [t=371.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626955.797550170] [duck_nav]: [t=371.7 s] slam weak
+[nav_node-5] [INFO] [1795626956.307565550] [duck_nav]: [t=372.2 s] slam blind
+[nav_node-5] [INFO] [1795626956.468427134] [duck_nav]: [t=372.4 s] slam weak
+[nav_node-5] [INFO] [1795626957.801273191] [duck_nav]: [t=373.7 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626958.100542798] [duck_nav]: [t=374.0 s] slam weak
+[nav_node-5] [INFO] [1795626958.102067613] [duck_nav]: [t=374.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626959.098457913] [duck_nav]: [t=375.0 s] slam weak
+[nav_node-5] [INFO] [1795626959.101121893] [duck_nav]: [t=375.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626959.296872194] [duck_nav]: [t=375.2 s] slam weak
+[nav_node-5] [INFO] [1795626961.300115006] [duck_nav]: [t=377.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626962.097326803] [duck_nav]: [t=378.0 s] slam weak
+[nav_node-5] [INFO] [1795626962.098196510] [duck_nav]: [t=378.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626962.800614289] [duck_nav]: [t=378.7 s] slam weak
+[nav_node-5] [INFO] [1795626964.796944202] [duck_nav]: [t=380.7 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626965.097682204] [duck_nav]: [t=381.0 s] slam weak
+[nav_node-5] [INFO] [1795626965.098966571] [duck_nav]: [t=381.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626966.097656275] [duck_nav]: [t=382.0 s] slam weak
+[nav_node-5] [INFO] [1795626966.099496982] [duck_nav]: [t=382.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626966.300862388] [duck_nav]: [t=382.2 s] slam weak
+[nav_node-5] [INFO] [1795626966.404753909] [duck_nav]: [t=382.3 s] slam blind
+[nav_node-5] [INFO] [1795626966.462543895] [duck_nav]: [t=382.4 s] slam weak
+[nav_node-5] [INFO] [1795626968.303320050] [duck_nav]: [t=384.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626969.098316919] [duck_nav]: [t=385.0 s] slam weak
+[nav_node-5] [INFO] [1795626969.099896596] [duck_nav]: [t=385.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626969.796684318] [duck_nav]: [t=385.7 s] slam weak
+[nav_node-5] [INFO] [1795626971.099348943] [duck_nav]: [t=387.0 s] slam blind
+[nav_node-5] [INFO] [1795626971.207670799] [duck_nav]: [t=387.1 s] slam weak
+[nav_node-5] [INFO] [1795626971.828019210] [duck_nav]: [t=387.7 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626972.097597205] [duck_nav]: [t=388.0 s] slam weak
+[nav_node-5] [INFO] [1795626972.100457780] [duck_nav]: [t=388.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626973.120857388] [duck_nav]: [t=389.0 s] slam weak
+[nav_node-5] [INFO] [1795626973.122149297] [duck_nav]: [t=389.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626973.297287958] [duck_nav]: [t=389.2 s] slam weak
+[nav_node-5] [INFO] [1795626973.656739180] [duck_nav]: [t=389.6 s] slam blind
+[slam_node-4] [INFO] [1795626973.697139254] [duck_slam]: frame processing: mean 56.8 ms, p95 67.0 ms, max 72.3 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795626973.758130286] [duck_nav]: [t=389.7 s] slam weak
+[yolo_node-3] [INFO] [1795626974.095834179] [duck_yolo]: 1949 frames, 21 ms/inference, detections so far: {'beacon': 78, 'box': 797}
+[world_sim-1] [INFO] [1795626974.143475992] [world_sim]: sim 390 s, wall 390 s, render 45 ms per camera frame
+[nav_node-5] [INFO] [1795626975.297439394] [duck_nav]: [t=391.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626976.101879751] [duck_nav]: [t=392.0 s] slam weak
+[nav_node-5] [INFO] [1795626976.102904709] [duck_nav]: [t=392.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626976.799587850] [duck_nav]: [t=392.7 s] slam weak
+[nav_node-5] [INFO] [1795626977.857342282] [duck_nav]: [t=393.8 s] slam blind
+[nav_node-5] [INFO] [1795626977.962271468] [duck_nav]: [t=393.9 s] slam weak
+[nav_node-5] [INFO] [1795626978.796699459] [duck_nav]: [t=394.7 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626979.104990507] [duck_nav]: [t=395.0 s] slam weak
+[nav_node-5] [INFO] [1795626979.106073070] [duck_nav]: [t=395.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626980.097637473] [duck_nav]: [t=396.0 s] slam weak
+[nav_node-5] [INFO] [1795626980.099021218] [duck_nav]: [t=396.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626980.297362186] [duck_nav]: [t=396.2 s] slam weak
+[nav_node-5] [INFO] [1795626982.297223159] [duck_nav]: [t=398.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626983.096828601] [duck_nav]: [t=399.0 s] slam weak
+[nav_node-5] [INFO] [1795626983.098198063] [duck_nav]: [t=399.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626983.798988880] [duck_nav]: [t=399.7 s] slam weak
+[nav_node-5] [INFO] [1795626985.799734445] [duck_nav]: [t=401.7 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626986.096857073] [duck_nav]: [t=402.0 s] slam weak
+[nav_node-5] [INFO] [1795626986.100887112] [duck_nav]: [t=402.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626988.144966172] [duck_nav]: [t=403.0 s] slam weak
+[nav_node-5] [INFO] [1795626988.146377050] [duck_nav]: [t=403.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626988.342324781] [duck_nav]: [t=403.2 s] slam weak
+[nav_node-5] [INFO] [1795626989.139754052] [duck_nav]: [t=404.0 s] slam blind
+[nav_node-5] [INFO] [1795626989.302329573] [duck_nav]: [t=404.2 s] slam weak
+[nav_node-5] [INFO] [1795626990.338291079] [duck_nav]: [t=405.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626991.147494656] [duck_nav]: [t=406.0 s] slam weak
+[nav_node-5] [INFO] [1795626991.148682637] [duck_nav]: [t=406.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626991.838824037] [duck_nav]: [t=406.7 s] slam weak
+[nav_node-5] [INFO] [1795626993.243599198] [duck_nav]: [t=408.1 s] slam blind
+[nav_node-5] [INFO] [1795626993.298991453] [duck_nav]: [t=408.2 s] slam weak
+[nav_node-5] [INFO] [1795626993.509549830] [duck_nav]: [t=408.4 s] slam blind
+[nav_node-5] [INFO] [1795626993.540291574] [duck_nav]: [t=408.4 s] slam weak
+[nav_node-5] [INFO] [1795626993.702771712] [duck_nav]: [t=408.6 s] slam blind
+[nav_node-5] [INFO] [1795626993.847569048] [duck_nav]: [t=408.7 s] slam weak
+[nav_node-5] [INFO] [1795626993.868735246] [duck_nav]: [t=408.7 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626994.145055595] [duck_nav]: [t=409.0 s] slam weak
+[nav_node-5] [INFO] [1795626994.146412566] [duck_nav]: [t=409.0 s] slam weak: looking around
+[slam_node-4] [INFO] [1795626995.084961211] [duck_slam]: frame processing: mean 54.8 ms, p95 65.5 ms, max 75.9 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795626995.162939349] [duck_nav]: [t=410.0 s] slam weak
+[nav_node-5] [INFO] [1795626995.164884854] [duck_nav]: [t=410.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626995.339874132] [duck_nav]: [t=410.2 s] slam weak
+[nav_node-5] [INFO] [1795626997.339444776] [duck_nav]: [t=412.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626998.137978726] [duck_nav]: [t=413.0 s] slam weak
+[nav_node-5] [INFO] [1795626998.138792832] [duck_nav]: [t=413.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795626998.841391110] [duck_nav]: [t=413.7 s] slam weak
+[nav_node-5] [INFO] [1795627000.843085002] [duck_nav]: [t=415.7 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627001.139345531] [duck_nav]: [t=416.0 s] slam weak
+[nav_node-5] [INFO] [1795627001.140856831] [duck_nav]: [t=416.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627002.137515913] [duck_nav]: [t=417.0 s] slam weak
+[nav_node-5] [INFO] [1795627002.139419202] [duck_nav]: [t=417.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627002.355718681] [duck_nav]: [t=417.2 s] slam weak
+[nav_node-5] [INFO] [1795627002.849116450] [duck_nav]: [t=417.7 s] slam blind
+[nav_node-5] [INFO] [1795627002.907966539] [duck_nav]: [t=417.8 s] slam weak
+[nav_node-5] [INFO] [1795627004.340504768] [duck_nav]: [t=419.2 s] slam weak: looking around
+[yolo_node-3] [INFO] [1795627005.137208969] [duck_yolo]: 2099 frames, 20 ms/inference, detections so far: {'beacon': 91, 'box': 797}
+[nav_node-5] [INFO] [1795627005.144170619] [duck_nav]: [t=420.0 s] slam weak
+[nav_node-5] [INFO] [1795627005.145254930] [duck_nav]: [t=420.0 s] slam weak: looking around
+[world_sim-1] [INFO] [1795627005.184427684] [world_sim]: sim 420 s, wall 420 s, render 45 ms per camera frame
+[nav_node-5] [INFO] [1795627005.838458893] [duck_nav]: [t=420.7 s] slam weak
+[nav_node-5] [INFO] [1795627005.999215855] [duck_nav]: [t=420.9 s] slam blind
+[nav_node-5] [INFO] [1795627006.100407079] [duck_nav]: [t=421.0 s] slam weak
+[nav_node-5] [INFO] [1795627007.839623193] [duck_nav]: [t=422.7 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627008.138672803] [duck_nav]: [t=423.0 s] slam weak
+[nav_node-5] [INFO] [1795627008.139953217] [duck_nav]: [t=423.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627009.138214707] [duck_nav]: [t=424.0 s] slam weak
+[nav_node-5] [INFO] [1795627009.140450792] [duck_nav]: [t=424.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627009.339579274] [duck_nav]: [t=424.2 s] slam weak
+[nav_node-5] [INFO] [1795627011.339748918] [duck_nav]: [t=426.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627012.152218983] [duck_nav]: [t=427.0 s] slam weak
+[nav_node-5] [INFO] [1795627012.155248220] [duck_nav]: [t=427.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627012.838853864] [duck_nav]: [t=427.7 s] slam weak
+[nav_node-5] [INFO] [1795627014.745191644] [duck_nav]: [t=429.6 s] slam blind
+[nav_node-5] [INFO] [1795627014.838594809] [duck_nav]: [t=429.7 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627015.138142303] [duck_nav]: [t=430.0 s] slam weak
+[nav_node-5] [INFO] [1795627015.138950691] [duck_nav]: [t=430.0 s] slam weak: looking around
+[slam_node-4] [INFO] [1795627015.241611661] [duck_slam]: frame processing: mean 52.3 ms, p95 62.0 ms, max 72.1 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795627016.139187422] [duck_nav]: [t=431.0 s] slam weak
+[nav_node-5] [INFO] [1795627016.140290079] [duck_nav]: [t=431.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627016.339848550] [duck_nav]: [t=431.2 s] slam weak
+[nav_node-5] [INFO] [1795627018.343208986] [duck_nav]: [t=433.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627019.151501508] [duck_nav]: [t=434.0 s] slam weak
+[nav_node-5] [INFO] [1795627019.154128258] [duck_nav]: [t=434.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627019.840180359] [duck_nav]: [t=434.7 s] slam weak
+[nav_node-5] [INFO] [1795627022.898324705] [duck_nav]: [t=436.7 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627023.198123357] [duck_nav]: [t=437.0 s] slam weak
+[nav_node-5] [INFO] [1795627023.199719741] [duck_nav]: [t=437.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627024.200011459] [duck_nav]: [t=438.0 s] slam weak
+[nav_node-5] [INFO] [1795627024.201193833] [duck_nav]: [t=438.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627024.397828942] [duck_nav]: [t=438.2 s] slam weak
+[nav_node-5] [INFO] [1795627025.404016131] [duck_nav]: [t=439.2 s] slam blind
+[nav_node-5] [INFO] [1795627025.565277407] [duck_nav]: [t=439.4 s] slam weak
+[nav_node-5] [INFO] [1795627026.401289254] [duck_nav]: [t=440.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627027.198874755] [duck_nav]: [t=441.0 s] slam weak
+[nav_node-5] [INFO] [1795627027.200341497] [duck_nav]: [t=441.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627027.898346614] [duck_nav]: [t=441.7 s] slam weak
+[nav_node-5] [INFO] [1795627029.897199781] [duck_nav]: [t=443.7 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627030.196908455] [duck_nav]: [t=444.0 s] slam weak
+[nav_node-5] [INFO] [1795627030.198440952] [duck_nav]: [t=444.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627031.197210043] [duck_nav]: [t=445.0 s] slam weak
+[nav_node-5] [INFO] [1795627031.199667986] [duck_nav]: [t=445.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627031.397941962] [duck_nav]: [t=445.2 s] slam weak
+[nav_node-5] [INFO] [1795627031.803659117] [duck_nav]: [t=445.6 s] slam blind
+[nav_node-5] [INFO] [1795627031.865296851] [duck_nav]: [t=445.7 s] slam weak
+[nav_node-5] [INFO] [1795627032.797025799] [duck_nav]: [t=446.6 s] slam blind
+[nav_node-5] [INFO] [1795627032.962368521] [duck_nav]: [t=446.8 s] slam weak
+[nav_node-5] [INFO] [1795627033.398224543] [duck_nav]: [t=447.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627034.199907784] [duck_nav]: [t=448.0 s] slam weak
+[nav_node-5] [INFO] [1795627034.201398838] [duck_nav]: [t=448.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627034.904589559] [duck_nav]: [t=448.7 s] slam weak
+[yolo_node-3] [INFO] [1795627036.196266627] [duck_yolo]: 2249 frames, 21 ms/inference, detections so far: {'beacon': 125, 'box': 797}
+[world_sim-1] [INFO] [1795627036.240264148] [world_sim]: sim 450 s, wall 450 s, render 45 ms per camera frame
+[slam_node-4] [INFO] [1795627036.421045989] [duck_slam]: frame processing: mean 52.8 ms, p95 62.9 ms, max 84.5 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795627036.913124423] [duck_nav]: [t=450.7 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627037.203692546] [duck_nav]: [t=451.0 s] slam weak
+[nav_node-5] [INFO] [1795627037.204955127] [duck_nav]: [t=451.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627038.199082159] [duck_nav]: [t=452.0 s] slam weak
+[nav_node-5] [INFO] [1795627038.199898079] [duck_nav]: [t=452.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627038.442102979] [duck_nav]: [t=452.2 s] slam weak
+[nav_node-5] [INFO] [1795627038.662735091] [duck_nav]: [t=452.5 s] slam blind
+[nav_node-5] [INFO] [1795627038.807972069] [duck_nav]: [t=452.6 s] slam weak
+[nav_node-5] [INFO] [1795627040.398071574] [duck_nav]: [t=454.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627041.200104915] [duck_nav]: [t=455.0 s] slam weak
+[nav_node-5] [INFO] [1795627041.202155624] [duck_nav]: [t=455.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627041.901298462] [duck_nav]: [t=455.7 s] slam weak
+[nav_node-5] [INFO] [1795627043.907034864] [duck_nav]: [t=457.7 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627044.199321884] [duck_nav]: [t=458.0 s] slam weak
+[nav_node-5] [INFO] [1795627044.202139845] [duck_nav]: [t=458.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627045.201081081] [duck_nav]: [t=459.0 s] slam weak
+[nav_node-5] [INFO] [1795627045.203064077] [duck_nav]: [t=459.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627045.416504884] [duck_nav]: [t=459.2 s] slam weak
+[nav_node-5] [INFO] [1795627045.997282655] [duck_nav]: [t=459.8 s] slam blind
+[nav_node-5] [INFO] [1795627046.158675933] [duck_nav]: [t=460.0 s] slam weak
+[nav_node-5] [INFO] [1795627047.400791464] [duck_nav]: [t=461.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627048.197526128] [duck_nav]: [t=462.0 s] slam weak
+[nav_node-5] [INFO] [1795627048.199982135] [duck_nav]: [t=462.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627048.897704952] [duck_nav]: [t=462.7 s] slam weak
+[nav_node-5] [INFO] [1795627053.102751636] [duck_nav]: [t=466.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627053.201770119] [duck_nav]: [t=467.0 s] slam weak
+[nav_node-5] [INFO] [1795627053.205464030] [duck_nav]: [t=467.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627055.245246347] [duck_nav]: [t=468.0 s] slam weak
+[nav_node-5] [INFO] [1795627055.246759913] [duck_nav]: [t=468.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627055.606300713] [duck_nav]: [t=468.4 s] slam weak
+[slam_node-4] [INFO] [1795627057.521435133] [duck_slam]: frame processing: mean 45.7 ms, p95 68.1 ms, max 126.9 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795627057.599160418] [duck_nav]: [t=470.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627058.241274327] [duck_nav]: [t=471.0 s] slam weak
+[nav_node-5] [INFO] [1795627058.242416005] [duck_nav]: [t=471.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627059.101750409] [duck_nav]: [t=471.9 s] slam weak
+[nav_node-5] [INFO] [1795627061.095341784] [duck_nav]: [t=473.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627061.240556344] [duck_nav]: [t=474.0 s] slam weak
+[nav_node-5] [INFO] [1795627061.245154722] [duck_nav]: [t=474.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627062.301191269] [duck_nav]: [t=475.1 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795627063.412162637] [duck_nav]: [t=476.2 s] slam weak
+[nav_node-5] [INFO] [1795627066.484088684] [duck_nav]: [t=479.2 s] slam weak: looking around
+[yolo_node-3] [INFO] [1795627067.235003194] [duck_yolo]: 2399 frames, 22 ms/inference, detections so far: {'beacon': 164, 'box': 797}
+[nav_node-5] [INFO] [1795627067.235473175] [duck_nav]: [t=480.0 s] slam weak
+[nav_node-5] [INFO] [1795627067.236666943] [duck_nav]: [t=480.0 s] slam weak: looking around
+[world_sim-1] [INFO] [1795627067.287429784] [world_sim]: sim 480 s, wall 480 s, render 48 ms per camera frame
+[nav_node-5] [INFO] [1795627067.915977661] [duck_nav]: [t=480.7 s] slam weak
+[nav_node-5] [INFO] [1795627069.901955988] [duck_nav]: [t=482.7 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627070.235732447] [duck_nav]: [t=483.0 s] slam weak
+[nav_node-5] [INFO] [1795627070.236895931] [duck_nav]: [t=483.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627071.234397024] [duck_nav]: [t=484.0 s] slam weak
+[nav_node-5] [INFO] [1795627071.237314868] [duck_nav]: [t=484.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627071.395742130] [duck_nav]: [t=484.2 s] slam weak
+[nav_node-5] [INFO] [1795627073.407709918] [duck_nav]: [t=486.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627074.244869328] [duck_nav]: [t=487.0 s] slam weak
+[nav_node-5] [INFO] [1795627074.247565333] [duck_nav]: [t=487.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627074.896407969] [duck_nav]: [t=487.7 s] slam weak
+[nav_node-5] [INFO] [1795627076.866033448] [duck_nav]: [t=489.6 s] slam blind
+[nav_node-5] [INFO] [1795627076.916726876] [duck_nav]: [t=489.7 s] slam weak: looking around
+[slam_node-4] [INFO] [1795627077.223240116] [duck_slam]: frame processing: mean 46.8 ms, p95 68.1 ms, max 80.7 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795627077.237506873] [duck_nav]: [t=490.0 s] slam weak
+[nav_node-5] [INFO] [1795627077.238491682] [duck_nav]: [t=490.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627078.242028766] [duck_nav]: [t=491.0 s] slam weak
+[nav_node-5] [INFO] [1795627078.243024367] [duck_nav]: [t=491.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627078.404168121] [duck_nav]: [t=491.2 s] slam weak
+[nav_node-5] [INFO] [1795627080.413897881] [duck_nav]: [t=493.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627081.234978026] [duck_nav]: [t=494.0 s] slam weak
+[nav_node-5] [INFO] [1795627081.235779248] [duck_nav]: [t=494.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627081.900883149] [duck_nav]: [t=494.7 s] slam weak
+[nav_node-5] [INFO] [1795627083.895515081] [duck_nav]: [t=496.7 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627084.233987829] [duck_nav]: [t=497.0 s] slam weak
+[nav_node-5] [INFO] [1795627084.235330973] [duck_nav]: [t=497.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627085.235781834] [duck_nav]: [t=498.0 s] slam weak
+[nav_node-5] [INFO] [1795627085.237162169] [duck_nav]: [t=498.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627085.414519236] [duck_nav]: [t=498.2 s] slam weak
+[nav_node-5] [INFO] [1795627088.488290348] [duck_nav]: [t=500.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627089.301464732] [duck_nav]: [t=501.0 s] slam weak
+[nav_node-5] [INFO] [1795627089.302675651] [duck_nav]: [t=501.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627089.960528841] [duck_nav]: [t=501.7 s] slam weak
+[nav_node-5] [INFO] [1795627090.670563198] [duck_nav]: [t=502.4 s] slam blind
+[nav_node-5] [INFO] [1795627090.705881795] [duck_nav]: [t=502.4 s] slam weak
+[nav_node-5] [INFO] [1795627091.860934808] [duck_nav]: [t=503.6 s] slam blind
+[nav_node-5] [INFO] [1795627091.912177189] [duck_nav]: [t=503.6 s] slam weak
+[nav_node-5] [INFO] [1795627091.963295140] [duck_nav]: [t=503.7 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627092.303212788] [duck_nav]: [t=504.0 s] slam weak
+[nav_node-5] [INFO] [1795627092.304628533] [duck_nav]: [t=504.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627093.302969373] [duck_nav]: [t=505.0 s] slam weak
+[nav_node-5] [INFO] [1795627093.324366375] [duck_nav]: [t=505.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627093.466602915] [duck_nav]: [t=505.2 s] slam weak
+[nav_node-5] [INFO] [1795627094.662311865] [duck_nav]: [t=506.4 s] slam blind
+[nav_node-5] [INFO] [1795627094.762117083] [duck_nav]: [t=506.5 s] slam weak
+[nav_node-5] [INFO] [1795627095.070751402] [duck_nav]: [t=506.8 s] slam blind
+[nav_node-5] [INFO] [1795627095.185291942] [duck_nav]: [t=506.9 s] slam weak
+[nav_node-5] [INFO] [1795627095.470202962] [duck_nav]: [t=507.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627096.304485474] [duck_nav]: [t=508.0 s] slam weak
+[nav_node-5] [INFO] [1795627096.305541540] [duck_nav]: [t=508.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627096.962711771] [duck_nav]: [t=508.7 s] slam weak
+[slam_node-4] [INFO] [1795627097.808949351] [duck_slam]: frame processing: mean 45.5 ms, p95 54.6 ms, max 66.9 ms over 300 frames (625 zones)
+[yolo_node-3] [INFO] [1795627098.299735665] [duck_yolo]: 2549 frames, 20 ms/inference, detections so far: {'beacon': 182, 'box': 800}
+[world_sim-1] [INFO] [1795627098.347113984] [world_sim]: sim 510 s, wall 510 s, render 44 ms per camera frame
+[nav_node-5] [INFO] [1795627098.982054481] [duck_nav]: [t=510.7 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627099.305788430] [duck_nav]: [t=511.0 s] slam weak
+[nav_node-5] [INFO] [1795627099.306798811] [duck_nav]: [t=511.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627100.303630129] [duck_nav]: [t=512.0 s] slam weak
+[nav_node-5] [INFO] [1795627100.305096843] [duck_nav]: [t=512.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627100.464030518] [duck_nav]: [t=512.2 s] slam weak
+[nav_node-5] [INFO] [1795627102.464417353] [duck_nav]: [t=514.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627103.325715362] [duck_nav]: [t=515.0 s] slam weak
+[nav_node-5] [INFO] [1795627103.326863736] [duck_nav]: [t=515.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627103.966298971] [duck_nav]: [t=515.7 s] slam weak
+[nav_node-5] [INFO] [1795627105.551778325] [duck_nav]: [t=517.2 s] slam blind
+[nav_node-5] [INFO] [1795627105.600831261] [duck_nav]: [t=517.3 s] slam weak
+[nav_node-5] [INFO] [1795627105.972933788] [duck_nav]: [t=517.7 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627106.309229898] [duck_nav]: [t=518.0 s] slam weak
+[nav_node-5] [INFO] [1795627106.310382797] [duck_nav]: [t=518.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627107.302626676] [duck_nav]: [t=519.0 s] slam weak
+[nav_node-5] [INFO] [1795627107.303438664] [duck_nav]: [t=519.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627107.467535207] [duck_nav]: [t=519.2 s] slam weak
+[nav_node-5] [INFO] [1795627109.460482648] [duck_nav]: [t=521.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627110.301502870] [duck_nav]: [t=522.0 s] slam weak
+[nav_node-5] [INFO] [1795627110.302685936] [duck_nav]: [t=522.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627110.965323380] [duck_nav]: [t=522.7 s] slam weak
+[nav_node-5] [INFO] [1795627112.321536600] [duck_nav]: [t=524.0 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795627112.401804381] [duck_nav]: [t=524.1 s] slam weak
+[nav_node-5] [INFO] [1795627114.965272080] [duck_nav]: [t=526.7 s] slam blind
+[nav_node-5] [INFO] [1795627115.061568885] [duck_nav]: [t=526.8 s] slam weak
+[nav_node-5] [INFO] [1795627115.461010965] [duck_nav]: [t=527.2 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627116.300392542] [duck_nav]: [t=528.0 s] slam weak
+[nav_node-5] [INFO] [1795627116.303118877] [duck_nav]: [t=528.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627116.902783209] [duck_nav]: [t=528.6 s] slam weak
+[slam_node-4] [INFO] [1795627117.300123043] [duck_slam]: frame processing: mean 41.9 ms, p95 63.6 ms, max 78.3 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795627117.327593290] [duck_nav]: [t=529.0 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795627118.203800986] [duck_nav]: [t=529.9 s] slam weak
+[nav_node-5] [INFO] [1795627122.323899034] [duck_nav]: [t=533.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627122.367399255] [duck_nav]: [t=533.0 s] slam weak
+[nav_node-5] [INFO] [1795627122.368791101] [duck_nav]: [t=533.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627123.363697855] [duck_nav]: [t=534.0 s] slam weak
+[nav_node-5] [INFO] [1795627123.365093285] [duck_nav]: [t=534.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627123.762707302] [duck_nav]: [t=534.4 s] slam weak
+[nav_node-5] [INFO] [1795627125.772049070] [duck_nav]: [t=536.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627126.371860119] [duck_nav]: [t=537.0 s] slam weak
+[nav_node-5] [INFO] [1795627126.386482539] [duck_nav]: [t=537.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627127.267874358] [duck_nav]: [t=537.9 s] slam weak
+[nav_node-5] [INFO] [1795627127.711816308] [duck_nav]: [t=538.3 s] slam blind
+[nav_node-5] [INFO] [1795627127.780364872] [duck_nav]: [t=538.4 s] slam weak
+[nav_node-5] [INFO] [1795627127.831455479] [duck_nav]: [t=538.5 s] slam blind
+[nav_node-5] [INFO] [1795627127.927847496] [duck_nav]: [t=538.6 s] slam weak
+[nav_node-5] [INFO] [1795627128.170794675] [duck_nav]: [t=538.8 s] slam blind
+[nav_node-5] [INFO] [1795627128.262463195] [duck_nav]: [t=538.9 s] slam weak
+[nav_node-5] [INFO] [1795627129.261827137] [duck_nav]: [t=539.9 s] slam weak: looking around
+[yolo_node-3] [INFO] [1795627129.360826569] [duck_yolo]: 2699 frames, 20 ms/inference, detections so far: {'beacon': 213, 'box': 800}
+[nav_node-5] [INFO] [1795627129.363958787] [duck_nav]: [t=540.0 s] slam weak
+[nav_node-5] [INFO] [1795627129.365045972] [duck_nav]: [t=540.0 s] slam weak: looking around
+[world_sim-1] [INFO] [1795627129.401552896] [world_sim]: sim 540 s, wall 540 s, render 42 ms per camera frame
+[nav_node-5] [INFO] [1795627130.379837252] [duck_nav]: [t=541.0 s] slam weak
+[nav_node-5] [INFO] [1795627130.380960356] [duck_nav]: [t=541.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627130.767750524] [duck_nav]: [t=541.4 s] slam weak
+[nav_node-5] [INFO] [1795627132.772013593] [duck_nav]: [t=543.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627133.369115857] [duck_nav]: [t=544.0 s] slam weak
+[nav_node-5] [INFO] [1795627133.370244737] [duck_nav]: [t=544.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627134.266046490] [duck_nav]: [t=544.9 s] slam weak
+[nav_node-5] [INFO] [1795627135.069148829] [duck_nav]: [t=545.7 s] slam blind
+[nav_node-5] [INFO] [1795627135.122542727] [duck_nav]: [t=545.8 s] slam weak
+[nav_node-5] [INFO] [1795627135.572581168] [duck_nav]: [t=546.2 s] slam blind
+[nav_node-5] [INFO] [1795627135.664463494] [duck_nav]: [t=546.3 s] slam weak
+[nav_node-5] [INFO] [1795627136.265903949] [duck_nav]: [t=546.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627136.366733471] [duck_nav]: [t=547.0 s] slam weak
+[nav_node-5] [INFO] [1795627136.368914264] [duck_nav]: [t=547.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627137.391356821] [duck_nav]: [t=548.0 s] slam weak
+[nav_node-5] [INFO] [1795627137.393924172] [duck_nav]: [t=548.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627137.776179783] [duck_nav]: [t=548.4 s] slam weak
+[slam_node-4] [INFO] [1795627138.065137594] [duck_slam]: frame processing: mean 43.6 ms, p95 63.4 ms, max 94.4 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795627139.243905749] [duck_nav]: [t=549.9 s] slam blind
+[nav_node-5] [INFO] [1795627139.322669954] [duck_nav]: [t=550.0 s] slam weak
+[nav_node-5] [INFO] [1795627139.624941645] [duck_nav]: [t=550.3 s] slam blind
+[nav_node-5] [INFO] [1795627139.723254189] [duck_nav]: [t=550.4 s] slam weak
+[nav_node-5] [INFO] [1795627139.761827703] [duck_nav]: [t=550.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627140.365111275] [duck_nav]: [t=551.0 s] slam blind
+[nav_node-5] [INFO] [1795627140.366648311] [duck_nav]: [t=551.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627141.268825204] [duck_nav]: [t=551.9 s] slam weak
+[nav_node-5] [INFO] [1795627142.123665427] [duck_nav]: [t=552.8 s] slam blind
+[nav_node-5] [INFO] [1795627142.231659494] [duck_nav]: [t=552.9 s] slam weak
+[nav_node-5] [INFO] [1795627143.310375122] [duck_nav]: [t=553.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627143.364291195] [duck_nav]: [t=554.0 s] slam weak
+[nav_node-5] [INFO] [1795627143.365156565] [duck_nav]: [t=554.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627144.363595627] [duck_nav]: [t=555.0 s] slam weak
+[nav_node-5] [INFO] [1795627144.367669822] [duck_nav]: [t=555.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627144.765246999] [duck_nav]: [t=555.4 s] slam weak
+[nav_node-5] [INFO] [1795627146.771678523] [duck_nav]: [t=557.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627147.380377782] [duck_nav]: [t=558.0 s] slam weak
+[nav_node-5] [INFO] [1795627147.381987919] [duck_nav]: [t=558.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627148.293436654] [duck_nav]: [t=558.9 s] slam weak
+[nav_node-5] [INFO] [1795627150.271179839] [duck_nav]: [t=560.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627150.372764489] [duck_nav]: [t=561.0 s] slam weak
+[nav_node-5] [INFO] [1795627150.377905837] [duck_nav]: [t=561.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627151.362805213] [duck_nav]: [t=562.0 s] slam weak
+[nav_node-5] [INFO] [1795627151.364518692] [duck_nav]: [t=562.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627151.762367615] [duck_nav]: [t=562.4 s] slam weak
+[nav_node-5] [INFO] [1795627154.771551153] [duck_nav]: [t=564.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627155.370736076] [duck_nav]: [t=565.0 s] slam weak
+[nav_node-5] [INFO] [1795627155.371729931] [duck_nav]: [t=565.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627156.272464140] [duck_nav]: [t=565.9 s] slam weak
+[nav_node-5] [INFO] [1795627156.937361170] [duck_nav]: [t=566.6 s] slam blind
+[nav_node-5] [INFO] [1795627156.979817719] [duck_nav]: [t=566.6 s] slam weak
+[nav_node-5] [INFO] [1795627158.270879000] [duck_nav]: [t=567.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627158.385107189] [duck_nav]: [t=568.0 s] slam weak
+[nav_node-5] [INFO] [1795627158.386467218] [duck_nav]: [t=568.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627159.373794975] [duck_nav]: [t=569.0 s] slam weak
+[nav_node-5] [INFO] [1795627159.374857779] [duck_nav]: [t=569.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627159.824495314] [duck_nav]: [t=569.4 s] slam weak
+[slam_node-4] [INFO] [1795627160.366768150] [duck_slam]: frame processing: mean 53.7 ms, p95 80.5 ms, max 99.3 ms over 300 frames (625 zones)
+[yolo_node-3] [INFO] [1795627160.370815652] [duck_yolo]: 2849 frames, 27 ms/inference, detections so far: {'beacon': 239, 'box': 800}
+[world_sim-1] [INFO] [1795627160.420948362] [world_sim]: sim 570 s, wall 570 s, render 64 ms per camera frame
+[nav_node-5] [INFO] [1795627160.743314058] [duck_nav]: [t=570.4 s] slam blind
+[nav_node-5] [INFO] [1795627160.775643530] [duck_nav]: [t=570.4 s] slam weak
+[nav_node-5] [INFO] [1795627161.771707334] [duck_nav]: [t=571.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627162.373624032] [duck_nav]: [t=572.0 s] slam weak
+[nav_node-5] [INFO] [1795627162.374524456] [duck_nav]: [t=572.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627163.271105086] [duck_nav]: [t=572.9 s] slam weak
+[nav_node-5] [INFO] [1795627164.150035041] [duck_nav]: [t=573.8 s] slam blind
+[nav_node-5] [INFO] [1795627164.222082052] [duck_nav]: [t=573.8 s] slam weak
+[nav_node-5] [INFO] [1795627165.271824555] [duck_nav]: [t=574.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627165.379140275] [duck_nav]: [t=575.0 s] slam weak
+[nav_node-5] [INFO] [1795627165.380288193] [duck_nav]: [t=575.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627166.371733338] [duck_nav]: [t=576.0 s] slam weak
+[nav_node-5] [INFO] [1795627166.373427783] [duck_nav]: [t=576.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627166.774053443] [duck_nav]: [t=576.4 s] slam weak
+[nav_node-5] [INFO] [1795627168.772166854] [duck_nav]: [t=578.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627169.372132224] [duck_nav]: [t=579.0 s] slam weak
+[nav_node-5] [INFO] [1795627169.375299333] [duck_nav]: [t=579.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627170.271182051] [duck_nav]: [t=579.9 s] slam weak
+[nav_node-5] [INFO] [1795627172.272048057] [duck_nav]: [t=581.9 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627172.373995766] [duck_nav]: [t=582.0 s] slam weak
+[nav_node-5] [INFO] [1795627172.375357749] [duck_nav]: [t=582.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627173.379864120] [duck_nav]: [t=583.0 s] slam weak
+[nav_node-5] [INFO] [1795627173.382159328] [duck_nav]: [t=583.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795627173.779633501] [duck_nav]: [t=583.4 s] slam weak
+[nav_node-5] [INFO] [1795627174.428782819] [duck_nav]: [t=584.0 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795627175.571310183] [duck_nav]: [t=585.2 s] slam weak
+[nav_node-5] [INFO] [1795627177.398601428] [duck_nav]: [t=587.0 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795627179.730648111] [duck_nav]: [t=589.4 s] slam weak
+[slam_node-4] [INFO] [1795627180.348449016] [duck_slam]: frame processing: mean 41.6 ms, p95 71.7 ms, max 94.8 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795627181.140455470] [duck_nav]: [t=590.8 s] slam blind
+[nav_node-5] [INFO] [1795627181.235408381] [duck_nav]: [t=590.9 s] slam weak
+[nav_node-5] [INFO] [1795627184.415632856] [duck_nav]: [t=594.0 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795627184.574511709] [duck_nav]: [t=594.2 s] slam weak
+[nav_node-5] [INFO] [1795627187.951104445] [duck_nav]: [t=596.7 s] slam blind
+[nav_node-5] [INFO] [1795627188.307022424] [duck_nav]: [t=597.0 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795627188.400755477] [duck_nav]: [t=597.2 s] slam weak
+[yolo_node-3] [INFO] [1795627191.229080073] [duck_yolo]: 2999 frames, 24 ms/inference, detections so far: {'beacon': 261, 'box': 803}
+[world_sim-1] [INFO] [1795627191.288820472] [world_sim]: sim 600 s, wall 600 s, render 50 ms per camera frame
+[score_node-6] [INFO] [1795627191.879149115] [duck_score]: RUN FINISHED
+[score_node-6] exploration         : TIMEOUT at 600 s (not complete)
+[score_node-6] beacon              : reached at 139 s (true distance < 0.45 m)
+[score_node-6] beacon estimate     : [4.196, 1.505], true (4.0, 1.3), error 0.283 m
+[score_node-6] SLAM position error : mean 0.245 m, max 0.468 m, final 0.333 m (29887 stamp-matched samples)
+[score_node-6] path walked         : 27.0 m, falls 0
+[score_node-6] YOLO                : 3002 frames, detections {'box': 803, 'beacon': 261}
+[score_node-6] room coverage       : 72% of the room interior classified
+[score_node-6] events:
+[score_node-6]      0.0 s  waiting for observations
+[score_node-6]      0.0 s  survey: turning in place to map all round
+[score_node-6]      2.0 s  slam weak
+[score_node-6]      3.0 s  exploring
+[score_node-6]      4.0 s  slam weak
+[score_node-6]      5.0 s  exploring
+[score_node-6]     11.0 s  slam weak
+[score_node-6]     12.0 s  exploring
+[score_node-6]     13.0 s  slam weak
+[score_node-6]     14.0 s  exploring
+[score_node-6]     18.6 s  survey done
+[score_node-6]     19.1 s  exploring
+[score_node-6]     31.5 s  near an obstacle: steering on a clear arc
+[score_node-6]     32.0 s  exploring
+[score_node-6]     36.0 s  no reachable frontier
+[score_node-6]     37.0 s  exploring
+[score_node-6]     42.0 s  near an obstacle: steering on a clear arc
+[score_node-6]     42.0 s  path clearance guard: turning in place and replanning
+[score_node-6]     42.1 s  exploring
+[score_node-6]     45.4 s  path clearance guard: turning in place and replanning
+[score_node-6]     46.0 s  exploring
+[score_node-6]     56.6 s  near an obstacle: steering on a clear arc
+[score_node-6]     56.6 s  path clearance guard: turning in place and replanning
+[score_node-6]     57.0 s  exploring
+[score_node-6]     57.1 s  path clearance guard: turning in place and replanning
+[score_node-6]     58.0 s  exploring
+[score_node-6]     58.1 s  path clearance guard: turning in place and replanning
+[score_node-6]     58.4 s  slam weak
+[score_node-6]     61.4 s  slam weak: looking around
+[score_node-6]     62.0 s  slam weak
+[score_node-6]     62.0 s  slam weak: looking around
+[score_node-6]     62.9 s  slam weak
+[score_node-6]     64.9 s  slam weak: looking around
+[score_node-6]     65.0 s  slam weak
+[score_node-6]     65.0 s  slam weak: looking around
+[score_node-6]     66.0 s  slam weak
+[score_node-6]     66.0 s  slam weak: looking around
+[score_node-6]     66.4 s  slam weak
+[score_node-6]     67.0 s  slam blind
+[score_node-6]     67.0 s  slam weak
+[score_node-6]     68.4 s  slam weak: looking around
+[score_node-6]     69.0 s  slam weak
+[score_node-6]     69.0 s  slam weak: looking around
+[score_node-6]     69.9 s  slam weak
+[score_node-6]     71.3 s  slam blind
+[score_node-6]     71.4 s  slam weak
+[score_node-6]     71.9 s  slam weak: looking around
+[score_node-6]     72.0 s  slam weak
+[score_node-6]     72.0 s  slam weak: looking around
+[score_node-6]     73.0 s  slam weak
+[score_node-6]     73.0 s  slam weak: looking around
+[score_node-6]     73.4 s  slam blind
+[score_node-6]     73.5 s  slam weak
+[score_node-6]     75.4 s  slam weak: looking around
+[score_node-6]     76.0 s  slam weak
+[score_node-6]     76.0 s  slam weak: looking around
+[score_node-6]     76.9 s  slam weak
+[score_node-6]     78.9 s  slam weak: looking around
+[score_node-6]     79.0 s  slam weak
+[score_node-6]     79.0 s  slam weak: looking around
+[score_node-6]     80.0 s  exploring
+[score_node-6]     87.8 s  path clearance guard: turning in place and replanning
+[score_node-6]     88.0 s  exploring
+[score_node-6]     89.3 s  path clearance guard: turning in place and replanning
+[score_node-6]     90.0 s  exploring
+[score_node-6]     98.6 s  slam weak
+[score_node-6]    100.0 s  exploring
+[score_node-6]    109.8 s  slam weak
+[score_node-6]    110.1 s  exploring
+[score_node-6]    111.6 s  slam weak
+[score_node-6]    112.0 s  exploring
+[score_node-6]    113.5 s  slam weak
+[score_node-6]    114.0 s  exploring
+[score_node-6]    128.0 s  heading for the beacon
+[score_node-6]    139.5 s  beacon reached (true distance 0.45 m)
+[score_node-6]    140.0 s  beacon reached; exploring the rest of the room
+[score_node-6]    146.2 s  slam weak
+[score_node-6]    149.2 s  slam weak: looking around
+[score_node-6]    150.0 s  beacon reached; exploring the rest of the room
+[score_node-6]    154.8 s  slam weak
+[score_node-6]    157.9 s  slam weak: looking around
+[score_node-6]    158.0 s  slam weak
+[score_node-6]    158.0 s  slam weak: looking around
+[score_node-6]    159.1 s  beacon reached; exploring the rest of the room
+[score_node-6]    164.5 s  slam weak
+[score_node-6]    167.6 s  slam weak: looking around
+[score_node-6]    168.0 s  slam weak
+[score_node-6]    168.0 s  slam weak: looking around
+[score_node-6]    169.0 s  slam weak
+[score_node-6]    171.0 s  slam weak: looking around
+[score_node-6]    172.0 s  slam weak
+[score_node-6]    172.0 s  slam weak: looking around
+[score_node-6]    172.5 s  slam weak
+[score_node-6]    172.6 s  slam blind
+[score_node-6]    172.7 s  slam weak
+[score_node-6]    174.5 s  slam weak: looking around
+[score_node-6]    175.0 s  slam weak
+[score_node-6]    175.0 s  slam weak: looking around
+[score_node-6]    176.0 s  slam weak
+[score_node-6]    176.1 s  slam blind
+[score_node-6]    176.2 s  slam weak
+[score_node-6]    178.0 s  slam weak: looking around
+[score_node-6]    179.0 s  slam weak
+[score_node-6]    179.0 s  slam weak: looking around
+[score_node-6]    179.5 s  slam weak
+[score_node-6]    181.5 s  slam weak: looking around
+[score_node-6]    182.0 s  slam weak
+[score_node-6]    182.0 s  slam weak: looking around
+[score_node-6]    183.0 s  slam weak
+[score_node-6]    185.0 s  slam weak: looking around
+[score_node-6]    186.0 s  slam weak
+[score_node-6]    186.0 s  slam weak: looking around
+[score_node-6]    186.5 s  slam weak
+[score_node-6]    188.5 s  slam weak: looking around
+[score_node-6]    189.0 s  slam weak
+[score_node-6]    189.0 s  slam weak: looking around
+[score_node-6]    190.0 s  slam weak
+[score_node-6]    192.0 s  slam weak: looking around
+[score_node-6]    193.0 s  slam weak
+[score_node-6]    193.0 s  slam weak: looking around
+[score_node-6]    193.5 s  slam weak
+[score_node-6]    193.7 s  slam blind
+[score_node-6]    193.8 s  slam weak
+[score_node-6]    195.5 s  slam weak: looking around
+[score_node-6]    196.0 s  slam weak
+[score_node-6]    196.0 s  slam weak: looking around
+[score_node-6]    197.0 s  slam weak
+[score_node-6]    199.0 s  slam weak: looking around
+[score_node-6]    200.0 s  slam weak
+[score_node-6]    200.0 s  slam weak: looking around
+[score_node-6]    200.5 s  slam weak
+[score_node-6]    201.9 s  slam blind
+[score_node-6]    202.0 s  slam weak
+[score_node-6]    202.5 s  slam blind
+[score_node-6]    202.5 s  slam weak: looking around
+[score_node-6]    203.0 s  slam weak
+[score_node-6]    203.0 s  slam weak: looking around
+[score_node-6]    204.0 s  slam weak
+[score_node-6]    206.0 s  slam weak: looking around
+[score_node-6]    207.0 s  slam weak
+[score_node-6]    207.0 s  slam weak: looking around
+[score_node-6]    207.5 s  slam weak
+[score_node-6]    208.0 s  slam blind
+[score_node-6]    208.1 s  slam weak
+[score_node-6]    209.5 s  slam weak: looking around
+[score_node-6]    210.0 s  slam weak
+[score_node-6]    210.0 s  slam weak: looking around
+[score_node-6]    211.0 s  beacon reached; exploring the rest of the room
+[score_node-6]    212.4 s  slam weak
+[score_node-6]    215.4 s  slam weak: looking around
+[score_node-6]    216.0 s  slam weak
+[score_node-6]    216.0 s  slam weak: looking around
+[score_node-6]    216.9 s  slam weak
+[score_node-6]    218.9 s  slam weak: looking around
+[score_node-6]    219.0 s  slam weak
+[score_node-6]    219.0 s  slam weak: looking around
+[score_node-6]    220.0 s  slam weak
+[score_node-6]    220.0 s  slam weak: looking around
+[score_node-6]    220.4 s  slam weak
+[score_node-6]    221.2 s  slam blind
+[score_node-6]    221.3 s  slam weak
+[score_node-6]    222.4 s  slam weak: looking around
+[score_node-6]    223.0 s  slam weak
+[score_node-6]    223.0 s  slam weak: looking around
+[score_node-6]    223.9 s  slam weak
+[score_node-6]    224.0 s  slam blind
+[score_node-6]    224.0 s  slam weak
+[score_node-6]    225.9 s  slam weak: looking around
+[score_node-6]    226.0 s  slam weak
+[score_node-6]    226.0 s  slam weak: looking around
+[score_node-6]    227.0 s  slam weak
+[score_node-6]    227.0 s  slam weak: looking around
+[score_node-6]    227.4 s  slam weak
+[score_node-6]    229.4 s  slam weak: looking around
+[score_node-6]    230.0 s  slam weak
+[score_node-6]    230.0 s  slam weak: looking around
+[score_node-6]    230.9 s  slam weak
+[score_node-6]    232.2 s  slam blind
+[score_node-6]    232.4 s  slam weak
+[score_node-6]    232.4 s  slam blind
+[score_node-6]    232.5 s  slam weak
+[score_node-6]    232.9 s  slam weak: looking around
+[score_node-6]    233.0 s  slam weak
+[score_node-6]    233.0 s  slam weak: looking around
+[score_node-6]    234.0 s  slam weak
+[score_node-6]    234.0 s  slam weak: looking around
+[score_node-6]    234.4 s  slam weak
+[score_node-6]    236.4 s  slam weak: looking around
+[score_node-6]    237.0 s  slam weak
+[score_node-6]    237.0 s  slam weak: looking around
+[score_node-6]    237.9 s  slam weak
+[score_node-6]    239.9 s  slam weak: looking around
+[score_node-6]    240.0 s  slam blind
+[score_node-6]    240.0 s  slam weak: looking around
+[score_node-6]    241.0 s  slam weak
+[score_node-6]    241.0 s  slam weak: looking around
+[score_node-6]    241.4 s  slam weak
+[score_node-6]    243.4 s  slam weak: looking around
+[score_node-6]    244.0 s  slam weak
+[score_node-6]    244.0 s  slam weak: looking around
+[score_node-6]    244.9 s  slam weak
+[score_node-6]    245.0 s  slam blind
+[score_node-6]    245.0 s  slam weak
+[score_node-6]    246.9 s  slam weak: looking around
+[score_node-6]    247.0 s  slam weak
+[score_node-6]    247.0 s  slam weak: looking around
+[score_node-6]    248.0 s  slam weak
+[score_node-6]    248.0 s  slam weak: looking around
+[score_node-6]    248.4 s  slam weak
+[score_node-6]    249.2 s  slam blind
+[score_node-6]    249.4 s  slam weak
+[score_node-6]    250.4 s  slam weak: looking around
+[score_node-6]    251.0 s  slam weak
+[score_node-6]    251.0 s  slam weak: looking around
+[score_node-6]    251.9 s  slam weak
+[score_node-6]    253.4 s  slam blind
+[score_node-6]    253.5 s  slam weak
+[score_node-6]    253.9 s  slam weak: looking around
+[score_node-6]    254.0 s  slam weak
+[score_node-6]    254.0 s  slam weak: looking around
+[score_node-6]    255.0 s  slam weak
+[score_node-6]    255.0 s  slam weak: looking around
+[score_node-6]    256.0 s  beacon reached; exploring the rest of the room
+[score_node-6]    257.4 s  slam weak
+[score_node-6]    260.4 s  slam weak: looking around
+[score_node-6]    261.0 s  slam weak
+[score_node-6]    261.0 s  slam weak: looking around
+[score_node-6]    261.9 s  slam blind
+[score_node-6]    261.9 s  slam weak
+[score_node-6]    263.9 s  slam weak: looking around
+[score_node-6]    264.0 s  slam weak
+[score_node-6]    264.0 s  slam weak: looking around
+[score_node-6]    265.0 s  slam weak
+[score_node-6]    265.0 s  slam weak: looking around
+[score_node-6]    265.4 s  slam weak
+[score_node-6]    266.8 s  slam blind
+[score_node-6]    266.9 s  slam weak
+[score_node-6]    267.4 s  slam weak: looking around
+[score_node-6]    268.0 s  slam weak
+[score_node-6]    268.0 s  slam weak: looking around
+[score_node-6]    268.9 s  slam weak
+[score_node-6]    270.9 s  slam weak: looking around
+[score_node-6]    271.0 s  slam weak
+[score_node-6]    271.0 s  slam weak: looking around
+[score_node-6]    272.0 s  slam weak
+[score_node-6]    272.0 s  slam weak: looking around
+[score_node-6]    272.4 s  slam weak
+[score_node-6]    274.1 s  slam blind
+[score_node-6]    274.2 s  slam weak
+[score_node-6]    274.4 s  slam weak: looking around
+[score_node-6]    275.0 s  slam weak
+[score_node-6]    275.0 s  slam weak: looking around
+[score_node-6]    275.9 s  slam weak
+[score_node-6]    277.9 s  slam weak: looking around
+[score_node-6]    278.0 s  slam weak
+[score_node-6]    278.0 s  slam weak: looking around
+[score_node-6]    279.0 s  slam weak
+[score_node-6]    279.0 s  slam weak: looking around
+[score_node-6]    279.4 s  slam weak
+[score_node-6]    281.4 s  slam weak: looking around
+[score_node-6]    282.0 s  slam weak
+[score_node-6]    282.0 s  slam weak: looking around
+[score_node-6]    282.9 s  slam weak
+[score_node-6]    284.9 s  slam weak: looking around
+[score_node-6]    285.0 s  slam weak
+[score_node-6]    285.0 s  slam weak: looking around
+[score_node-6]    286.0 s  slam weak
+[score_node-6]    286.0 s  slam weak: looking around
+[score_node-6]    286.4 s  slam weak
+[score_node-6]    286.9 s  slam blind
+[score_node-6]    287.0 s  slam weak
+[score_node-6]    287.5 s  slam blind
+[score_node-6]    287.6 s  slam weak
+[score_node-6]    288.4 s  slam weak: looking around
+[score_node-6]    289.0 s  slam weak
+[score_node-6]    289.0 s  slam weak: looking around
+[score_node-6]    289.9 s  slam weak
+[score_node-6]    289.9 s  slam blind
+[score_node-6]    290.0 s  slam weak
+[score_node-6]    291.9 s  slam weak: looking around
+[score_node-6]    292.0 s  slam weak
+[score_node-6]    292.0 s  slam weak: looking around
+[score_node-6]    293.0 s  slam weak
+[score_node-6]    293.0 s  slam weak: looking around
+[score_node-6]    293.4 s  slam weak
+[score_node-6]    294.7 s  slam blind
+[score_node-6]    294.8 s  slam weak
+[score_node-6]    295.4 s  slam weak: looking around
+[score_node-6]    296.0 s  slam weak
+[score_node-6]    296.0 s  slam weak: looking around
+[score_node-6]    296.9 s  slam weak
+[score_node-6]    297.9 s  slam blind
+[score_node-6]    298.0 s  slam weak
+[score_node-6]    298.9 s  slam weak: looking around
+[score_node-6]    299.0 s  slam weak
+[score_node-6]    299.0 s  slam weak: looking around
+[score_node-6]    300.0 s  slam weak
+[score_node-6]    300.0 s  slam weak: looking around
+[score_node-6]    301.0 s  beacon reached; exploring the rest of the room
+[score_node-6]    301.4 s  slam weak
+[score_node-6]    302.9 s  slam blind
+[score_node-6]    303.0 s  slam weak
+[score_node-6]    303.5 s  slam blind
+[score_node-6]    303.6 s  slam weak
+[score_node-6]    304.4 s  slam weak: looking around
+[score_node-6]    305.0 s  slam weak
+[score_node-6]    305.0 s  slam weak: looking around
+[score_node-6]    305.9 s  slam weak
+[score_node-6]    307.1 s  slam blind
+[score_node-6]    307.2 s  slam weak
+[score_node-6]    307.9 s  slam weak: looking around
+[score_node-6]    308.0 s  slam weak
+[score_node-6]    308.0 s  slam weak: looking around
+[score_node-6]    309.0 s  slam weak
+[score_node-6]    309.0 s  slam weak: looking around
+[score_node-6]    309.4 s  slam weak
+[score_node-6]    310.0 s  slam blind
+[score_node-6]    310.1 s  slam weak
+[score_node-6]    311.4 s  slam weak: looking around
+[score_node-6]    312.0 s  slam weak
+[score_node-6]    312.0 s  slam weak: looking around
+[score_node-6]    312.9 s  slam weak
+[score_node-6]    314.9 s  slam weak: looking around
+[score_node-6]    315.0 s  slam weak
+[score_node-6]    315.0 s  slam weak: looking around
+[score_node-6]    316.0 s  slam weak
+[score_node-6]    316.0 s  slam weak: looking around
+[score_node-6]    316.4 s  slam weak
+[score_node-6]    318.4 s  slam weak: looking around
+[score_node-6]    319.0 s  slam blind
+[score_node-6]    319.0 s  slam weak: looking around
+[score_node-6]    319.9 s  slam weak
+[score_node-6]    321.2 s  slam blind
+[score_node-6]    321.2 s  slam weak
+[score_node-6]    321.9 s  slam weak: looking around
+[score_node-6]    322.0 s  slam weak
+[score_node-6]    322.0 s  slam weak: looking around
+[score_node-6]    323.0 s  slam weak
+[score_node-6]    323.0 s  slam weak: looking around
+[score_node-6]    323.4 s  slam weak
+[score_node-6]    324.0 s  beacon reached; exploring the rest of the room
+[score_node-6]    325.2 s  slam weak
+[score_node-6]    325.3 s  slam blind
+[score_node-6]    325.4 s  slam weak
+[score_node-6]    326.0 s  beacon reached; exploring the rest of the room
+[score_node-6]    335.7 s  slam weak
+[score_node-6]    336.6 s  slam blind
+[score_node-6]    336.6 s  slam weak
+[score_node-6]    336.9 s  slam blind
+[score_node-6]    336.9 s  slam weak
+[score_node-6]    338.8 s  slam weak: looking around
+[score_node-6]    339.0 s  slam weak
+[score_node-6]    339.0 s  slam weak: looking around
+[score_node-6]    340.0 s  slam weak
+[score_node-6]    340.0 s  slam weak: looking around
+[score_node-6]    340.2 s  slam weak
+[score_node-6]    342.1 s  slam blind
+[score_node-6]    342.2 s  slam weak
+[score_node-6]    342.2 s  slam weak: looking around
+[score_node-6]    343.0 s  slam weak
+[score_node-6]    343.0 s  slam weak: looking around
+[score_node-6]    343.7 s  slam weak
+[score_node-6]    345.7 s  slam weak: looking around
+[score_node-6]    346.0 s  slam weak
+[score_node-6]    346.0 s  slam weak: looking around
+[score_node-6]    347.0 s  slam weak
+[score_node-6]    347.0 s  slam weak: looking around
+[score_node-6]    347.2 s  slam weak
+[score_node-6]    347.5 s  slam blind
+[score_node-6]    347.7 s  slam weak
+[score_node-6]    349.2 s  slam weak: looking around
+[score_node-6]    350.0 s  slam weak
+[score_node-6]    350.0 s  slam weak: looking around
+[score_node-6]    350.7 s  slam weak
+[score_node-6]    351.1 s  slam blind
+[score_node-6]    351.2 s  slam weak
+[score_node-6]    352.7 s  slam weak: looking around
+[score_node-6]    353.0 s  slam weak
+[score_node-6]    353.0 s  slam weak: looking around
+[score_node-6]    354.0 s  slam weak
+[score_node-6]    354.0 s  slam weak: looking around
+[score_node-6]    354.2 s  slam weak
+[score_node-6]    355.3 s  slam blind
+[score_node-6]    355.4 s  slam weak
+[score_node-6]    356.2 s  slam weak: looking around
+[score_node-6]    357.0 s  slam weak
+[score_node-6]    357.0 s  slam weak: looking around
+[score_node-6]    357.7 s  slam weak
+[score_node-6]    358.6 s  slam blind
+[score_node-6]    358.7 s  slam weak
+[score_node-6]    358.8 s  slam blind
+[score_node-6]    358.9 s  slam weak
+[score_node-6]    359.7 s  slam weak: looking around
+[score_node-6]    360.0 s  slam weak
+[score_node-6]    360.0 s  slam weak: looking around
+[score_node-6]    361.0 s  slam weak
+[score_node-6]    361.0 s  slam weak: looking around
+[score_node-6]    361.2 s  slam weak
+[score_node-6]    363.0 s  slam blind
+[score_node-6]    363.2 s  slam weak
+[score_node-6]    363.2 s  slam weak: looking around
+[score_node-6]    364.0 s  slam weak
+[score_node-6]    364.0 s  slam weak: looking around
+[score_node-6]    364.7 s  slam weak
+[score_node-6]    365.1 s  slam blind
+[score_node-6]    365.2 s  slam weak
+[score_node-6]    366.7 s  slam blind
+[score_node-6]    366.7 s  slam weak: looking around
+[score_node-6]    367.0 s  slam weak
+[score_node-6]    367.0 s  slam weak: looking around
+[score_node-6]    368.0 s  slam weak
+[score_node-6]    368.0 s  slam weak: looking around
+[score_node-6]    368.2 s  slam weak
+[score_node-6]    370.2 s  slam weak: looking around
+[score_node-6]    371.0 s  slam weak
+[score_node-6]    371.0 s  slam weak: looking around
+[score_node-6]    371.7 s  slam weak
+[score_node-6]    372.2 s  slam blind
+[score_node-6]    372.4 s  slam weak
+[score_node-6]    373.7 s  slam weak: looking around
+[score_node-6]    374.0 s  slam weak
+[score_node-6]    374.0 s  slam weak: looking around
+[score_node-6]    375.0 s  slam weak
+[score_node-6]    375.0 s  slam weak: looking around
+[score_node-6]    375.2 s  slam weak
+[score_node-6]    377.2 s  slam weak: looking around
+[score_node-6]    378.0 s  slam weak
+[score_node-6]    378.0 s  slam weak: looking around
+[score_node-6]    378.7 s  slam weak
+[score_node-6]    380.7 s  slam weak: looking around
+[score_node-6]    381.0 s  slam weak
+[score_node-6]    381.0 s  slam weak: looking around
+[score_node-6]    382.0 s  slam weak
+[score_node-6]    382.0 s  slam weak: looking around
+[score_node-6]    382.2 s  slam weak
+[score_node-6]    382.3 s  slam blind
+[score_node-6]    382.4 s  slam weak
+[score_node-6]    384.2 s  slam weak: looking around
+[score_node-6]    385.0 s  slam weak
+[score_node-6]    385.0 s  slam weak: looking around
+[score_node-6]    385.7 s  slam weak
+[score_node-6]    387.0 s  slam blind
+[score_node-6]    387.1 s  slam weak
+[score_node-6]    387.7 s  slam weak: looking around
+[score_node-6]    388.0 s  slam weak
+[score_node-6]    388.0 s  slam weak: looking around
+[score_node-6]    389.0 s  slam weak
+[score_node-6]    389.0 s  slam weak: looking around
+[score_node-6]    389.2 s  slam weak
+[score_node-6]    389.6 s  slam blind
+[score_node-6]    389.7 s  slam weak
+[score_node-6]    391.2 s  slam weak: looking around
+[score_node-6]    392.0 s  slam weak
+[score_node-6]    392.0 s  slam weak: looking around
+[score_node-6]    392.7 s  slam weak
+[score_node-6]    393.8 s  slam blind
+[score_node-6]    393.9 s  slam weak
+[score_node-6]    394.7 s  slam weak: looking around
+[score_node-6]    395.0 s  slam weak
+[score_node-6]    395.0 s  slam weak: looking around
+[score_node-6]    396.0 s  slam weak
+[score_node-6]    396.0 s  slam weak: looking around
+[score_node-6]    396.2 s  slam weak
+[score_node-6]    398.2 s  slam weak: looking around
+[score_node-6]    399.0 s  slam weak
+[score_node-6]    399.0 s  slam weak: looking around
+[score_node-6]    399.7 s  slam weak
+[score_node-6]    401.7 s  slam weak: looking around
+[score_node-6]    402.0 s  slam weak
+[score_node-6]    402.0 s  slam weak: looking around
+[score_node-6]    403.0 s  slam weak
+[score_node-6]    403.0 s  slam weak: looking around
+[score_node-6]    403.2 s  slam weak
+[score_node-6]    404.0 s  slam blind
+[score_node-6]    404.2 s  slam weak
+[score_node-6]    405.2 s  slam weak: looking around
+[score_node-6]    406.0 s  slam weak
+[score_node-6]    406.0 s  slam weak: looking around
+[score_node-6]    406.7 s  slam weak
+[score_node-6]    408.1 s  slam blind
+[score_node-6]    408.2 s  slam weak
+[score_node-6]    408.4 s  slam blind
+[score_node-6]    408.4 s  slam weak
+[score_node-6]    408.6 s  slam blind
+[score_node-6]    408.7 s  slam weak
+[score_node-6]    408.7 s  slam weak: looking around
+[score_node-6]    409.0 s  slam weak
+[score_node-6]    409.0 s  slam weak: looking around
+[score_node-6]    410.0 s  slam weak
+[score_node-6]    410.0 s  slam weak: looking around
+[score_node-6]    410.2 s  slam weak
+[score_node-6]    412.2 s  slam weak: looking around
+[score_node-6]    413.0 s  slam weak
+[score_node-6]    413.0 s  slam weak: looking around
+[score_node-6]    413.7 s  slam weak
+[score_node-6]    415.7 s  slam weak: looking around
+[score_node-6]    416.0 s  slam weak
+[score_node-6]    416.0 s  slam weak: looking around
+[score_node-6]    417.0 s  slam weak
+[score_node-6]    417.0 s  slam weak: looking around
+[score_node-6]    417.2 s  slam weak
+[score_node-6]    417.7 s  slam blind
+[score_node-6]    417.8 s  slam weak
+[score_node-6]    419.2 s  slam weak: looking around
+[score_node-6]    420.0 s  slam weak
+[score_node-6]    420.0 s  slam weak: looking around
+[score_node-6]    420.7 s  slam weak
+[score_node-6]    420.9 s  slam blind
+[score_node-6]    421.0 s  slam weak
+[score_node-6]    422.7 s  slam weak: looking around
+[score_node-6]    423.0 s  slam weak
+[score_node-6]    423.0 s  slam weak: looking around
+[score_node-6]    424.0 s  slam weak
+[score_node-6]    424.0 s  slam weak: looking around
+[score_node-6]    424.2 s  slam weak
+[score_node-6]    426.2 s  slam weak: looking around
+[score_node-6]    427.0 s  slam weak
+[score_node-6]    427.0 s  slam weak: looking around
+[score_node-6]    427.7 s  slam weak
+[score_node-6]    429.6 s  slam blind
+[score_node-6]    429.7 s  slam weak: looking around
+[score_node-6]    430.0 s  slam weak
+[score_node-6]    430.0 s  slam weak: looking around
+[score_node-6]    431.0 s  slam weak
+[score_node-6]    431.0 s  slam weak: looking around
+[score_node-6]    431.2 s  slam weak
+[score_node-6]    433.2 s  slam weak: looking around
+[score_node-6]    434.0 s  slam weak
+[score_node-6]    434.0 s  slam weak: looking around
+[score_node-6]    434.7 s  slam weak
+[score_node-6]    436.7 s  slam weak: looking around
+[score_node-6]    437.0 s  slam weak
+[score_node-6]    437.0 s  slam weak: looking around
+[score_node-6]    438.0 s  slam weak
+[score_node-6]    438.0 s  slam weak: looking around
+[score_node-6]    438.2 s  slam weak
+[score_node-6]    439.2 s  slam blind
+[score_node-6]    439.4 s  slam weak
+[score_node-6]    440.2 s  slam weak: looking around
+[score_node-6]    441.0 s  slam weak
+[score_node-6]    441.0 s  slam weak: looking around
+[score_node-6]    441.7 s  slam weak
+[score_node-6]    443.7 s  slam weak: looking around
+[score_node-6]    444.0 s  slam weak
+[score_node-6]    444.0 s  slam weak: looking around
+[score_node-6]    445.0 s  slam weak
+[score_node-6]    445.0 s  slam weak: looking around
+[score_node-6]    445.2 s  slam weak
+[score_node-6]    445.6 s  slam blind
+[score_node-6]    445.7 s  slam weak
+[score_node-6]    446.6 s  slam blind
+[score_node-6]    446.8 s  slam weak
+[score_node-6]    447.2 s  slam weak: looking around
+[score_node-6]    448.0 s  slam weak
+[score_node-6]    448.0 s  slam weak: looking around
+[score_node-6]    448.7 s  slam weak
+[score_node-6]    450.7 s  slam weak: looking around
+[score_node-6]    451.0 s  slam weak
+[score_node-6]    451.0 s  slam weak: looking around
+[score_node-6]    452.0 s  slam weak
+[score_node-6]    452.0 s  slam weak: looking around
+[score_node-6]    452.2 s  slam weak
+[score_node-6]    452.5 s  slam blind
+[score_node-6]    452.6 s  slam weak
+[score_node-6]    454.2 s  slam weak: looking around
+[score_node-6]    455.0 s  slam weak
+[score_node-6]    455.0 s  slam weak: looking around
+[score_node-6]    455.7 s  slam weak
+[score_node-6]    457.7 s  slam weak: looking around
+[score_node-6]    458.0 s  slam weak
+[score_node-6]    458.0 s  slam weak: looking around
+[score_node-6]    459.0 s  slam weak
+[score_node-6]    459.0 s  slam weak: looking around
+[score_node-6]    459.2 s  slam weak
+[score_node-6]    459.8 s  slam blind
+[score_node-6]    460.0 s  slam weak
+[score_node-6]    461.2 s  slam weak: looking around
+[score_node-6]    462.0 s  slam weak
+[score_node-6]    462.0 s  slam weak: looking around
+[score_node-6]    462.7 s  slam weak
+[score_node-6]    466.9 s  slam weak: looking around
+[score_node-6]    467.0 s  slam weak
+[score_node-6]    467.0 s  slam weak: looking around
+[score_node-6]    468.0 s  slam weak
+[score_node-6]    468.0 s  slam weak: looking around
+[score_node-6]    468.4 s  slam weak
+[score_node-6]    470.4 s  slam weak: looking around
+[score_node-6]    471.0 s  slam weak
+[score_node-6]    471.0 s  slam weak: looking around
+[score_node-6]    471.9 s  slam weak
+[score_node-6]    473.9 s  slam weak: looking around
+[score_node-6]    474.0 s  slam weak
+[score_node-6]    474.0 s  slam weak: looking around
+[score_node-6]    475.1 s  beacon reached; exploring the rest of the room
+[score_node-6]    476.2 s  slam weak
+[score_node-6]    479.2 s  slam weak: looking around
+[score_node-6]    480.0 s  slam weak
+[score_node-6]    480.0 s  slam weak: looking around
+[score_node-6]    480.7 s  slam weak
+[score_node-6]    482.7 s  slam weak: looking around
+[score_node-6]    483.0 s  slam weak
+[score_node-6]    483.0 s  slam weak: looking around
+[score_node-6]    484.0 s  slam weak
+[score_node-6]    484.0 s  slam weak: looking around
+[score_node-6]    484.2 s  slam weak
+[score_node-6]    486.2 s  slam weak: looking around
+[score_node-6]    487.0 s  slam weak
+[score_node-6]    487.0 s  slam weak: looking around
+[score_node-6]    487.7 s  slam weak
+[score_node-6]    489.6 s  slam blind
+[score_node-6]    489.7 s  slam weak: looking around
+[score_node-6]    490.0 s  slam weak
+[score_node-6]    490.0 s  slam weak: looking around
+[score_node-6]    491.0 s  slam weak
+[score_node-6]    491.0 s  slam weak: looking around
+[score_node-6]    491.2 s  slam weak
+[score_node-6]    493.2 s  slam weak: looking around
+[score_node-6]    494.0 s  slam weak
+[score_node-6]    494.0 s  slam weak: looking around
+[score_node-6]    494.7 s  slam weak
+[score_node-6]    496.7 s  slam weak: looking around
+[score_node-6]    497.0 s  slam weak
+[score_node-6]    497.0 s  slam weak: looking around
+[score_node-6]    498.0 s  slam weak
+[score_node-6]    498.0 s  slam weak: looking around
+[score_node-6]    498.2 s  slam weak
+[score_node-6]    500.2 s  slam weak: looking around
+[score_node-6]    501.0 s  slam weak
+[score_node-6]    501.0 s  slam weak: looking around
+[score_node-6]    501.7 s  slam weak
+[score_node-6]    502.4 s  slam blind
+[score_node-6]    502.4 s  slam weak
+[score_node-6]    503.6 s  slam blind
+[score_node-6]    503.6 s  slam weak
+[score_node-6]    503.7 s  slam weak: looking around
+[score_node-6]    504.0 s  slam weak
+[score_node-6]    504.0 s  slam weak: looking around
+[score_node-6]    505.0 s  slam weak
+[score_node-6]    505.0 s  slam weak: looking around
+[score_node-6]    505.2 s  slam weak
+[score_node-6]    506.4 s  slam blind
+[score_node-6]    506.5 s  slam weak
+[score_node-6]    506.8 s  slam blind
+[score_node-6]    506.9 s  slam weak
+[score_node-6]    507.2 s  slam weak: looking around
+[score_node-6]    508.0 s  slam weak
+[score_node-6]    508.0 s  slam weak: looking around
+[score_node-6]    508.7 s  slam weak
+[score_node-6]    510.7 s  slam weak: looking around
+[score_node-6]    511.0 s  slam weak
+[score_node-6]    511.0 s  slam weak: looking around
+[score_node-6]    512.0 s  slam weak
+[score_node-6]    512.0 s  slam weak: looking around
+[score_node-6]    512.2 s  slam weak
+[score_node-6]    514.2 s  slam weak: looking around
+[score_node-6]    515.0 s  slam weak
+[score_node-6]    515.0 s  slam weak: looking around
+[score_node-6]    515.7 s  slam weak
+[score_node-6]    517.2 s  slam blind
+[score_node-6]    517.3 s  slam weak
+[score_node-6]    517.7 s  slam weak: looking around
+[score_node-6]    518.0 s  slam weak
+[score_node-6]    518.0 s  slam weak: looking around
+[score_node-6]    519.0 s  slam weak
+[score_node-6]    519.0 s  slam weak: looking around
+[score_node-6]    519.2 s  slam weak
+[score_node-6]    521.2 s  slam weak: looking around
+[score_node-6]    522.0 s  slam weak
+[score_node-6]    522.0 s  slam weak: looking around
+[score_node-6]    522.7 s  slam weak
+[score_node-6]    524.0 s  beacon reached; exploring the rest of the room
+[score_node-6]    524.1 s  slam weak
+[score_node-6]    526.7 s  slam blind
+[score_node-6]    526.8 s  slam weak
+[score_node-6]    527.2 s  slam weak: looking around
+[score_node-6]    528.0 s  slam weak
+[score_node-6]    528.0 s  slam weak: looking around
+[score_node-6]    528.6 s  slam weak
+[score_node-6]    529.0 s  beacon reached; exploring the rest of the room
+[score_node-6]    529.9 s  slam weak
+[score_node-6]    533.0 s  slam weak: looking around
+[score_node-6]    533.0 s  slam weak
+[score_node-6]    533.0 s  slam weak: looking around
+[score_node-6]    534.0 s  slam weak
+[score_node-6]    534.0 s  slam weak: looking around
+[score_node-6]    534.4 s  slam weak
+[score_node-6]    536.4 s  slam weak: looking around
+[score_node-6]    537.0 s  slam weak
+[score_node-6]    537.0 s  slam weak: looking around
+[score_node-6]    537.9 s  slam weak
+[score_node-6]    538.3 s  slam blind
+[score_node-6]    538.4 s  slam weak
+[score_node-6]    538.5 s  slam blind
+[score_node-6]    538.6 s  slam weak
+[score_node-6]    538.8 s  slam blind
+[score_node-6]    538.9 s  slam weak
+[score_node-6]    539.9 s  slam weak: looking around
+[score_node-6]    540.0 s  slam weak
+[score_node-6]    540.0 s  slam weak: looking around
+[score_node-6]    541.0 s  slam weak
+[score_node-6]    541.0 s  slam weak: looking around
+[score_node-6]    541.4 s  slam weak
+[score_node-6]    543.4 s  slam weak: looking around
+[score_node-6]    544.0 s  slam weak
+[score_node-6]    544.0 s  slam weak: looking around
+[score_node-6]    544.9 s  slam weak
+[score_node-6]    545.7 s  slam blind
+[score_node-6]    545.8 s  slam weak
+[score_node-6]    546.2 s  slam blind
+[score_node-6]    546.3 s  slam weak
+[score_node-6]    546.9 s  slam weak: looking around
+[score_node-6]    547.0 s  slam weak
+[score_node-6]    547.0 s  slam weak: looking around
+[score_node-6]    548.0 s  slam weak
+[score_node-6]    548.0 s  slam weak: looking around
+[score_node-6]    548.4 s  slam weak
+[score_node-6]    549.9 s  slam blind
+[score_node-6]    550.0 s  slam weak
+[score_node-6]    550.3 s  slam blind
+[score_node-6]    550.4 s  slam weak
+[score_node-6]    550.4 s  slam weak: looking around
+[score_node-6]    551.0 s  slam blind
+[score_node-6]    551.0 s  slam weak: looking around
+[score_node-6]    551.9 s  slam weak
+[score_node-6]    552.8 s  slam blind
+[score_node-6]    552.9 s  slam weak
+[score_node-6]    553.9 s  slam weak: looking around
+[score_node-6]    554.0 s  slam weak
+[score_node-6]    554.0 s  slam weak: looking around
+[score_node-6]    555.0 s  slam weak
+[score_node-6]    555.0 s  slam weak: looking around
+[score_node-6]    555.4 s  slam weak
+[score_node-6]    557.4 s  slam weak: looking around
+[score_node-6]    558.0 s  slam weak
+[score_node-6]    558.0 s  slam weak: looking around
+[score_node-6]    558.9 s  slam weak
+[score_node-6]    560.9 s  slam weak: looking around
+[score_node-6]    561.0 s  slam weak
+[score_node-6]    561.0 s  slam weak: looking around
+[score_node-6]    562.0 s  slam weak
+[score_node-6]    562.0 s  slam weak: looking around
+[score_node-6]    562.4 s  slam weak
+[score_node-6]    564.4 s  slam weak: looking around
+[score_node-6]    565.0 s  slam weak
+[score_node-6]    565.0 s  slam weak: looking around
+[score_node-6]    565.9 s  slam weak
+[score_node-6]    566.6 s  slam blind
+[score_node-6]    566.6 s  slam weak
+[score_node-6]    567.9 s  slam weak: looking around
+[score_node-6]    568.0 s  slam weak
+[score_node-6]    568.0 s  slam weak: looking around
+[score_node-6]    569.0 s  slam weak
+[score_node-6]    569.0 s  slam weak: looking around
+[score_node-6]    569.4 s  slam weak
+[score_node-6]    570.4 s  slam blind
+[score_node-6]    570.4 s  slam weak
+[score_node-6]    571.4 s  slam weak: looking around
+[score_node-6]    572.0 s  slam weak
+[score_node-6]    572.0 s  slam weak: looking around
+[score_node-6]    572.9 s  slam weak
+[score_node-6]    573.8 s  slam blind
+[score_node-6]    573.8 s  slam weak
+[score_node-6]    574.9 s  slam weak: looking around
+[score_node-6]    575.0 s  slam weak
+[score_node-6]    575.0 s  slam weak: looking around
+[score_node-6]    576.0 s  slam weak
+[score_node-6]    576.0 s  slam weak: looking around
+[score_node-6]    576.4 s  slam weak
+[score_node-6]    578.4 s  slam weak: looking around
+[score_node-6]    579.0 s  slam weak
+[score_node-6]    579.0 s  slam weak: looking around
+[score_node-6]    579.9 s  slam weak
+[score_node-6]    581.9 s  slam weak: looking around
+[score_node-6]    582.0 s  slam weak
+[score_node-6]    582.0 s  slam weak: looking around
+[score_node-6]    583.0 s  slam weak
+[score_node-6]    583.0 s  slam weak: looking around
+[score_node-6]    583.4 s  slam weak
+[score_node-6]    584.0 s  beacon reached; exploring the rest of the room
+[score_node-6]    585.2 s  slam weak
+[score_node-6]    587.0 s  beacon reached; exploring the rest of the room
+[score_node-6]    589.4 s  slam weak
+[score_node-6]    590.8 s  slam blind
+[score_node-6]    590.9 s  slam weak
+[score_node-6]    594.0 s  beacon reached; exploring the rest of the room
+[score_node-6]    594.2 s  slam weak
+[score_node-6]    596.7 s  slam blind
+[score_node-6]    597.0 s  beacon reached; exploring the rest of the room
+[score_node-6]    597.2 s  slam weak
+[nav_node-5] [INFO] [1795627194.304326989] [duck_nav]: [t=603.0 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795627195.290358017] [duck_nav]: [t=604.1 s] slam weak
+[robot_state_publisher-2] [INFO] [1795627195.938102340] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[INFO] [robot_state_publisher-2]: process has finished cleanly [pid 2663]
+[INFO] [score_node-6]: process has finished cleanly [pid 2667]
+[INFO] [yolo_node-3]: process has finished cleanly [pid 2664]
+[INFO] [nav_node-5]: process has finished cleanly [pid 2666]
+[INFO] [slam_node-4]: process has finished cleanly [pid 2665]
+[INFO] [world_sim-1]: process has finished cleanly [pid 2662]
