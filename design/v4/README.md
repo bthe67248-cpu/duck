@@ -138,6 +138,12 @@ and reached the beacon sooner, at slightly lower coverage. On some seeds it was 
 and with one run per seed the difference is within the noise, so it stays opt-in until a repeat confirms it (the repeat below did not). Frame cost
 is unchanged (mean 39–54 ms per 25 × 25 frame on a desktop CPU).
 
+**Corners (later change, `results/corner_nav/`).** The clearance guard used to fire 24–162 times per run at corners,
+because pure pursuit cut inside the margin-hugging shortest path. The planner now keeps off walls where there is room,
+the lookahead and speed shrink at corners, and a clear arc is searched before stopping. Guard events fell to 1–12 per
+run, and the duck reached the beacon on 6/6 seeds against 4/6 on the same `main`, with 93 % coverage against 80 %.
+Exploration still does not complete.
+
 Ideas not adopted: a wider normal search while turning was not needed once the ratchet was fixed (the relocalisation
 window variant above did nothing). The 0.13 m sensor height is not a problem for `scan_from_points`: at 60° vertical
 FOV the lowest zones reach the floor at about 0.23 m, floor returns stay below the 3 cm obstacle threshold with the

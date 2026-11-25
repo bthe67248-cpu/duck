@@ -4,8 +4,15 @@ Subscribes  /map (OccupancyGrid; its resolution/origin/size are used and validat
             /slam/state (String: "ok" | "recovering" ...), /goal (PointStamped, frame "map"), /nav/enable (Bool)
 Publishes   /cmd_vel (Twist: linear.x = walk command, angular.z = turn), /head_yaw_cmd (Float64, sweeping),
             /plan (nav_msgs/Path), /nav/status (String), /nav/result (String, latched: final outcome)
-Planner: wavefront over free cells kept `clearance` m from obstacles (Euclidean), to the beacon or else the nearest
-         frontier (1 Hz). Driver: pure pursuit of the path (20 Hz).
+Planner: weighted wavefront over free cells kept `clearance` m from obstacles (Euclidean), preferring cells with
+         `plan_comfort` m to spare, to the beacon or else the nearest frontier (1 Hz).
+Driver (20 Hz): pure pursuit with a lookahead that shrinks at corners and next to obstacles and a walk command that
+         drops with path curvature. When the pure-pursuit arc fails the footprint check (`motion_clear`) a fan of turn
+         rates is searched for a clear arc that still makes progress along the path; only if none exists does the
+         clearance guard stop forward motion and turn in place. After `guard_recover_s` of guard without progress the
+         robot gives up that frontier for `frontier_avoid_s` (exploring) or makes a local manoeuvre: turn to the
+         clearest heading and take a short guarded step (beacon / repeated). `corner_handling:=false` restores plain
+         pure pursuit + guard.
 
 Command ownership: while enabled this node is the only /cmd_vel publisher. When it is disabled, finishes, stops for
 a fault, or shuts down it publishes a zero Twist; world_sim also expires any command older than its `cmd_timeout`,
@@ -44,6 +51,11 @@ class NavNode(Node):
         self.declare_parameter("min_explored_m2", 2.0)   # reachable known-free area needed before "complete"
         self.declare_parameter("no_frontier_plans", 5)   # consecutive no-frontier plans before judging
         self.declare_parameter("goal_reached_m", 0.36)
+        # corners: weighted planning, adaptive lookahead, arc search and guard recovery (False: plain pursuit + guard)
+        self.declare_parameter("corner_handling", True)
+        self.declare_parameter("plan_comfort", 0.10)      # m beyond `clearance` the planner prefers to keep (0 = off)
+        self.declare_parameter("guard_recover_s", 2.0)    # s of clearance guard without progress before recovering
+        self.declare_parameter("frontier_avoid_s", 60.0)  # s a frontier the robot could not reach is skipped
         # body-fixed depth sensor (no head sweep for mapping): turn in place to map all round at start-up, and turn
         # slowly to find mapped walls again when localisation stays weak. 0 = off (head-mounted sensor).
         self.declare_parameter("survey_turn", 0.0)        # rad of in-place turning before exploring (2*pi = full turn)
@@ -65,6 +77,7 @@ class NavNode(Node):
         self.distances = None
         self.path = None; self.mode = "explore"; self.visited_goal = False; self.finished = False
         self.progress_ref = None; self.unstick_until = 0.0; self.status = ""; self.no_frontier = 0
+        self.guard_time = 0.0; self.episode_recoveries = 0; self.avoid = []; self.manoeuvre = None
         self.pub_cmd = self.create_publisher(Twist, "cmd_vel", 10)
         self.pub_head = self.create_publisher(Float64, "head_yaw_cmd", 10)
         self.pub_plan = self.create_publisher(Path, "plan", 2)
@@ -132,7 +145,7 @@ class NavNode(Node):
                 return
             self.map_revision = revision; self.revision_stamp = ns * 1e-9
             self.path = None; self.goal = None; self.visited_goal = False
-            self.progress_ref = None; self.unstick_until = 0.0; self.no_frontier = 0
+            self.progress_ref = None; self.unstick_until = 0.0; self.no_frontier = 0; self.avoid = []
             self.stop("map corrected; waiting for fresh observations")
 
     def on_goal(self, msg):
@@ -170,7 +183,7 @@ class NavNode(Node):
         self.pub_cmd.publish(Twist()); self.path = None
         if center_head:
             self.pub_head.publish(Float64(data=0.0))
-        self.unstick_until = 0.0; self.progress_ref = None
+        self.unstick_until = 0.0; self.progress_ref = None; self.manoeuvre = None
         if why:
             self.say(why)
 
@@ -212,7 +225,15 @@ class NavNode(Node):
                 self.say("beacon reached; exploring the rest of the room")
         # the expensive part runs without the lock, on a consistent snapshot of grid/info/pose
         clearance = float(self.get_parameter("clearance").value)
-        path, mode = ds.plan(grid, pose, goal, info=info, clearance=clearance)
+        corner = bool(self.get_parameter("corner_handling").value)
+        comfort = float(self.get_parameter("plan_comfort").value) if corner else 0.0
+        with self.lock:
+            now = self.now()
+            self.avoid = [a for a in self.avoid if a[3] > now]
+            avoid = [a[:3] for a in self.avoid]
+        path, mode = ds.plan(grid, pose, goal, info=info, clearance=clearance, comfort=comfort, avoid=avoid)
+        if mode == "no_frontier" and avoid:              # skipped frontiers never end exploration
+            path, mode = ds.plan(grid, pose, goal, info=info, clearance=clearance, comfort=comfort)
         state = None
         if mode == "no_frontier":
             state = ds.exploration_state(grid, pose, info, min_area_m2=float(self.get_parameter("min_explored_m2").value))
@@ -304,31 +325,105 @@ class NavNode(Node):
             cmd.angular.z = 1.2; self.pub_cmd.publish(cmd); return
         path = self.path
         if self.progress_ref is None or math.hypot(self.pose[0] - self.progress_ref[0], self.pose[1] - self.progress_ref[1]) > 0.10:
+            if self.progress_ref is not None:
+                self.guard_time = 0.0; self.episode_recoveries = 0      # moved: a new stuck episode starts from zero
             self.progress_ref = (self.pose[0], self.pose[1], t)
         elif t - self.progress_ref[2] > 8.0 and path:
             self.unstick_until = t + 2.5; self.progress_ref = None
             self.get_logger().info("no progress for 8 s: turning in place and replanning")
+        corner = bool(self.get_parameter("corner_handling").value)
+        if corner and self.manoeuvre is not None and self.run_manoeuvre(t):
+            return
         if path:
-            tgt = ds.path_target(path, self.pose, lookahead=0.06 if self.mode == "escape" else 0.22)
+            escape = self.mode == "escape"
+            clearance = float(self.get_parameter("clearance").value)
+            bound = float(self.get_parameter("speed_bound_mps").value)
+            walk = float(self.get_parameter("walk_cmd").value)
+            if escape or not corner:
+                lookahead, turn = (0.06 if escape else 0.22), 0.0
+            else:
+                lookahead, turn = ds.adaptive_lookahead(path, self.pose, info=self.info, distances=self.distances,
+                                                        clearance=clearance)
+            tgt = ds.path_target(path, self.pose, lookahead=lookahead)
             e = (math.atan2(tgt[1] - self.pose[1], tgt[0] - self.pose[0]) - self.pose[2] + math.pi) % (2 * math.pi) - math.pi
             if abs(e) > 0.6:
                 cmd.angular.z = 1.2 * float(np.sign(e))
             else:
-                cmd.linear.x = float(self.get_parameter("walk_cmd").value); cmd.angular.z = float(np.clip(2.0 * e, -1.0, 1.0))
+                # slow with curvature: walk_cmd at a straight path, SLOW_WALK of it at a right-angle corner
+                cmd.linear.x = walk * (1.0 - (1.0 - SLOW_WALK) * min(1.0, turn / (math.pi / 2)))
+                cmd.angular.z = float(np.clip(2.0 * e, -1.0, 1.0))
                 sweep = float(self.get_parameter("yaw_sweep_rate").value)
                 if sweep > 0 and self.mode != "escape":
                     period = max(float(self.get_parameter("yaw_sweep_period").value), 0.5)
                     cmd.angular.z = float(np.clip(cmd.angular.z + sweep * math.sin(2 * math.pi * t / period), -1.2, 1.2))
-                if not ds.motion_clear(self.grid, self.pose, float(self.get_parameter("speed_bound_mps").value),
-                                       cmd.angular.z, info=self.info,
-                                       clearance=float(self.get_parameter("clearance").value),
-                                       escape=self.mode == "escape", distances=self.distances):
+                kw = dict(info=self.info, clearance=clearance, escape=escape, distances=self.distances)
+                if not ds.motion_clear(self.grid, self.pose, bound, cmd.angular.z, **kw):
+                    alt = None
+                    if corner:   # same conservative speed bound: any arc chosen here also passes the guard below
+                        alt = ds.choose_arc(self.grid, self.pose, path, bound, ARC_RATES, preferred=cmd.angular.z, **kw)
+                    if alt is not None:
+                        cmd.angular.z = alt; cmd.linear.x = min(cmd.linear.x, walk * SLOW_WALK)
+                        self.say("near an obstacle: steering on a clear arc")
+                    else:
+                        cmd.linear.x = 0.0
+                        w = float(np.clip(2.0 * e, -1.0, 1.0))
+                        cmd.angular.z = w if not corner else float(np.sign(e) or 1.0) * max(0.5, abs(w))
+                        self.say("path clearance guard: turning in place and replanning")
+                        if corner:
+                            self.guard_time += 0.05
+                            if self.guard_time >= float(self.get_parameter("guard_recover_s").value):
+                                self.recover(t)
+                # the stop guard stays the safety net: never walk on an arc that fails the footprint check
+                if cmd.linear.x > 0 and not ds.motion_clear(self.grid, self.pose, bound, cmd.angular.z, **kw):
                     cmd.linear.x = 0.0
-                    cmd.angular.z = float(np.clip(2.0 * e, -1.0, 1.0))
-                    self.say("path clearance guard: turning in place and replanning")
         elif self.mode == "no_frontier":
             cmd.angular.z = 1.0                                                         # look around in place
         self.pub_cmd.publish(cmd)
+
+    # ---- guard recovery -----------------------------------------------------------------------
+    def recover(self, t):
+        """The guard kept the robot from following its path. Exploring: skip that frontier for a while (first try in
+        this spot). Otherwise: turn to the clearest heading and take a short guarded step, then replan."""
+        self.guard_time = 0.0; self.episode_recoveries += 1
+        if self.mode == "explore" and self.path and self.episode_recoveries == 1:
+            x, y = self.path[-1]
+            self.avoid.append((x, y, 0.4, t + float(self.get_parameter("frontier_avoid_s").value)))
+            self.path = None
+            self.say("path clearance guard: trying another frontier"); return
+        heading = ds.best_clear_heading(self.grid, self.pose, float(self.get_parameter("speed_bound_mps").value),
+                                        info=self.info, clearance=float(self.get_parameter("clearance").value),
+                                        distances=self.distances)
+        if heading is None:
+            self.unstick_until = t + 2.5                     # nothing clear all round: the old turn-in-place unstick
+            self.say("path clearance guard: no clear heading, turning in place"); return
+        self.manoeuvre = [heading, t + 6.0, None]
+        self.say("path clearance guard: local manoeuvre")
+
+    def run_manoeuvre(self, t):
+        """Turn in place to the chosen heading, then walk slowly up to MANOEUVRE_STEP_S while the arc stays clear.
+        True while it is still driving; on the way out the path is dropped so the next plan starts from here."""
+        yaw, until, walk_until = self.manoeuvre
+        err = (yaw - self.pose[2] + math.pi) % (2 * math.pi) - math.pi
+        cmd = Twist()
+        if t <= until:
+            if walk_until is None and abs(err) > 0.15:
+                cmd.angular.z = float(np.sign(err)) * max(0.5, min(1.2, 2.0 * abs(err)))
+                self.pub_cmd.publish(cmd); return True
+            if walk_until is None:
+                walk_until = self.manoeuvre[2] = t + MANOEUVRE_STEP_S
+            w = float(np.clip(2.0 * err, -1.0, 1.0))
+            if t < walk_until and ds.motion_clear(self.grid, self.pose, float(self.get_parameter("speed_bound_mps").value),
+                                                  w, info=self.info, clearance=float(self.get_parameter("clearance").value),
+                                                  distances=self.distances):
+                cmd.linear.x = float(self.get_parameter("walk_cmd").value) * SLOW_WALK; cmd.angular.z = w
+                self.pub_cmd.publish(cmd); return True
+        self.manoeuvre = None; self.path = None
+        return False
+
+
+SLOW_WALK = 0.7                                  # fraction of walk_cmd near obstacles (0.35 of 0.5; < 0.25 = stand)
+ARC_RATES = tuple(np.linspace(-1.2, 1.2, 13))    # turn rates (rad/s) tried when the pure-pursuit arc is not clear
+MANOEUVRE_STEP_S = 1.2
 
 
 def main():

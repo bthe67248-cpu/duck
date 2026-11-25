@@ -14,6 +14,8 @@ from dataclasses import dataclass
 
 import numpy as np
 from scipy import ndimage
+from scipy.sparse import coo_matrix
+from scipy.sparse.csgraph import dijkstra
 
 from .pose_graph import PoseGraph, carry_pose_correction
 
@@ -969,12 +971,7 @@ def motion_clear(grid, pose, speed, yaw_rate, horizon=0.6, info=DEFAULT_MAP,
     required = min(clearance, distances[start]) if escape else clearance
     steps = max(2, int(math.ceil(abs(speed) * horizon / (info.res / 3))))
     for t in np.linspace(0, horizon, steps + 1)[1:]:
-        if abs(yaw_rate) < 1e-6:
-            x = pose[0] + speed * t * math.cos(pose[2]); y = pose[1] + speed * t * math.sin(pose[2])
-        else:
-            x = pose[0] + speed / yaw_rate * (math.sin(pose[2] + yaw_rate * t) - math.sin(pose[2]))
-            y = pose[1] - speed / yaw_rate * (math.cos(pose[2] + yaw_rate * t) - math.cos(pose[2]))
-        ij = info.cell(x, y)
+        ij = info.cell(*arc_end(pose, speed, yaw_rate, t))
         if not info.inside(*ij) or grid[ij] != 0 or distances[ij] + 1e-9 < required:
             return False
         if escape:
@@ -984,11 +981,105 @@ def motion_clear(grid, pose, speed, yaw_rate, horizon=0.6, info=DEFAULT_MAP,
 
 def path_target(path, pose, lookahead=0.22):
     """Walk forward from the nearest path point, never chase the old start behind us."""
-    nearest = min(range(len(path)), key=lambda i: math.hypot(path[i][0] - pose[0], path[i][1] - pose[1]))
+    nearest = _nearest_index(path, pose)
     for p in path[nearest:]:
         if math.hypot(p[0] - pose[0], p[1] - pose[1]) >= lookahead:
             return p
     return path[-1]
+
+
+def _nearest_index(path, pose, start=0, stop=None):
+    seg = path[start:stop]
+    return start + min(range(len(seg)), key=lambda i: math.hypot(seg[i][0] - pose[0], seg[i][1] - pose[1]))
+
+
+def path_turn_ahead(path, pose, span=0.35):
+    """Heading change (rad) of the path over the `span` m ahead of the point nearest the robot (between the chords of
+    its first and second halves)."""
+    i0 = _nearest_index(path, pose)
+    pts = [path[i0]]
+    run = 0.0
+    for p in path[i0 + 1:]:
+        run += math.hypot(p[0] - pts[-1][0], p[1] - pts[-1][1]); pts.append(p)
+        if run >= span:
+            break
+    if len(pts) < 3:
+        return 0.0
+    m = len(pts) // 2                                    # two half chords: the staircase of grid steps averages out
+    h1 = math.atan2(pts[m][1] - pts[0][1], pts[m][0] - pts[0][0])
+    h2 = math.atan2(pts[-1][1] - pts[m][1], pts[-1][0] - pts[m][0])
+    return abs((h2 - h1 + math.pi) % (2 * math.pi) - math.pi)
+
+
+def adaptive_lookahead(path, pose, info=DEFAULT_MAP, distances=None, clearance=ROBOT_RADIUS,
+                       base=0.22, minimum=0.10, comfort=0.08):
+    """Pure-pursuit lookahead that shrinks at corners and next to obstacles, so the chord the robot aims along stays
+    close to the clearance-respecting path. Returns (lookahead m, path turn ahead rad)."""
+    turn = path_turn_ahead(path, pose)
+    la = base - (base - minimum) * min(1.0, turn / (math.pi / 2))
+    if distances is not None:
+        ij = info.cell(*pose[:2])
+        if info.inside(*ij):
+            room = min(1.0, max(0.0, (float(distances[ij]) - clearance) / comfort))  # 0 at the margin, 1 with room
+            la = min(la, minimum + (base - minimum) * room)
+    return la, turn
+
+
+def arc_end(pose, speed, yaw_rate, t):
+    """Position after `t` s on the constant speed / turn-rate arc from `pose`."""
+    if abs(yaw_rate) < 1e-6:
+        return pose[0] + speed * t * math.cos(pose[2]), pose[1] + speed * t * math.sin(pose[2])
+    return (pose[0] + speed / yaw_rate * (math.sin(pose[2] + yaw_rate * t) - math.sin(pose[2])),
+            pose[1] - speed / yaw_rate * (math.cos(pose[2] + yaw_rate * t) - math.cos(pose[2])))
+
+
+def choose_arc(grid, pose, path, speed, yaw_rates, preferred=0.0, horizon=0.6, info=DEFAULT_MAP,
+               clearance=ROBOT_RADIUS, escape=False, distances=None, min_progress=0.03):
+    """Pick the turn rate whose arc (at the conservative speed bound `speed`) passes `motion_clear` and makes the
+    most progress along `path`: arc length up to the path point nearest the arc's end, minus the cross-track
+    distance there. Returns the turn rate, or None when no clear arc gains `min_progress` m along the path."""
+    if distances is None:
+        _, distances = _clearance_m(grid, info)
+    s = [0.0]
+    for a, b in zip(path, path[1:]):
+        s.append(s[-1] + math.hypot(b[0] - a[0], b[1] - a[1]))
+    i0 = _nearest_index(path, pose)
+    stop = i0 + 1
+    while stop < len(path) and s[stop] - s[i0] < 2.5 * speed * horizon:
+        stop += 1                                        # only the stretch of path the arc can reach
+    stop = min(len(path), stop + 1)
+    best = None
+    for w in yaw_rates:
+        if not motion_clear(grid, pose, speed, w, horizon=horizon, info=info, clearance=clearance,
+                            escape=escape, distances=distances):
+            continue
+        end = arc_end(pose, speed, w, horizon)
+        j = _nearest_index(path, end, i0, stop)
+        progress = s[j] - s[i0]
+        if progress < min_progress:
+            continue
+        score = progress - math.hypot(end[0] - path[j][0], end[1] - path[j][1]) - 0.02 * abs(w - preferred)
+        if best is None or score > best[0]:
+            best = (score, float(w))
+    return None if best is None else best[1]
+
+
+def best_clear_heading(grid, pose, speed, horizon=0.6, info=DEFAULT_MAP, clearance=ROBOT_RADIUS, distances=None,
+                       n=12):
+    """Local manoeuvre for a stuck robot: of `n` headings all round, the one whose straight walk passes
+    `motion_clear` and ends with the most clearance (ties go to the smaller turn). Returns the heading or None."""
+    if distances is None:
+        _, distances = _clearance_m(grid, info)
+    best = None
+    for k in range(n):
+        p = (pose[0], pose[1], pose[2] + 2 * math.pi * k / n)
+        if not motion_clear(grid, p, speed, 0.0, horizon=horizon, info=info, clearance=clearance, distances=distances):
+            continue
+        ij = info.cell(*arc_end(p, speed, 0.0, horizon))
+        score = min(float(distances[ij]), 1.0) - 0.01 * min(k, n - k)
+        if best is None or score > best[0]:
+            best = (score, (p[2] + math.pi) % (2 * math.pi) - math.pi)
+    return None if best is None else best[1]
 
 
 def _bfs(trav, start):
@@ -1020,7 +1111,48 @@ def _argmin_where(mask, values):
     return np.unravel_index(np.argmin(np.where(mask, values.astype(np.int64), big)), mask.shape)
 
 
-def plan(grid, pose, goal=None, goal_radius=0.34, info=DEFAULT_MAP, clearance=ROBOT_RADIUS, min_frontier=8):
+def _wall_cost(clear_m, clearance, comfort, weight):
+    """Extra cost per metre inside the comfort band beyond the hard clearance: 0 with `comfort` m to spare,
+    `weight` right at the margin, quadratic in between."""
+    if comfort <= 0 or weight <= 0:
+        return np.zeros(clear_m.shape)
+    short = np.clip((clearance + comfort - clear_m) / comfort, 0.0, 1.0)
+    return weight * short ** 2
+
+
+def _dijkstra(trav, start, cost, res):
+    """Shortest weighted paths over 8-connected traversable cells (no diagonal corner cutting). An edge costs its
+    length times 1 + the mean wall cost of its two cells. Returns (dist in m, inf where unreachable; flat predecessor
+    indices, negative for none)."""
+    nx, ny = trav.shape
+    flat = np.arange(nx * ny).reshape(nx, ny)
+    rows, cols, weights = [], [], []
+    for di, dj in ((1, 0), (0, 1), (1, 1), (1, -1)):
+        a = (slice(0, nx - di), slice(max(0, -dj), ny - max(0, dj)))
+        b = (slice(di, nx), slice(max(0, dj), ny + min(0, dj)))
+        ok = trav[a] & trav[b]
+        if di and dj:                                    # both orthogonal neighbours must be traversable too
+            ok &= trav[(b[0], a[1])] & trav[(a[0], b[1])]
+        rows.append(flat[a][ok]); cols.append(flat[b][ok])
+        weights.append(res * math.hypot(di, dj) * (1.0 + 0.5 * (cost[a][ok] + cost[b][ok])))
+    graph = coo_matrix((np.concatenate(weights), (np.concatenate(rows), np.concatenate(cols))),
+                       shape=(nx * ny, nx * ny)).tocsr()
+    dist, pred = dijkstra(graph, directed=False, indices=int(flat[start]), return_predecessors=True)
+    return dist.reshape(nx, ny), pred
+
+
+def _trace_pred(pred, target, start, info):
+    ny = info.ny
+    k = int(target[0]) * ny + int(target[1]); s0 = int(start[0]) * ny + int(start[1])
+    cells = [k]
+    while cells[-1] != s0:
+        cells.append(int(pred[cells[-1]]))
+    cells.reverse()
+    return [info.center(c // ny, c % ny) for c in cells]
+
+
+def plan(grid, pose, goal=None, goal_radius=0.34, info=DEFAULT_MAP, clearance=ROBOT_RADIUS, min_frontier=8,
+         comfort=0.10, wall_weight=3.0, avoid=()):
     """Wavefront plan on an occupancy grid (nx, ny; -1/0/100).
     Returns (path [(x, y)...] or None, mode); mode is one of STATUS_TEXT's keys.
     - Raw occupied cells are never made traversable.
@@ -1028,7 +1160,12 @@ def plan(grid, pose, goal=None, goal_radius=0.34, info=DEFAULT_MAP, clearance=RO
     - The robot's own footprint counts as free while it is still UNKNOWN (the body stands there and the camera
       cannot see under itself); a footprint cell mapped occupied stays occupied.
     - A start inside the clearance margin gets an 'escape' path over known-free cells to the nearest cell with
-      full clearance, instead of clearing the margin."""
+      full clearance, instead of clearing the margin.
+    - Paths are weighted shortest paths: a cell within `comfort` m beyond the clearance costs up to `wall_weight`
+      extra per metre, so paths keep off walls where there is room and only hug the margin in narrow gaps
+      (comfort=0 gives plain shortest paths).
+    - `avoid`: [(x, y, r)...] frontier cells within r of these points are not chosen (frontiers the robot could not
+      reach); the beacon goal is never avoided."""
     if grid.shape != (info.nx, info.ny):
         raise ValueError(f"grid shape {grid.shape} does not match map info ({info.nx}, {info.ny})")
     ci, cj = info.cell(pose[0], pose[1])
@@ -1050,21 +1187,25 @@ def plan(grid, pose, goal=None, goal_radius=0.34, info=DEFAULT_MAP, clearance=RO
             return None, "start_blocked"
         return _trace(parent, _argmin_where(cand, dist), start, info), "escape"
 
-    dist, parent = _bfs(trav, start)
-    reached = dist >= 0
+    dist, pred = _dijkstra(trav, start, _wall_cost(clear_m, clearance, comfort, wall_weight), info.res)
+    reached = np.isfinite(dist)
     if goal is not None:
         gi, gj = info.cell(*goal)
         d2 = (ii - gi) ** 2 + (jj - gj) ** 2
         cand = reached & (d2 * info.res ** 2 <= goal_radius ** 2)
         if cand.any():
-            return _trace(parent, _argmin_where(cand, d2), start, info), "goal"
-    frontier = frontier_cells(grid, reached) & (dist > 0.35 / info.res)
+            return _trace_pred(pred, _argmin_where(cand, d2), start, info), "goal"
+    frontier = frontier_cells(grid, reached) & (dist > 0.35)
     lab, n = ndimage.label(frontier, structure=np.ones((3, 3)))        # same connectivity as exploration_state
     if n:
         sizes = ndimage.sum(frontier, lab, range(1, n + 1))
         big = np.isin(lab, np.nonzero(sizes >= min_frontier)[0] + 1)
+        for x, y, r in avoid:
+            ai, aj = info.cell(x, y)
+            big &= ((ii - ai) ** 2 + (jj - aj) ** 2) * info.res ** 2 > r ** 2
         if big.any():
-            return _trace(parent, _argmin_where(big, dist), start, info), "explore"
+            cost = np.where(big, dist, np.inf)
+            return _trace_pred(pred, np.unravel_index(np.argmin(cost), cost.shape), start, info), "explore"
     return None, "no_frontier"
 
 
