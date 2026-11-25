@@ -48,6 +48,8 @@ def nodes(context):
                           "tof_noise_rel": ParameterValue(LaunchConfiguration("tof_noise_rel"), value_type=float),
                           "tof_rate_hz": ParameterValue(LaunchConfiguration("tof_rate_hz"), value_type=float),
                           "tof_mount": LaunchConfiguration("tof_mount"),   # head | body (A010 bracket on the torso)
+                          "sensor_errors": ParameterValue(LaunchConfiguration("sensor_errors"), value_type=bool),
+                          "servo_delay": ParameterValue(LaunchConfiguration("servo_delay"), value_type=float),
                           "rt_factor": ParameterValue(LaunchConfiguration("rt_factor"), value_type=float)}]),
         Node(package="robot_state_publisher", executable="robot_state_publisher",
              parameters=[{"robot_description": urdf}, sim_time]),
@@ -125,6 +127,10 @@ def generate_launch_description():
         DeclareLaunchArgument("tof_noise_rel", default_value="0.01"),
         DeclareLaunchArgument("tof_rate_hz", default_value="15.0"),
         DeclareLaunchArgument("tof_mount", default_value="body"),
+        # realistic profile: IMU bias/noise, encoder error, extrinsic error and timing jitter (world_sim
+        # SENSOR_ERROR_DEFAULTS); false = exact IMU, encoders, mounts and stamps as before
+        DeclareLaunchArgument("sensor_errors", default_value="true"),
+        DeclareLaunchArgument("servo_delay", default_value="-1.0"),         # s; -1 = the model's servo_delay_s
         DeclareLaunchArgument("reloc_window", default_value="0.8"),          # m, relocalisation search
         DeclareLaunchArgument("reloc_ang", default_value="0.4363323129985824"),   # rad (25 deg)
         DeclareLaunchArgument("reloc_confirm", default_value="true"),

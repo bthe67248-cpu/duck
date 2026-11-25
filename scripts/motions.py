@@ -1,7 +1,7 @@
-r"""motions.py -- run the official Microduck ONNX policies on the Duckling V3 model in MuJoCo, with pass/fail criteria.
+r"""motions.py -- run the official Microduck ONNX policies on the Duckling V4 model in MuJoCo, with pass/fail criteria.
 
 Usage:
-  .venv\Scripts\python.exe scripts\motions.py <motion> [--view] [--gif] [--kp-scale 1.0]
+  .venv\Scripts\python.exe scripts\motions.py <motion> [--view] [--gif] [--kp-scale 1.0] [--servo-delay S] [--record DIR]
 Motions:
   balance     stand 10 s at zero command: tilt, height, drift, settling, joint-limit margin, actuator saturation
   walk        walk forward 8 s: minimum travel, drift, heading, continuous fall monitoring
@@ -19,7 +19,10 @@ claims to test, e.g. a push that never made the robot fall). Results of the earl
 Policy contract (from microduck_rl/scripts/infer_policy.py): 50 Hz control, 200 Hz physics,
 61-D observation = gyro(3) + projected gravity(3) + joint pos rel. STAND(14) + joint vel(14)
 + last action(14) + command(13: twist 3, head 4, body pose 6); target = STAND + action.
-Servos here are the model's plain PD actuators (upstream trains with the BAM XL330 model).
+Servos here are the model's plain PD actuators (upstream trains with the BAM XL330 model). They act on each target
+`servo_delay_s` after the policy issued it (the model's <custom> value: 20 ms ESTIMATE or the measured calibration
+value; --servo-delay overrides it; ros2/duck_nav/duck_nav/actuation.py). --record DIR saves each motion's qpos at
+50 Hz to DIR/<motion>.npz for design/v4/check_v4_fit.py --traj.
 
 Fall monitor (Duck.mon, sampled every 50 Hz control step, latched): FALL when torso up-axis z < 0.5 (tilt > 60 deg),
 or torso height < 0.07 m, or a head-dome/head-lower/body collision proxy touches the floor for >= 3 consecutive
@@ -31,10 +34,14 @@ from pathlib import Path
 import mujoco, numpy as np, onnxruntime as ort
 
 ROOT = Path(os.environ.get("DUCKLING_ROOT", Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ros2" / "duck_nav"))
+from duck_nav.actuation import ServoDelay, model_servo_delay  # noqa: E402
 POL = ROOT / "policies"
 OUT = ROOT / "results" / "post_fix" / "motions"
 SCENE = ROOT / "model" / "duck_v4_gc_scene.xml"
 DISABLE = None          # None | "body" | "head" | "all": switch off those S1 collision proxies (A/B diagnosis only)
+SERVO_DELAY = None      # s; None = the model's servo_delay_s
+RECORD = None           # directory for the qpos recordings (--record)
 BODY_FALL_GEOMS = {"head_dome_collision", "head_lower_collision", "head_upper_skirt_collision",
                    "body_front_upper_collision", "body_rear_upper_collision", "body_board_bay_collision"}
 
@@ -122,6 +129,9 @@ class Duck:
                 self.m.geom_contype[self.m.geom(n).id] = 0; self.m.geom_conaffinity[self.m.geom(n).id] = 0
         self.last = np.zeros(14, np.float32)
         self.cmd = np.zeros(13, np.float32)
+        self.servo = ServoDelay(model_servo_delay(self.m) if SERVO_DELAY is None else SERVO_DELAY,
+                                self.m.opt.timestep, self.default)
+        self.traj = []
         self.sessions = {}
         self.policy = None
         self.mon = Monitor(self)
@@ -161,11 +171,14 @@ class Duck:
         """One 50 Hz control step (4 physics steps)."""
         inp = self.policy.get_inputs()[0].name
         self.last = self.policy.run(None, {inp: self.obs()})[0][0].astype(np.float32)
-        self.d.ctrl[:14] = self.default + self.last
+        target = self.default + self.last
         self.d.ctrl[self.push_x] = push
         for _ in range(4):
+            self.d.ctrl[:14] = self.servo.step(target)          # servos act on the target issued servo_delay ago
             mujoco.mj_step(self.m, self.d)
         self.steps += 1
+        if RECORD:
+            self.traj.append(self.d.qpos.copy())
         self.mon.update()
         if self.renderer and self.steps % 2 == 0:                  # 25 fps
             self.cam.lookat[:] = [self.d.qpos[0], self.d.qpos[1], 0.10]
@@ -180,6 +193,10 @@ class Duck:
             self.step(push)
 
     def save(self, name):
+        if RECORD and self.traj:
+            Path(RECORD).mkdir(parents=True, exist_ok=True)
+            np.savez_compressed(Path(RECORD) / f"{name}.npz", qpos=np.array(self.traj), dt=0.02,
+                                servo_delay_s=self.servo.delay_s, robot_mass_kg=float(self.m.body_subtreemass[1]))
         if not self.frames: return
         from PIL import Image
         OUT.mkdir(parents=True, exist_ok=True)
@@ -410,7 +427,10 @@ if __name__ == "__main__":
     ap.add_argument("--xml", help="scene xml to use instead of model/duck_v4_gc_scene.xml (e.g. the pre-fix model for A/B)")
     ap.add_argument("--disable-proxies", choices=["body", "head", "all"], help="diagnosis: switch off these collision proxies")
     ap.add_argument("--out", help="output directory for gifs/summary")
+    ap.add_argument("--servo-delay", type=float, help="servo command delay, s (default: the model's servo_delay_s)")
+    ap.add_argument("--record", help="save each motion's qpos (50 Hz) to RECORD/<motion>.npz for check_v4_fit.py")
     a = ap.parse_args()
+    SERVO_DELAY, RECORD = a.servo_delay, a.record
     if a.xml: SCENE = Path(a.xml).resolve()
     if a.out: OUT = Path(a.out).resolve()
     DISABLE = a.disable_proxies

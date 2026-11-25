@@ -26,8 +26,17 @@ Publishes   /clock                      simulation time (all other nodes run wit
             /duck/mode                  which policy is driving: walk, sit, rise, roll, pick
 Sampling convention: after each 4 physics steps mj_forward() is called, so qpos, body/camera/site transforms, IMU
 sensordata, rendered images and the published stamp all describe the same state at sim time k * 0.02 s.
-The walking policy (velstand.onnx) turns the commands into 14 servo targets at 50 Hz.
+The walking policy (velstand.onnx) turns the commands into 14 servo targets at 50 Hz. The servos act on each target
+`servo_delay` later (default: the model's <custom> servo_delay_s, 20 ms ESTIMATE; duck_nav/actuation.py).
+Realistic profile sensor errors (duck_nav/sensor_errors.py, parameters in SENSOR_ERROR_DEFAULTS): /imu gets noise,
+turn-on bias, bias random walk and mounting misalignment; /joint_states gets encoder zero offsets, noise and
+quantisation; the camera and ToF look from mounts perturbed off their CAD pose while /camera/pose_level,
+/tof/pose_level and the base_level TF are computed the way the robot would (nominal mounts, measured joint angles,
+the IMU-derived tilt, which the accelerometer bias and misalignment tilt); stamps carry timing jitter and the ToF
+latency varies. The policy sees exact gyro/gravity/joints unless `policy_sensor_errors` is true. The ideal profile
+has no sensor errors.
 """
+import copy
 import json
 import math
 import os
@@ -51,7 +60,31 @@ from std_msgs.msg import Float32MultiArray, Float64, Header, String
 from tf2_ros import TransformBroadcaster
 from visualization_msgs.msg import Marker, MarkerArray
 
+from .actuation import ServoDelay, model_servo_delay
 from .duckslam import tof_zone_rays
+from .sensor_errors import EncoderErrors, ImuErrors, Jitter, level_pose, perturb
+
+# realistic-profile sensor error parameters and defaults (ESTIMATES; replace with bench measurements)
+SENSOR_ERROR_DEFAULTS = dict(
+    imu_gyro_noise=0.002,          # rad/s per 50 Hz sample
+    imu_gyro_bias=0.005,           # rad/s, turn-on bias sigma per axis (slam_node gyro_calib_s can remove it)
+    imu_gyro_bias_walk=1e-5,       # rad/s/sqrt(s)
+    imu_accel_noise=0.02,          # m/s2 per sample
+    imu_accel_bias=0.1,            # m/s2 sigma per axis (0.1 m/s2 tilts the attitude estimate by ~0.6 deg)
+    imu_accel_bias_walk=1e-4,      # m/s2/sqrt(s)
+    imu_misalign_deg=0.5,          # IMU mounting misalignment sigma per axis
+    attitude_noise_deg=0.1,        # white noise of the attitude estimate used for the sensor poses
+    enc_offset_deg=0.5,            # joint zero offset sigma (assembly calibration)
+    enc_noise_deg=0.05,            # encoder reading noise sigma
+    enc_counts_per_rev=4096,       # quantisation (XL330); 0 = none
+    enc_vel_noise=0.05,            # rad/s
+    imu_stamp_jitter=0.0005,       # s sigma, /imu and /joint_states stamps
+    cam_stamp_jitter=0.003,        # s sigma, camera image / info / pose stamps
+    tof_stamp_jitter=0.002,        # s sigma, ToF frame and pose stamps
+    tof_latency_jitter=0.01,       # s, uniform extra publication delay on top of tof_latency
+    tof_extrinsic_deg=1.0, tof_extrinsic_mm=2.0,   # true ToF mount vs CAD: rotation / translation sigma per axis
+    cam_extrinsic_deg=1.0, cam_extrinsic_mm=2.0,   # same for the head camera
+)
 
 POLICY_DT = 0.02
 TOF_FIELDS = [PointField(name=n, offset=4 * i, datatype=PointField.FLOAT32, count=1)
@@ -60,9 +93,8 @@ TOF_FIELDS = [PointField(name=n, offset=4 * i, datatype=PointField.FLOAT32, coun
               PointField(name="zone", offset=18, datatype=PointField.UINT16, count=1)]
 
 
-def quat_mul(a, b):
-    return np.array([a[0]*b[0] - a[1]*b[1] - a[2]*b[2] - a[3]*b[3], a[0]*b[1] + a[1]*b[0] + a[2]*b[3] - a[3]*b[2],
-                     a[0]*b[2] - a[1]*b[3] + a[2]*b[0] + a[3]*b[1], a[0]*b[3] + a[1]*b[2] - a[2]*b[1] + a[3]*b[0]])
+def ros_stamp(t):
+    return rclpy.time.Time(nanoseconds=int(round(t * 1e9))).to_msg()
 
 
 def pose_msg(stamp, frame, R, t):
@@ -107,6 +139,11 @@ class WorldSim(Node):
         # where the depth sensor sits: "body" (A010 in the V4 chest pocket, site `tof_body`) | "head" (site `tof`)
         self.declare_parameter("tof_mount", "body")
         self.declare_parameter("seed", 0)
+        self.declare_parameter("servo_delay", -1.0)          # s; < 0 = the model's servo_delay_s (custom numeric)
+        self.declare_parameter("policy_sensor_errors", False)  # realistic: the policy sees the erroneous IMU/encoders too
+        self.declare_parameter("sensor_errors", True)        # realistic: false = exact IMU, encoders, mounts, stamps
+        for name, value in SENSOR_ERROR_DEFAULTS.items():
+            self.declare_parameter(name, value)
         self.profile = str(self.get_parameter("sensor_profile").value)
         if self.profile not in ("ideal", "realistic"):
             raise ValueError(f"sensor_profile must be 'ideal' or 'realistic', not '{self.profile}'")
@@ -131,6 +168,9 @@ class WorldSim(Node):
         self.gyro = self.m.sensor_adr[self.m.sensor("gyro").id]; self.acc = self.m.sensor_adr[self.m.sensor("accel").id]
         self.trunk = self.m.body("trunk_base").id; self.cam = self.m.camera("head_cam").id
         self.tof_site = self.m.site("tof_body" if self.tof_mount == "body" else "tof").id
+        self.setup_errors()
+        delay = float(self.get_parameter("servo_delay").value)
+        self.servo = ServoDelay(model_servo_delay(self.m) if delay < 0 else delay, self.m.opt.timestep, self.default)
         pdir = os.path.dirname(self.get_parameter("policy").value)
         self.sessions = {}
         for mode, fname in (("walk", os.path.basename(self.get_parameter("policy").value)), ("sit", "alpha_sitstand.onnx"),
@@ -188,7 +228,74 @@ class WorldSim(Node):
                  f"range {self.get_parameter('tof_min_range').value}-{self.get_parameter('tof_max_range').value} m, mount {self.tof_mount}"
                  if self.profile == "realistic" else "ideal depth")
         self.get_logger().info(f"world_sim up ({self.profile} sensors): 50 Hz policy, 200 Hz physics, "
-                               f"camera {self.W}x{self.H} at 5 Hz, {extra}")
+                               f"servo delay {self.servo.delay_s * 1000:.0f} ms, camera {self.W}x{self.H} at 5 Hz, {extra}")
+        if self.profile == "realistic":
+            e = self.err
+            self.get_logger().info(
+                f"sensor errors: gyro bias {np.round(self.imu_err.bg, 4)} rad/s, accel bias {np.round(self.imu_err.ba, 3)} m/s2, "
+                f"encoder offsets up to {math.degrees(np.abs(self.enc_err.offset).max()):.2f} deg, extrinsic error "
+                f"ToF {self.extrinsic_error['tof'][0]} deg / {self.extrinsic_error['tof'][1]} mm, camera "
+                f"{self.extrinsic_error['cam'][0]} deg / {self.extrinsic_error['cam'][1]} mm, stamp jitter imu/cam/tof "
+                f"{e['imu_stamp_jitter'] * 1000:.1f}/{e['cam_stamp_jitter'] * 1000:.1f}/{e['tof_stamp_jitter'] * 1000:.1f} ms"
+                f"{', policy sees them' if self.get_parameter('policy_sensor_errors').value else ''}")
+
+    def setup_errors(self):
+        """Sensor error models (all exact for the ideal profile). The simulated camera and ToF look from TRUE mounts,
+        perturbed off the CAD pose once per run; `m_nom` keeps the nominal mounts the robot believes, and `d_meas`
+        does its forward kinematics with the measured joint angles."""
+        p = {k: float(self.get_parameter(k).value) for k in SENSOR_ERROR_DEFAULTS}
+        if self.profile != "realistic" or not self.get_parameter("sensor_errors").value:
+            p = {k: 0.0 for k in p}
+        self.err = p
+        rad = math.radians
+        self.imu_err = ImuErrors(self.rng, p["imu_gyro_noise"], p["imu_gyro_bias"], p["imu_gyro_bias_walk"],
+                                 p["imu_accel_noise"], p["imu_accel_bias"], p["imu_accel_bias_walk"],
+                                 rad(p["imu_misalign_deg"]), rad(p["attitude_noise_deg"]))
+        res = 2 * math.pi / p["enc_counts_per_rev"] if p["enc_counts_per_rev"] > 0 else 0.0
+        self.enc_err = EncoderErrors(self.rng, len(self.qadr), rad(p["enc_offset_deg"]), rad(p["enc_noise_deg"]), res,
+                                     p["enc_vel_noise"])
+        self.jit = {s: Jitter(self.rng, p[f"{s}_stamp_jitter"]) for s in ("imu", "cam", "tof")}
+        self.jit["joints"] = Jitter(self.rng, p["imu_stamp_jitter"])
+        self.m_nom = copy.deepcopy(self.m)
+        self.d_meas = mujoco.MjData(self.m_nom)
+        self.extrinsic_error = {}
+        for kind, idx, pos, quat in (("tof", self.tof_site, self.m.site_pos, self.m.site_quat),
+                                     ("cam", self.cam, self.m.cam_pos, self.m.cam_quat)):
+            dR, dt = perturb(self.rng, rad(p[f"{kind}_extrinsic_deg"]), p[f"{kind}_extrinsic_mm"] / 1000.0)
+            R = np.zeros(9); mujoco.mju_quat2Mat(R, quat[idx]); R = R.reshape(3, 3)
+            pos[idx] = pos[idx] + R @ dt                     # true mount = nominal composed with (dR, dt)
+            q = np.zeros(4); mujoco.mju_mat2Quat(q, (R @ dR).flatten()); quat[idx] = q
+            self.extrinsic_error[kind] = (round(math.degrees(np.arccos(np.clip((np.trace(dR) - 1) / 2, -1, 1))), 2),
+                                          round(float(np.linalg.norm(dt)) * 1000, 1))
+        mujoco.mj_forward(self.m, self.d)
+        self.E = np.eye(3)                                   # attitude estimate error (torso frame), per step
+        self.meas = None
+
+    def sense(self):
+        """What the robot measures in the current state (call after mj_forward): IMU, encoders, the attitude-estimate
+        error and its own forward kinematics. Kept in self.meas = (gyro, accel, q, v) for this 50 Hz step."""
+        gy, ac = self.imu_err.measure(self.d.sensordata[self.gyro:self.gyro + 3],
+                                      self.d.sensordata[self.acc:self.acc + 3], POLICY_DT)
+        q, v = self.measured_state()
+        self.E = self.imu_err.tilt_error()
+        self.meas = (gy, ac, q, v)
+
+    def measured_state(self):
+        """Encoder readings and the robot's own forward kinematics (nominal mounts) for the current state."""
+        q, v = self.enc_err.measure(self.d.qpos[self.qadr], self.d.qvel[self.vadr])
+        self.d_meas.qpos[:] = self.d.qpos
+        self.d_meas.qpos[self.qadr] = q
+        mujoco.mj_kinematics(self.m_nom, self.d_meas)
+        return q, v
+
+    def trunk_estimate(self):
+        """Torso orientation as the robot estimates it (true heading, IMU-derived tilt)."""
+        return self.d.xmat[self.trunk].reshape(3, 3) @ self.E.T
+
+    def believed_pose(self, R_world, p_world):
+        """Level-frame pose of a sensor whose world pose in the robot's own kinematics (d_meas) is R_world, p_world."""
+        Rt, pt = self.d_meas.xmat[self.trunk].reshape(3, 3), self.d_meas.xpos[self.trunk]
+        return level_pose(self.trunk_estimate(), float(self.d.qpos[2]), Rt.T @ R_world, Rt.T @ (p_world - pt))
 
     def sim_t(self):
         return self.k * POLICY_DT
@@ -273,13 +380,6 @@ class WorldSim(Node):
         self.pub_mk.publish(arr)
 
     # ---- sensors ---------------------------------------------------------------------------------
-    def level_frame(self):
-        """Rotation world->level (heading removed) and the level-frame origin (robot x, y at floor height)."""
-        q = self.d.xquat[self.trunk]
-        yaw = math.atan2(2 * (q[0] * q[3] + q[1] * q[2]), 1 - 2 * (q[2] ** 2 + q[3] ** 2))
-        Rz = np.array([[math.cos(yaw), math.sin(yaw), 0], [-math.sin(yaw), math.cos(yaw), 0], [0, 0, 1]])
-        return Rz, np.array([self.d.qpos[0], self.d.qpos[1], 0.0]), yaw
-
     def camera_info(self, stamp):
         f = (self.H / 2) / math.tan(math.radians(self.fovy) / 2)
         ci = CameraInfo(); ci.header.stamp = stamp; ci.header.frame_id = "head_cam"
@@ -334,36 +434,47 @@ class WorldSim(Node):
             return                                                       # at most rt_factor x real time
         d, m = self.d, self.m
         self.expire_command()
-        q = d.xquat[self.trunk]
-        g = np.array([0.0, 0.0, -1.0]); t = np.cross(q[1:], g) * 2
-        grav = g - q[0] * t + np.cross(q[1:], t)
+        if self.meas is None:
+            self.sense()
         session = self.sessions[{"rise": "sit"}.get(self.mode, self.mode)]
         self.cmd = self.command_vector()
-        obs = np.concatenate([d.sensordata[self.gyro:self.gyro + 3], grav, d.qpos[self.qadr] - self.default,
-                              d.qvel[self.vadr], self.last, self.cmd]).astype(np.float32)[None]
+        if self.profile == "realistic" and self.get_parameter("policy_sensor_errors").value:
+            gyro, _, q_obs, v_obs = self.meas
+            grav = self.trunk_estimate().T @ np.array([0.0, 0.0, -1.0])
+        else:
+            q = d.xquat[self.trunk]
+            g = np.array([0.0, 0.0, -1.0]); t = np.cross(q[1:], g) * 2
+            grav = g - q[0] * t + np.cross(q[1:], t)
+            gyro, q_obs, v_obs = d.sensordata[self.gyro:self.gyro + 3], d.qpos[self.qadr], d.qvel[self.vadr]
+        obs = np.concatenate([gyro, grav, q_obs - self.default, v_obs, self.last, self.cmd]).astype(np.float32)[None]
         self.last = session.run(None, {self.inp: obs})[0][0].astype(np.float32)
-        d.ctrl[:14] = self.default + self.last
+        target = self.default + self.last
         for _ in range(self.n_sub):
+            d.ctrl[:14] = self.servo.step(target)      # the servos act on the target issued servo_delay ago
             mujoco.mj_step(m, d)
         mujoco.mj_forward(m, d)              # refresh transforms/sensors for the state just integrated
         self.k += 1
         sim_t = self.sim_t()
-        stamp = rclpy.time.Time(nanoseconds=int(round(sim_t * 1e9))).to_msg()
+        stamp = ros_stamp(sim_t)
         self.pub_clock.publish(ClockMsg(clock=stamp))
+        self.sense()
+        gy, ac, q_meas, v_meas = self.meas
 
-        js = JointState(); js.header.stamp = stamp; js.name = self.jnames
-        js.position = d.qpos[self.qadr].tolist(); js.velocity = d.qvel[self.vadr].tolist()
+        js = JointState(); js.header.stamp = ros_stamp(self.jit["joints"].stamp(sim_t)); js.name = self.jnames
+        js.position = q_meas.tolist(); js.velocity = v_meas.tolist()
         self.pub_js.publish(js)
-        imu = Imu(); imu.header.stamp = stamp; imu.header.frame_id = "trunk_base"
-        gy = d.sensordata[self.gyro:self.gyro + 3]; ac = d.sensordata[self.acc:self.acc + 3]
+        imu = Imu(); imu.header.stamp = ros_stamp(self.jit["imu"].stamp(sim_t)); imu.header.frame_id = "trunk_base"
         imu.angular_velocity.x, imu.angular_velocity.y, imu.angular_velocity.z = (float(v) for v in gy)
         imu.linear_acceleration.x, imu.linear_acceleration.y, imu.linear_acceleration.z = (float(v) for v in ac)
         imu.orientation_covariance[0] = -1.0
         self.pub_imu.publish(imu)
 
-        Rz, origin, yaw = self.level_frame()
+        R_est = self.trunk_estimate()                                    # true heading, IMU-derived tilt
+        yaw = math.atan2(R_est[1, 0], R_est[0, 0])
+        q_level = np.zeros(4)                                            # tilt only, heading removed
+        mujoco.mju_mat2Quat(q_level, (np.array([[math.cos(yaw), math.sin(yaw), 0], [-math.sin(yaw), math.cos(yaw), 0],
+                                                 [0, 0, 1]]) @ R_est).flatten())
         q = d.xquat[self.trunk]
-        q_level = quat_mul(np.array([math.cos(yaw / 2), 0, 0, -math.sin(yaw / 2)]), q)   # tilt only, heading removed
         tf = TransformStamped(); tf.header.stamp = stamp; tf.header.frame_id = "base_level"; tf.child_frame_id = "trunk_base"
         tf.transform.translation.z = float(d.qpos[2])
         tf.transform.rotation.w, tf.transform.rotation.x, tf.transform.rotation.y, tf.transform.rotation.z = (float(v) for v in q_level)
@@ -377,6 +488,7 @@ class WorldSim(Node):
             self.pub_mode.publish(String(data=self.mode))
         if self.k % 10 == 0:                                             # camera (+ ideal depth), 5 Hz
             t0 = time.monotonic()
+            stamp = ros_stamp(self.jit["cam"].stamp(sim_t))
             self.rgb_r.update_scene(d, camera=self.cam, scene_option=self.opt); rgb = self.rgb_r.render()
             if self.profile == "realistic":
                 noise = self.rng.normal(0.0, float(self.get_parameter("cam_noise").value), rgb.shape)
@@ -391,13 +503,18 @@ class WorldSim(Node):
                 im.height, im.width, im.encoding, im.step = self.H, self.W, "32FC1", 4 * self.W
                 im.data = dep.astype(np.float32).tobytes(); self.pub_dep.publish(im)
             self.render_ms = 0.9 * self.render_ms + 0.1 * (time.monotonic() - t0) * 1000
-            self.pub_cpose.publish(pose_msg(stamp, "base_level", Rz @ d.cam_xmat[self.cam].reshape(3, 3),
-                                            Rz @ (d.cam_xpos[self.cam] - origin)))
+            dm = self.d_meas                                             # nominal mount, measured joints
+            self.pub_cpose.publish(pose_msg(stamp, "base_level",
+                                            *self.believed_pose(dm.cam_xmat[self.cam].reshape(3, 3), dm.cam_xpos[self.cam])))
         if self.profile == "realistic":
             if self.k % self.tof_every == 0:
-                self.pub_tpose.publish(pose_msg(stamp, "base_level", Rz @ d.site_xmat[self.tof_site].reshape(3, 3),
-                                                Rz @ (self.tof_origin() - origin)))
-                self.tof_queue.append((sim_t + float(self.get_parameter("tof_latency").value), self.tof_frame(stamp)))
+                stamp = ros_stamp(self.jit["tof"].stamp(sim_t))
+                Rn = self.d_meas.site_xmat[self.tof_site].reshape(3, 3)
+                pn = self.d_meas.site_xpos[self.tof_site] + Rn[:, 0] * float(self.get_parameter("tof_origin_offset").value)
+                self.pub_tpose.publish(pose_msg(stamp, "base_level", *self.believed_pose(Rn, pn)))
+                due = sim_t + float(self.get_parameter("tof_latency").value) + self.rng.uniform(0.0, self.err["tof_latency_jitter"])
+                due = max(due, self.tof_queue[-1][0] if self.tof_queue else due)     # frames stay in order
+                self.tof_queue.append((due, self.tof_frame(stamp)))
             while self.tof_queue and self.tof_queue[0][0] <= sim_t + 1e-9:
                 self.pub_tof.publish(self.tof_queue.popleft()[1])
         if self.k % 1500 == 0:

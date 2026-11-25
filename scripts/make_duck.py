@@ -7,12 +7,16 @@ Roots are derived from this file's location. Overrides: $DUCKLING_ROOT (repo roo
 (folder holding robot_walk.xml, scene_walk.xml, assets/ ...; default microduck_rl/.../robot/microduck).
 
 V4 against the upstream Microduck (design/v4/README.md):
-  torso  upstream left/right shells, banana PCB locker and battery visual -> body_shell_v4 enclosing the UNO Q + 70 mm
-         HAT stack, a 2S LiPo + XT60 and a Sipeed A010 (site `tof_body` on its front face)
+  torso  upstream left/right shells, banana PCB locker and battery -> body_shell_v4 enclosing the UNO Q + 70 mm
+         HAT stack, a 2S LiPo + XT60 and a Sipeed A010 (site `tof_body` on its front face). The upstream battery's
+         mass, COM and inertia are subtracted (UPSTREAM_BATTERY_G) and the LiPo is added as its own box at its V4
+         location (mass from v4_params.json battery.mass_g)
   head   upstream shells, mouth, face plate/ring (face_part, noenoeil) and Pi Zero + HAT -> head_upper_v4 /
          head_lower_v4 with an XL330-size mouth servo; the lower half of the beak is a `jaw` body on the `mouth`
          hinge with a position actuator (placed after the push motors)
   limits neck pitch capped at NECK_PITCH_MAX (head/body clearance, design/v4/check_v4_fit.py)
+  servos command delay SERVO_DELAY_S (or the calibration's servo.delay_s), stored in the model as
+         <custom><numeric name="servo_delay_s">; scripts/motions.py and world_sim apply it (duck_nav/actuation.py)
 
 Edit ONLY the block below with your own scale/ruler measurements, then re-run.
 Everything marked ESTIMATE / PROVISIONAL is a placeholder, not a measurement.
@@ -41,13 +45,21 @@ MEASURED_MASS = {
     "leg": None, "leg_2": None,                      # shanks
     "ankle_left": None, "ankle_right": None,         # feet
 }
-# Printed V4 parts (grams). None -> PROVISIONAL 30 % infill wall-proxy formula:
-#   V_wall = min(V, A*1.2 mm); V_print = V_wall + 0.30 (V - V_wall); m = V_print * 0.00124 g/mm3.
+# Printed V4 parts (grams). None -> PROVISIONAL wall-proxy formula with the print settings in design/v4/v4_params.json
+# ("print": wall_mm and infill, a per-part entry over "default"):
+#   V_wall = min(V, A*wall); V_print = V_wall + infill (V - V_wall); m = V_print * 0.00124 g/mm3.
 PART_MASS_G = {"head_upper_v4": None, "head_lower_v4": None, "jaw_v4": None, "body_shell_v4": None}
 # Bought parts (grams). ESTIMATES until weighed.
 BOUGHT_G = {"pcb_stack_v4": 45.0, "a010_v4": 10.0, "xt60_v4": 6.0, "mouth_servo_v4": 18.0}
 PLA_DENSITY_G_MM3 = 0.00124
-INFILL, WALL_MM = 0.30, 1.2
+# The upstream torso's battery (np_f970 part) is inside its inertial; V4 replaces it with the 2S LiPo. ESTIMATE of what
+# it contributes: the torso mass left after its other parts at the masses implied by the upstream neck, shank and hip
+# links (XL330 17.9 g, printed parts 1.08 g/cm3, bearing 1.4 g) is 123 g; fitting the torso COM gives 103-125 g.
+UPSTREAM_BATTERY_G = 115.0
+# Servo command delay (s): the servos act on the target sent this long ago. ESTIMATE: the upstream policies are trained
+# with 3-6 physics steps (15-30 ms) of actuator lag (microduck_rl microduck_constants.py). A measured servo.delay_s in
+# the calibration file replaces it.
+SERVO_DELAY_S = 0.020
 # Upstream parts that V4 REPLACES (their mass/inertia is subtracted). ESTIMATE: mesh volume x 1240 kg/m3 (solid).
 UPSTREAM_PART_DENSITY = 1240.0
 HEAD_SHIFT = (0.0, 0.0, 0.0)    # nudge the head (forward, left, up) in m if it sits wrong
@@ -73,7 +85,7 @@ LENS_MESHES = {"lens"}
 REMOVED_HEAD_VISUAL = {"top_head_shell", "bottom_head_shell", "jaw", "jaw_soft", "soft_mouth_top",
                        "face_part", "noenoeil", "elec_rpi_robot_hat_pcb", "pcb__raspberry_pi_zero_2_w"}
 REMOVED_HEAD_COLLISION = {"top_head_shell", "bottom_head_shell", "jaw"}
-# upstream torso parts replaced by the V4 body (np_f970 visual only: its mass stays, the 2S pack is assumed equal)
+# upstream torso parts replaced by the V4 body and the 2S LiPo (np_f970: the battery, UPSTREAM_BATTERY_G)
 REMOVED_TORSO = {"left_shell", "right_shell", "banana_pcb_locker", "np_f970"}
 V4_PARTS = ["head_upper_v4", "head_lower_v4", "jaw_v4", "mouth_servo_v4", "body_shell_v4",
             "pcb_stack_v4", "a010_v4", "battery_v4", "xt60_v4"]
@@ -99,7 +111,7 @@ if _args.calibration:
     if "head_shift_m" in CALIBRATION:
         HEAD_SHIFT = CALIBRATION["head_shift_m"]
     if "delay_s" in CALIBRATION["servo"]:
-        print("  NOTE: measured servo delay is recorded for the delay check; actuator latency is NOT automatically simulated.")
+        SERVO_DELAY_S = CALIBRATION["servo"]["delay_s"]
 OUT_ROBOT = f"duck_v4{'_' + _args.tag if _args.tag else ''}.xml"
 OUT_SCENE = f"duck_v4{'_' + _args.tag if _args.tag else ''}_scene.xml"
 GC = "groundcontact" in _args.base
@@ -191,19 +203,27 @@ def set_inertial(body, M, C, I):
     i.set("fullinertia", " ".join(f"{v:.6g}" for v in (I[0, 0], I[1, 1], I[2, 2], I[0, 1], I[0, 2], I[1, 2])))
 
 
-def formula_mass_g(vol_mm3, area_mm2):
-    vw = min(vol_mm3, area_mm2 * WALL_MM)
-    return (vw + INFILL * (vol_mm3 - vw)) * PLA_DENSITY_G_MM3
+def print_settings(params, name):
+    """(wall_mm, infill) of a printed part: v4_params.json "print" (a per-part entry over "default")."""
+    pr = params.get("print", {})
+    s = {"wall_mm": 1.2, "infill": 0.30, **pr.get("default", {}), **pr.get(name, {})}
+    return float(s["wall_mm"]), float(s["infill"])
 
 
-def printed_kg(name, meshes, ledger):
+def formula_mass_g(vol_mm3, area_mm2, wall_mm=1.2, infill=0.30):
+    vw = min(vol_mm3, area_mm2 * wall_mm)
+    return (vw + infill * (vol_mm3 - vw)) * PLA_DENSITY_G_MM3
+
+
+def printed_kg(name, meshes, ledger, params):
+    wall, infill = print_settings(params, name)
     if PART_MASS_G[name] is not None:
         g, how = PART_MASS_G[name], "WEIGHED/SLICED (user supplied)"
     else:
-        g = formula_mass_g(meshes[name]["volume_mm3"], meshes[name]["area_mm2"])
-        how = "PROVISIONAL 30% infill wall-proxy formula (not a slicer value)"
+        g = formula_mass_g(meshes[name]["volume_mm3"], meshes[name]["area_mm2"], wall, infill)
+        how = f"PROVISIONAL {infill:.0%} infill, {wall:g} mm wall-proxy formula (not a slicer value)"
     ledger[name] = dict(mass_g=round(g, 2), status=how, volume_mm3=round(meshes[name]["volume_mm3"], 1),
-                        area_mm2=round(meshes[name]["area_mm2"], 1))
+                        area_mm2=round(meshes[name]["area_mm2"], 1), wall_mm=wall, infill=infill)
     return g / 1000.0
 
 
@@ -264,6 +284,7 @@ def main():
     meshes = json.loads((DST / "v4_meshes.json").read_text())
     params = json.loads((V4 / "v4_params.json").read_text())
     PROXIES = json.loads((ROOT / "scripts" / "collision_proxies.json").read_text())
+    BOUGHT_G.setdefault("battery_v4", float(params["battery"]["mass_g"]))
     asset = root.find("asset")
     for n_ in V4_PARTS:
         ET.SubElement(asset, "mesh", name=n_, file=f"{n_}.stl")
@@ -317,7 +338,7 @@ def main():
         check_physical("head without replaced upstream parts", Mr, Ir)
         parts = [(Mr, Cr, Ir)]
         for n_ in ("head_upper_v4", "head_lower_v4"):
-            parts.append(part_props(DST / "assets" / f"{n_}.stl", R_mb, place[n_], mass=printed_kg(n_, meshes, ledger)))
+            parts.append(part_props(DST / "assets" / f"{n_}.stl", R_mb, place[n_], mass=printed_kg(n_, meshes, ledger, params)))
         parts.append(part_props(DST / "assets" / "mouth_servo_v4.stl", R_mb, place["mouth_servo_v4"],
                                 mass=bought_kg("mouth_servo_v4", ledger)))
         M1, C1, I1 = combine(parts)
@@ -333,7 +354,7 @@ def main():
         print("  head link mass is the WEIGHED value (shells + mouth servo included, jaw excluded)")
         ledger["_head_link"] = dict(new_mass_g=MEASURED_MASS["jaw_soft"] * 1000, note="weighed complete link")
         for n_ in ("head_upper_v4", "head_lower_v4"):
-            printed_kg(n_, meshes, ledger); ledger[n_]["included_in_measured_head"] = True
+            printed_kg(n_, meshes, ledger, params); ledger[n_]["included_in_measured_head"] = True
         bought_kg("mouth_servo_v4", ledger); ledger["mouth_servo_v4"]["included_in_measured_head"] = True
 
     # ---- jaw: child body at the hinge (rear-bottom edge of the beak cut), axis = head-mesh x, opens 0..open_deg
@@ -342,7 +363,7 @@ def main():
     hinge_body = R_mb @ hinge_mesh + place["head_lower_v4"]
     jaw_rel = place["head_lower_v4"] - hinge_body
     jaw = ET.SubElement(head, "body", name="jaw", pos=fmt(hinge_body, 6))
-    jaw_kg = printed_kg("jaw_v4", meshes, ledger)
+    jaw_kg = printed_kg("jaw_v4", meshes, ledger, params)
     Mj, Cj, Ij = part_props(DST / "assets" / "jaw_v4.stl", R_mb, jaw_rel, mass=jaw_kg)
     ET.SubElement(jaw, "inertial", pos=" ".join(f"{v:.6g}" for v in Cj), mass=f"{Mj:.6f}",
                   fullinertia=" ".join(f"{v:.6g}" for v in (Ij[0, 0], Ij[1, 1], Ij[2, 2], Ij[0, 1], Ij[0, 2], Ij[1, 2])))
@@ -378,26 +399,36 @@ def main():
         Mt, Ct, It = body_inertial(trunk)
         parts = [(Mt, Ct, It)]; removed_g = {}
         for mname, pos, q in removed_torso:
-            if mname == "np_f970":
-                continue                                          # pack mass stays (2S LiPo assumed equal)
-            mm, cc, ii = part_props(DST / "assets" / f"{mname}.stl", mat_of(q), pos, density=UPSTREAM_PART_DENSITY)
+            if mname == "np_f970":                                # upstream battery: ESTIMATED mass, uniform density
+                mm, cc, ii = part_props(DST / "assets" / f"{mname}.stl", mat_of(q), pos, mass=UPSTREAM_BATTERY_G / 1000)
+            else:
+                mm, cc, ii = part_props(DST / "assets" / f"{mname}.stl", mat_of(q), pos, density=UPSTREAM_PART_DENSITY)
             parts.append((-mm, cc, ii)); removed_g[mname] = round(mm * 1000, 1)
+        Mr, Cr, Ir = combine(parts)
+        check_physical("torso without replaced upstream parts", Mr, Ir)
         parts.append(part_props(DST / "assets" / "body_shell_v4.stl", np.eye(3), np.zeros(3),
-                                mass=printed_kg("body_shell_v4", meshes, ledger)))
-        for n_ in ("pcb_stack_v4", "a010_v4", "xt60_v4"):
+                                mass=printed_kg("body_shell_v4", meshes, ledger, params)))
+        for n_ in ("pcb_stack_v4", "a010_v4", "xt60_v4", "battery_v4"):
             parts.append(part_props(DST / "assets" / f"{n_}.stl", np.eye(3), np.zeros(3), mass=bought_kg(n_, ledger)))
+        lipo = parts[-1]
+        ledger["battery_v4"].update(com_mm=[round(v * 1000, 1) for v in lipo[1]],
+                                    principal_inertia_kg_m2=[float(f"{v:.4g}") for v in np.linalg.eigvalsh(lipo[2])],
+                                    note="uniform box at its V4 location (design/v4/v4_params.json battery)")
         M2, C2, I2 = combine(parts)
         check_physical("V4 torso", M2, I2)
         set_inertial(trunk, M2, C2, I2)
         ledger["_torso_link"] = dict(upstream_mass_g=round(Mt * 1000, 1), removed_upstream_parts_g_ESTIMATE=removed_g,
-                                     new_mass_g=round(M2 * 1000, 1),
-                                     note="upstream battery mass kept for the 2S LiPo (assumed equal)")
+                                     remainder_g=round(Mr * 1000, 1), new_mass_g=round(M2 * 1000, 1),
+                                     upstream_com_mm=[round(v * 1000, 1) for v in Ct], com_mm=[round(v * 1000, 1) for v in C2],
+                                     note="replaced, not added: upstream shells, PCB locker and battery (np_f970, "
+                                          "UPSTREAM_BATTERY_G ESTIMATE) subtracted; V4 body, boards, A010, XT60 and "
+                                          "the 2S LiPo added at their V4 locations")
         print(f"  torso link: {Mt*1000:.1f} g upstream -> {M2*1000:.1f} g with the V4 body and its contents")
     else:
         print("  torso link mass is the WEIGHED value (body shell, boards, battery, XT60 and A010 included)")
         ledger["_torso_link"] = dict(new_mass_g=MEASURED_MASS["trunk_base"] * 1000, note="weighed complete link")
-        printed_kg("body_shell_v4", meshes, ledger); ledger["body_shell_v4"]["included_in_measured_torso"] = True
-        for n_ in ("pcb_stack_v4", "a010_v4", "xt60_v4"):
+        printed_kg("body_shell_v4", meshes, ledger, params); ledger["body_shell_v4"]["included_in_measured_torso"] = True
+        for n_ in ("pcb_stack_v4", "a010_v4", "xt60_v4", "battery_v4"):
             bought_kg(n_, ledger); ledger[n_]["included_in_measured_torso"] = True
     a = params["a010"]; alo, ahi = np.array(a["lo"]) / 1000, np.array(a["hi"]) / 1000
     ET.SubElement(trunk, "site", group="3", name="tof_body",
@@ -462,6 +493,16 @@ def main():
     ET.SubElement(act, "position", name="mouth", joint="mouth", kp=str(MOUTH_KP), kv=str(MOUTH_KV),
                   ctrlrange=f"0 {np.radians(J['open_deg']):.6f}", forcerange=f"-{MOUTH_FORCE} {MOUTH_FORCE}")
 
+    # servo command delay: a model constant read by scripts/motions.py and duck_nav.world_sim (custom numerics load in
+    # every MuJoCo version and the Simulink plant ignores them; it has its own delay block)
+    custom = root.find("custom")
+    if custom is None:
+        custom = ET.SubElement(root, "custom")
+    for nm_ in list(custom.findall("numeric")):
+        if nm_.get("name") == "servo_delay_s":
+            custom.remove(nm_)
+    ET.SubElement(custom, "numeric", name="servo_delay_s", data=f"{SERVO_DELAY_S:.6g}")
+
     # 4. sensors with Simulink-safe names (no hyphens), fixed order
     for s in root.findall("sensor"):
         root.remove(s)
@@ -483,7 +524,11 @@ def main():
                   pla_density_g_mm3=PLA_DENSITY_G_MM3, parts=ledger,
                   measured_link_mass_kg={k: v for k, v in MEASURED_MASS.items() if v is not None},
                   head_shift_m=list(HEAD_SHIFT), neck_pitch_max_rad=NECK_PITCH_MAX,
-                  servo_overrides=SERVO, robot_mass_kg=round(float(m_.body_subtreemass[1]), 4),
+                  servo_overrides=SERVO, servo_delay_s=None, servo_delay_sim_s=SERVO_DELAY_S,
+                  servo_delay_source=("calibration servo.delay_s" if CALIBRATION and "delay_s" in CALIBRATION["servo"]
+                                      else "ESTIMATE: upstream training lag 15-30 ms"),
+                  upstream_battery_removed_g_ESTIMATE=UPSTREAM_BATTERY_G,
+                  robot_mass_kg=round(float(m_.body_subtreemass[1]), 4),
                   note="Link masses rescale existing inertia at unchanged COM; weights alone do not calibrate COM/inertia.")
     if CALIBRATION:
         record["calibration_sha256"] = CALIBRATION["source_sha256"]

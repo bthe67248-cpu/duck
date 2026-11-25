@@ -48,3 +48,28 @@ def test_completion_marker_follows_artifacts_even_when_optional_map_fails(monkey
         assert result['walked_m'] == 1.
     finally:
         sys.modules.pop('duck_nav.score_node', None)
+
+
+def test_estimates_with_jittered_stamps_match_the_nearest_ground_truth(monkeypatch):
+    definitions = {
+        'rclpy': {}, 'rclpy.executors': {'ExternalShutdownException': Exception},
+        'rclpy.node': {'Node': object},
+        'rclpy.qos': {'DurabilityPolicy': object, 'QoSProfile': object},
+        'geometry_msgs.msg': {'PointStamped': object, 'PoseStamped': object},
+        'nav_msgs.msg': {'OccupancyGrid': object}, 'std_msgs.msg': {'String': object},
+        'vision_msgs.msg': {'Detection2DArray': object},
+    }
+    for name, fields in definitions.items():
+        module = ModuleType(name); module.__dict__.update(fields)
+        monkeypatch.setitem(sys.modules, name, module)
+    module = importlib.import_module('duck_nav.score_node')
+    try:
+        hist = {k * 20_000_000: (k * 0.01, 0.0) for k in range(100)}      # 50 Hz ground truth
+        tol = 10_000_000
+        assert module.nearest_sample(hist, 400_000_000, tol) == (0.2, 0.0)          # exact stamp
+        assert module.nearest_sample(hist, 402_300_000, tol) == (0.2, 0.0)          # 2.3 ms of jitter
+        assert module.nearest_sample(hist, 397_900_000, tol) == (0.2, 0.0)
+        assert module.nearest_sample(hist, 5_000_000_000, tol) is None              # no ground truth that late
+        assert module.nearest_sample({}, 0, tol) is None
+    finally:
+        sys.modules.pop('duck_nav.score_node', None)

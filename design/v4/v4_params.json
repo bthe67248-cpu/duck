@@ -317,5 +317,119 @@
    "note": "XL330-size (34 x 20 x 26) lying sideways above the lower-shell pedestal, under the forehead; drives the jaw through a short link"
   },
   "_note": "cx/widen/rear_*/upper_zshift: record of the one-off deformation that made head_upper_v4.stl and head_lower_v4_whole.stl from the V3 head (deleted); jaw and mouth_servo are rebuilt by build_v4.py"
+ },
+ "envelopes": [
+  {
+   "name": "usb_c_top",
+   "frame": "torso",
+   "lo": [
+    -80.5,
+    -6.2,
+    39.0
+   ],
+   "hi": [
+    -74.0,
+    6.2,
+    64.0
+   ],
+   "note": "UNO Q USB-C, straight plug: UNO form factor has the USB on a short edge, which is the top (or bottom) edge of the upright stack. 12.4 x 6.5 mm overmold, 25 mm with strain relief and cable bend. ESTIMATE"
+  },
+  {
+   "name": "usb_c_rear",
+   "frame": "torso",
+   "lo": [
+    -105.0,
+    -6.2,
+    21.75
+   ],
+   "hi": [
+    -80.5,
+    6.2,
+    28.25
+   ],
+   "note": "the same plug if the receptacle faced rearwards through usb_access (what the cut assumes). ESTIMATE"
+  },
+  {
+   "name": "xt60_mating_plug",
+   "frame": "torso",
+   "lo": [
+    -41.6,
+    -7.9,
+    -62.0
+   ],
+   "hi": [
+    -33.4,
+    7.9,
+    -35.5
+   ],
+   "note": "female XT60 (8.2 x 15.8 mm, 16 mm long) pushed onto the pack's male from below, plus a 10 mm bend of its 14 AWG lead. ESTIMATE"
+  },
+  {
+   "name": "balance_plug",
+   "frame": "torso",
+   "lo": [
+    -44.0,
+    8.6,
+    -37.2
+   ],
+   "hi": [
+    -32.0,
+    14.4,
+    -25.2
+   ],
+   "note": "2S JST-XH balance plug (12 x 5.8 x 12 mm incl. leads) stowed beside the XT60 below the pack; it leaves the same end as the power leads. ESTIMATE"
+  },
+  {
+   "name": "a010_usb",
+   "frame": "torso",
+   "lo": [
+    12.3,
+    -6.2,
+    2.25
+   ],
+   "hi": [
+    37.3,
+    6.2,
+    8.75
+   ],
+   "note": "A010 USB-C cable, straight plug at the sensor's rear face (25 mm with strain relief). ESTIMATE"
+  },
+  {
+   "name": "mouth_servo_cable",
+   "frame": "head",
+   "lo": [
+    36.0,
+    -30.0,
+    18.0
+   ],
+   "hi": [
+    48.0,
+    -18.0,
+    37.0
+   ],
+   "note": "XL330 JST-EH plug (8 mm) and 4 mm cable bend at the mouth servo's +x end, lower-head mesh frame. ESTIMATE"
+  }
+ ],
+ "print": {
+  "_note": "print settings behind the provisional printed-part masses (scripts/make_duck.py wall-proxy formula): wall_mm = perimeter thickness per surface, infill = fraction of the remaining volume. A per-part entry (head_upper_v4, head_lower_v4, jaw_v4, body_shell_v4) overrides default. Head reduction options: design/v4/README.md",
+  "default": {
+   "wall_mm": 1.2,
+   "infill": 0.3
+  },
+  "_proposed_head": {
+   "_note": "head mass reduction, not applied (design/v4/head_mass.py, README): move these into the per-part keys to use them. 0.8 mm = 2 perimeters of a 0.4 mm nozzle. Check stiffness of the dome and the jaw hinge on a printed part first.",
+   "head_upper_v4": {
+    "wall_mm": 0.8,
+    "infill": 0.15
+   },
+   "head_lower_v4": {
+    "wall_mm": 0.8,
+    "infill": 0.15
+   },
+   "jaw_v4": {
+    "wall_mm": 0.8,
+    "infill": 0.15
+   }
+  }
  }
 }

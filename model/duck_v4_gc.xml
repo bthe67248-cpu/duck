@@ -56,7 +56,7 @@
   <worldbody>
     <body name="trunk_base" pos="0 0 0.12" quat="1 0 0 0" childclass="microduck">
       <freejoint name="trunk_base_freejoint" />
-      <inertial pos="-0.0313522 3.11776e-06 0.00265714" mass="0.302640" fullinertia="0.000231678 0.000489122 0.000430999 2.28186e-08 -2.56409e-05 -3.17617e-08" />
+      <inertial pos="-0.0306321 6.6028e-06 0.00641297" mass="0.242640" fullinertia="0.000304444 0.000549176 0.000452419 3.31967e-08 -2.13892e-05 1.05034e-09" />
       <geom type="mesh" class="visual" pos="0.006 0.0175 -0.005" quat="1 -0 -0 0" mesh="seeed_bearing__configuration__22x16x4" material="seeed_bearing__configuration__22x16x4_material" />
       <geom type="mesh" class="visual" pos="0.004 -0 -0.0175" quat="0.707107 -0 -0 0.707107" mesh="trunk_base" material="black_pla" />
       <geom type="mesh" class="visual" pos="0.006 0.0175 0.0115" quat="0 -0.707107 0 -0.707107" mesh="xl330" material="xl330_material" />
@@ -287,6 +287,9 @@
     <position name="mouth" joint="mouth" kp="0.5" kv="0.02" ctrlrange="0 0.523599" forcerange="-0.6 0.6" />
   </actuator>
   <equality />
+  <custom>
+    <numeric name="servo_delay_s" data="0.02" />
+  </custom>
   <sensor>
     <gyro name="gyro" site="imu" />
     <accelerometer name="accel" site="imu" />

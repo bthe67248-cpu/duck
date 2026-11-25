@@ -92,3 +92,93 @@ def test_contact_gate_rejects_feet_only_model(built):
                  "--samples", 1, check=False)
     assert result.returncode == 2
     assert "needs the ground-contact model" in result.stderr
+
+
+def test_lipo_replaces_the_upstream_battery_at_its_v4_location(built):
+    root, _, base, _ = built
+    ledger = json.loads((root / "model/mass_ledger.json").read_text())
+    torso, lipo = ledger["parts"]["_torso_link"], ledger["parts"]["battery_v4"]
+    assert torso["removed_upstream_parts_g_ESTIMATE"]["np_f970"] == ledger["upstream_battery_removed_g_ESTIMATE"]
+    params = json.loads((root / "design/v4/v4_params.json").read_text())["battery"]
+    assert lipo["mass_g"] == params["mass_g"]
+    np.testing.assert_allclose(lipo["com_mm"], (np.array(params["lo"]) + np.array(params["hi"])) / 2, atol=0.6)
+    added = sum(ledger["parts"][n]["mass_g"] for n in ("body_shell_v4", "pcb_stack_v4", "a010_v4", "xt60_v4", "battery_v4"))
+    assert torso["new_mass_g"] == pytest.approx(torso["remainder_g"] + added, abs=0.2)
+    assert base.body("trunk_base").mass[0] * 1000 == pytest.approx(torso["new_mass_g"], abs=0.1)
+    # lighter (55 g pack for a ~115 g upstream battery) and the torso COM moves back towards the pack
+    assert torso["new_mass_g"] < torso["upstream_mass_g"] + added - 100
+    assert torso["com_mm"][0] < torso["upstream_com_mm"][0]
+
+
+def test_servo_delay_is_carried_by_the_model(built):
+    root, _, base, measured = built
+    sys.path.insert(0, str(ROOT / "ros2/duck_nav"))
+    from duck_nav.actuation import model_servo_delay
+    assert model_servo_delay(base) == pytest.approx(.02)        # ESTIMATE: middle of the upstream 15-30 ms lag
+    assert model_servo_delay(measured) == pytest.approx(.04)    # the calibration's measured delay
+    ledger = json.loads((root / "model/mass_ledger.json").read_text())
+    assert ledger["servo_delay_sim_s"] == .02 and ledger["servo_delay_s"] is None
+    assert json.loads((root / "model/mass_ledger_measured.json").read_text())["servo_delay_source"].startswith("calibration")
+
+
+def test_delayed_targets_reach_the_joints_later(built):
+    mujoco = pytest.importorskip("mujoco")
+    root, _, base, _ = built
+    sys.path.insert(0, str(ROOT / "ros2/duck_nav"))
+    from duck_nav.actuation import ServoDelay, model_servo_delay
+    m = mujoco.MjModel.from_xml_path(str(root / "model/duck_v4_scene.xml")); m.opt.timestep = 0.005
+    key = m.key("sim_start").id
+    knee = m.jnt_qposadr[m.joint("left_knee").id]
+    paths = {}
+    for name, delay, step in (("hold", 0.0, 0.0), ("delayed", model_servo_delay(m), 0.3)):
+        d = mujoco.MjData(m); mujoco.mj_resetDataKeyframe(m, d, key)
+        target = m.key_ctrl[key][:14].copy()
+        s = ServoDelay(delay, m.opt.timestep, target)
+        target[3] += step                                       # left knee target steps by 0.3 rad at t = 0
+        path = []
+        for _ in range(12):
+            d.ctrl[:14] = s.step(target); mujoco.mj_step(m, d); path.append(d.qpos[knee])
+        paths[name] = np.array(path)
+    # with a 20 ms (4 physics steps) delay the knee follows the unchanged target for 4 steps, then departs from it
+    np.testing.assert_array_equal(paths["delayed"][:4], paths["hold"][:4])
+    assert abs(paths["delayed"][-1] - paths["hold"][-1]) > 1e-3
+
+
+def test_print_settings_come_from_v4_params(built):
+    root, run, _, _ = built
+    path = root / "design/v4/v4_params.json"
+    original = path.read_text()
+    try:
+        params = json.loads(original)
+        params["print"] = {"default": {"wall_mm": 1.2, "infill": .3}, "head_upper_v4": {"wall_mm": .8, "infill": .15}}
+        path.write_text(json.dumps(params))
+        run("make_duck.py", "--tag", "thin")
+    finally:
+        path.write_text(original)
+    thin = json.loads((root / "model/mass_ledger_thin.json").read_text())["parts"]
+    base = json.loads((root / "model/mass_ledger.json").read_text())["parts"]
+    u = thin["head_upper_v4"]
+    vw = min(u["volume_mm3"], u["area_mm2"] * .8)
+    assert u["mass_g"] == pytest.approx((vw + .15 * (u["volume_mm3"] - vw)) * .00124, abs=.01)
+    assert (u["wall_mm"], u["infill"]) == (.8, .15)
+    assert u["mass_g"] < base["head_upper_v4"]["mass_g"] - 10
+    assert thin["head_lower_v4"]["mass_g"] == base["head_lower_v4"]["mass_g"]
+
+
+def test_fit_check_finds_the_deep_head_interferences_the_old_band_missed(built):
+    mujoco = pytest.importorskip("mujoco")
+    pytest.importorskip("trimesh")
+    root, _, _, _ = built
+    sys.path.insert(0, str(ROOT / "design/v4"))
+    import check_v4_fit as fit
+    m = mujoco.MjModel.from_xml_path(str(root / "model/duck_v4_scene.xml")); d = mujoco.MjData(m)
+    mujoco.mj_resetDataKeyframe(m, d, m.key("sim_start").id); mujoco.mj_forward(m, d)
+    params = json.loads((root / "design/v4/v4_params.json").read_text())
+    parts = fit.build_parts(m, params, root / "model/duck_v4.xml")
+    static = fit.static_fit(m, d, parts, .8)
+    lens = static["jaw_soft/head_upper_v4 vs jaw_soft/lens"]
+    assert lens["new_mm"] > 4 and lens["old_mm"] < 2.5
+    assert static["jaw_soft/m12_lens_holder vs jaw_soft/mouth_servo_v4"]["new_mm"] > 4
+    assert static["jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330"]["clash"]
+    assert static["envelope/xt60_mating_plug vs trunk_base/body_shell_v4"]["clash"]
+    assert not static.get("envelope/usb_c_rear vs trunk_base/body_shell_v4", {"clash": False})["clash"]

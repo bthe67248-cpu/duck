@@ -81,12 +81,13 @@ Then, from `C:\dev\duckling_sim`:
 .\.venv\Scripts\python.exe scripts\prep_meshes.py
 ```
 
-- **Collision shapes** (ground-contact model `duck_v4_gc.xml` only): primitives for the head dome, skirt, lower shell, upper bill and jaw (`scripts\collision_proxies.json`), and the six outer blocks of the body (from `v4_params.json`). Check with `scripts\check_collision_proxies.py`, `scripts\check_contacts.py` and `design\v4\check_v4_fit.py` (0/3000 sampled poses clash with the neck-pitch limit of 0.70 rad).
-- **Masses.** Every number is recorded in `model\mass_ledger.json`: printed parts from the provisional 30 % infill formula, bought parts as estimates, replaced upstream parts subtracted (no double counting, no clamping). Robot about 849 g in simulation.
+- **Collision shapes** (ground-contact model `duck_v4_gc.xml` only): primitives for the head dome, skirt, lower shell, upper bill and jaw (`scripts\collision_proxies.json`), and the six outer blocks of the body (from `v4_params.json`). Check with `scripts\check_collision_proxies.py`, `scripts\check_contacts.py` and `design\v4\check_v4_fit.py` (mesh-mesh containment over the standing pose, 3000 sampled poses and recorded motions; it finds head-shell interferences with the neck and camera parts and a rubbing jaw, listed in `design\v4\README.md`; no moving part enters the body with the neck-pitch limit of 0.70 rad).
+- **Masses.** Every number is recorded in `model\mass_ledger.json`: printed parts from the provisional 30 % infill formula, bought parts as estimates, replaced upstream parts subtracted (no double counting, no clamping), including the upstream battery, which the 55 g 2S LiPo replaces at its V4 location. Robot about 789 g in simulation.
 
 **Estimates you must replace with measurements** (top block of `make_duck.py`):
-- **Print masses, PROVISIONAL** (`PART_MASS_G`): head shells, jaw and body shell from the 30 % infill wall-proxy formula. Slice and weigh the real parts.
-- **Bought parts, ESTIMATES** (`BOUGHT_G`): UNO Q + HAT 45 g, A010 10 g, XT60 pair 6 g, mouth servo 18 g. The 2S LiPo is assumed to weigh the same as the upstream battery.
+- **Print masses, PROVISIONAL** (`PART_MASS_G`): head shells, jaw and body shell from the wall-proxy formula with the `print` settings in `design\v4\v4_params.json` (1.2 mm walls, 30 % infill). Slice and weigh the real parts.
+- **Bought parts, ESTIMATES** (`BOUGHT_G`): UNO Q + HAT 45 g, A010 10 g, XT60 pair 6 g, mouth servo 18 g; 2S LiPo 55 g (`v4_params.json` `battery.mass_g`). The upstream battery it replaces is estimated at 115 g (`UPSTREAM_BATTERY_G`, see `design\v4\README.md`).
+- **Servo delay, ESTIMATE** (`SERVO_DELAY_S`, 20 ms, the middle of the upstream training lag): written into the model and applied by `motions.py` and `world_sim`. A measured `servo.delay_s` in the calibration file replaces it.
 - **Replaced upstream parts:** estimated from mesh volume at solid density. Weighing complete links (`MEASURED_MASS`) replaces this.
 - Head position: front flush with the upstream face, bottom at the upstream shell's bottom. `HEAD_SHIFT` nudges it. Check against the real robot.
 - The servo model (kp 0.55 N·m/rad, 0.96 N·m limit) is upstream's Dynamixel XL330, not your Feetech.
