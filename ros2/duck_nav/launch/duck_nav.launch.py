@@ -128,8 +128,8 @@ def generate_launch_description():
         DeclareLaunchArgument("tof_rate_hz", default_value="15.0"),
         DeclareLaunchArgument("tof_mount", default_value="body"),
         # realistic profile: IMU bias/noise, encoder error, extrinsic error and timing jitter (world_sim
-        # SENSOR_ERROR_DEFAULTS); false = exact IMU, encoders, mounts and stamps as before
-        DeclareLaunchArgument("sensor_errors", default_value="true"),
+        # SENSOR_ERROR_DEFAULTS); off by default until paired trials have measured what they cost SLAM
+        DeclareLaunchArgument("sensor_errors", default_value="false"),
         DeclareLaunchArgument("servo_delay", default_value="-1.0"),         # s; -1 = the model's servo_delay_s
         DeclareLaunchArgument("reloc_window", default_value="0.8"),          # m, relocalisation search
         DeclareLaunchArgument("reloc_ang", default_value="0.4363323129985824"),   # rad (25 deg)

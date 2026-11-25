@@ -69,7 +69,23 @@ def test_jitter_keeps_stamps_increasing():
     j = Jitter(rng(4), sigma=0.01)                        # half the sample period: reorderings are likely
     s = [j.stamp(k * 0.02) for k in range(2000)]
     assert np.all(np.diff(s) > 0)
-    assert np.std(np.array(s) - np.arange(2000) * 0.02) == pytest.approx(0.01, rel=0.2)
+    err = np.array(s) - np.arange(2000) * 0.02
+    assert np.std(err) == pytest.approx(0.0058, rel=0.2)   # normal clipped at 0: std 0.58 sigma
+
+
+def test_jitter_stamp_never_after_publication():
+    """Stamps later than the publish time look like future poses to nav_node ("stale pose"): clamp them."""
+    j = Jitter(rng(5), sigma=0.0005)                       # world_sim imu/joints: 0.5 ms at a 2 ms step
+    t = np.arange(5000) * 0.002
+    s = np.array([j.stamp(x) for x in t])
+    assert np.all(s <= t) and np.all(np.diff(s) > 0)
+    assert np.mean(s < t) > 0.4                            # still jittered
+    j = Jitter(rng(6), sigma=0.003)                        # explicit later publication (e.g. a delayed frame)
+    s = np.array([j.stamp(x, publish=x + 0.01) for x in t])
+    assert np.all(s <= t + 0.01) and np.any(s > t) and np.all(np.diff(s) > 0)
+    j = Jitter(rng(7), sigma=0.01)                         # same publication time twice: the cap wins over strictness
+    s = [j.stamp(1.0) for _ in range(5)]
+    assert max(s) <= 1.0 and s == sorted(s)
 
 
 def test_perturb_sizes():

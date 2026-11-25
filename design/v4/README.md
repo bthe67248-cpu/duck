@@ -195,8 +195,9 @@ delays, so these rows show robustness, not a ranking. The walk criterion failed 
 
 ### Realistic sensor profile (`world_sim`, `duck_nav/sensor_errors.py`)
 
-New parameters (defaults are ESTIMATES for a BMI088/ICM-42688-class IMU and XL330 servos; `sensor_errors:=false`
-switches them all off, `sensors:=ideal` never has them):
+New parameters (defaults are ESTIMATES for a BMI088/ICM-42688-class IMU and XL330 servos). They are **off by default**
+(`sensor_errors:=false`) until paired trials have measured their effect; `sensor_errors:=true` switches them on and
+`sensors:=ideal` never has them:
 
 | Error | Parameters (default) | Where it shows |
 |-|-|-|
@@ -206,7 +207,7 @@ switches them all off, `sensors:=ideal` never has them):
 | Attitude noise | `attitude_noise_deg` 0.1 | the tilt used for the sensor poses and the `base_level` TF |
 | Encoders | `enc_offset_deg` 0.5 (zero offset σ), `enc_noise_deg` 0.05, `enc_counts_per_rev` 4096, `enc_vel_noise` 0.05 rad/s | `/joint_states`; the head camera pose (forward kinematics with the measured angles) |
 | Extrinsics | `tof_extrinsic_deg` 1.0 / `tof_extrinsic_mm` 2.0, `cam_extrinsic_deg` 1.0 / `cam_extrinsic_mm` 2.0 (σ per axis) | the simulated A010 and camera look from a mount perturbed once per run; `/tof/pose_level` and `/camera/pose_level` report the CAD mount |
-| Timing | `imu_stamp_jitter` 0.5 ms, `cam_stamp_jitter` 3 ms, `tof_stamp_jitter` 2 ms (σ, stamps kept increasing), `tof_latency_jitter` 10 ms (uniform extra delay, frames stay in order) | message stamps |
+| Timing | `imu_stamp_jitter` 0.5 ms, `cam_stamp_jitter` 3 ms, `tof_stamp_jitter` 2 ms (σ, clamped so a stamp is never later than its publication time, kept increasing), `tof_latency_jitter` 10 ms (uniform extra delay, frames stay in order) | message stamps |
 
 Published sensor poses are now computed the way the robot would: nominal mounts, measured joint angles, true heading
 and the IMU-derived tilt (`level_pose`, which reproduces the old world-frame formula exactly when the errors are zero,

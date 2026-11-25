@@ -28,12 +28,13 @@ Sampling convention: after each 4 physics steps mj_forward() is called, so qpos,
 sensordata, rendered images and the published stamp all describe the same state at sim time k * 0.02 s.
 The walking policy (velstand.onnx) turns the commands into 14 servo targets at 50 Hz. The servos act on each target
 `servo_delay` later (default: the model's <custom> servo_delay_s, 20 ms ESTIMATE; duck_nav/actuation.py).
-Realistic profile sensor errors (duck_nav/sensor_errors.py, parameters in SENSOR_ERROR_DEFAULTS): /imu gets noise,
+Realistic profile sensor errors (off unless sensor_errors is true; duck_nav/sensor_errors.py, parameters in
+SENSOR_ERROR_DEFAULTS): /imu gets noise,
 turn-on bias, bias random walk and mounting misalignment; /joint_states gets encoder zero offsets, noise and
 quantisation; the camera and ToF look from mounts perturbed off their CAD pose while /camera/pose_level,
 /tof/pose_level and the base_level TF are computed the way the robot would (nominal mounts, measured joint angles,
-the IMU-derived tilt, which the accelerometer bias and misalignment tilt); stamps carry timing jitter and the ToF
-latency varies. The policy sees exact gyro/gravity/joints unless `policy_sensor_errors` is true. The ideal profile
+the IMU-derived tilt, which the accelerometer bias and misalignment tilt); stamps carry timing jitter (never later than the
+publication time) and the ToF latency varies. The policy sees exact gyro/gravity/joints unless `policy_sensor_errors` is true. The ideal profile
 has no sensor errors.
 """
 import copy
@@ -141,7 +142,7 @@ class WorldSim(Node):
         self.declare_parameter("seed", 0)
         self.declare_parameter("servo_delay", -1.0)          # s; < 0 = the model's servo_delay_s (custom numeric)
         self.declare_parameter("policy_sensor_errors", False)  # realistic: the policy sees the erroneous IMU/encoders too
-        self.declare_parameter("sensor_errors", True)        # realistic: false = exact IMU, encoders, mounts, stamps
+        self.declare_parameter("sensor_errors", False)       # realistic: true = IMU, encoder, mount and stamp errors (off until measured)
         for name, value in SENSOR_ERROR_DEFAULTS.items():
             self.declare_parameter(name, value)
         self.profile = str(self.get_parameter("sensor_profile").value)

@@ -94,13 +94,20 @@ class EncoderErrors:
 
 
 class Jitter:
-    """Stamp error for one stream: t + N(0, sigma), strictly increasing (at least 1 us after the previous stamp)."""
+    """Stamp error for one stream: t + N(0, sigma), never later than the publication time (a message cannot carry a
+    stamp from the future: nav_node rejects poses with now - stamp < 0 as stale) and strictly increasing (at least
+    1 us after the previous stamp). Clamping makes the error one-sided: the stamp is up to a few sigma early, never
+    late (mean -0.4 sigma, std 0.58 sigma)."""
     def __init__(self, rng, sigma=0.0):
         self.rng, self.sigma, self.last = rng, sigma, -math.inf
 
-    def stamp(self, t):
+    def stamp(self, t, publish=None):
+        """Stamp for a sample taken at t and published at `publish` (default t, i.e. in the same sim step)."""
+        publish = t if publish is None else publish
         s = t + (self.rng.normal(0.0, self.sigma) if self.sigma > 0 else 0.0)
-        s = max(s, self.last + 1e-6)
+        s = max(min(s, publish), self.last + 1e-6)
+        if s > publish:              # publication times closer than 1 us: keep the order, never exceed publish
+            s = publish if publish > self.last else self.last
         self.last = s
         return s
 
