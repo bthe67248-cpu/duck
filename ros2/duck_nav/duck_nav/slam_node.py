@@ -124,6 +124,10 @@ class SlamNode(Node):
         self.declare_parameter("size_max_range", 2.5)         # m; beyond this a box-size-only range is not used
         self.declare_parameter("range_spread_max", 0.15)      # m; ToF zones in a box must agree this well
         self.declare_parameter("goal_confirmations", 2)       # consistent ranged sightings before /goal is published
+        # floor flow pairs images at least flow_interval s apart (keeping the older image until then), at most
+        # flow_max_gap s; the simulator's 5 fps camera pairs every frame, a 30 fps USB camera every 5th
+        self.declare_parameter("flow_interval", 0.15)
+        self.declare_parameter("flow_max_gap", 0.3)
         self.mode = str(self.get_parameter("sensor_mode").value)
         if self.mode not in ("depth", "tof"):
             raise ValueError("sensor_mode must be 'depth' or 'tof'")
@@ -184,10 +188,14 @@ class SlamNode(Node):
             self.flow_method = self.get_parameter("flow_method").value
             if self.flow_method not in flowodom.METHODS:
                 raise ValueError(f"flow_method must be one of {flowodom.METHODS}")
-            self.flow_prev = None; self.flow_pending = deque(maxlen=3); self.flow_rng = np.random.default_rng(0)
+            self.flow_prev = None; self.flow_pending = deque(maxlen=10); self.flow_rng = np.random.default_rng(0)
+            self.flow_interval = float(self.get_parameter("flow_interval").value)
+            self.flow_max_gap = float(self.get_parameter("flow_max_gap").value)
+            if not 0 < self.flow_interval < self.flow_max_gap:
+                raise ValueError("need 0 < flow_interval < flow_max_gap")
             self.flow_ms = 0.0
-        self.pose_hist = StampBuffer(200)                     # 4 s of 50 Hz poses
-        self.cam_poses = StampBuffer(20); self.sensor_poses = StampBuffer(30)
+        self.pose_hist = StampBuffer(400)                     # 8 s of 50 Hz IMU poses, 2 s at 200 Hz
+        self.cam_poses = StampBuffer(90); self.sensor_poses = StampBuffer(60)     # 3 s at 30 fps; 4 s of 15 Hz ToF
         self.pending_frames = deque(maxlen=6)                 # sensor frames waiting for their pose
         self.frames = StampBuffer(15)                         # stamp -> (kind, data, slam pose at acquisition)
         self.pending_dets = deque(maxlen=20)
@@ -300,7 +308,11 @@ class SlamNode(Node):
     # 2. sensor frames -------------------------------------------------------------------------
     def on_info(self, m):
         if m.k[0] > 0:
-            self.K = ds.Intrinsics(m.width, m.height, m.k[0], m.k[4], m.k[2], m.k[5])
+            dist = tuple(float(v) for v in m.d[:5]) if m.distortion_model in ("plumb_bob", "") else ()
+            if m.distortion_model not in ("plumb_bob", "") and any(m.d):
+                self.get_logger().warn(f"distortion model {m.distortion_model} not supported: treated as pinhole",
+                                       throttle_duration_sec=30.0)
+            self.K = ds.Intrinsics(m.width, m.height, m.k[0], m.k[4], m.k[2], m.k[5], dist if any(dist) else ())
 
     @staticmethod
     def _pose(msg):
@@ -405,9 +417,14 @@ class SlamNode(Node):
     # 2b. floor optical flow (translation:=flow | flow_or_command) ----------------------------------
     def on_image(self, msg):
         ns = stamp_ns(msg.header)
+        if self.flow_prev is not None and (ns - self.flow_prev[0]) * 1e-9 < self.flow_interval:
+            return                                              # not due yet: keep the older image for the pair
         a = np.frombuffer(msg.data, np.uint8).reshape(msg.height, msg.width, -1)
         cv2 = self.flowodom.cv2
         gray = cv2.cvtColor(a, cv2.COLOR_BGR2GRAY if msg.encoding == "bgr8" else cv2.COLOR_RGB2GRAY)             if a.shape[2] == 3 else a[:, :, 0]
+        if self.K is not None and self.K.dist:              # flow geometry is pinhole: undistort the image first
+            K = np.array([[self.K.fx, 0.0, self.K.cx], [0.0, self.K.fy, self.K.cy], [0.0, 0.0, 1.0]])
+            gray = cv2.undistort(gray, K, np.array(self.K.dist + (0.0,) * (5 - len(self.K.dist))))
         if self.cam_poses.get(ns) is None:
             self.flow_pending.append((ns, gray))                # pose not here yet: on_cam_pose retries
             return
@@ -416,8 +433,11 @@ class SlamNode(Node):
     def flow_step(self, ns, gray):
         """Estimate the body motion since the previous image and apply the residual to the current pose."""
         pose = self.cam_poses.get(ns)
-        prev, self.flow_prev = self.flow_prev, (ns, gray, pose)
-        if prev is None or self.K is None or not 0.1 < (ns - prev[0]) * 1e-9 < 0.3:
+        prev = self.flow_prev
+        if prev is not None and (ns - prev[0]) * 1e-9 < self.flow_interval:
+            return                                              # keep the older image until the interval has passed
+        self.flow_prev = (ns, gray, pose)
+        if prev is None or self.K is None or (ns - prev[0]) * 1e-9 > self.flow_max_gap:
             return
         K = np.array([[self.K.fx, 0.0, self.K.cx], [0.0, self.K.fy, self.K.cy], [0.0, 0.0, 1.0]])
         t0 = time.perf_counter()

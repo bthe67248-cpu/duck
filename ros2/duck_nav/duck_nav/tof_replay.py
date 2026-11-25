@@ -1,6 +1,6 @@
 """Finite JSONL contract replay backend. This never accesses hardware.
 
-Each line: {"stamp_ns": 123, "ranges": [64 metre values], "status": [64 codes]}.
+Each line: {"stamp_ns": 123, "ranges": [n*n metre values], "status": [n*n codes]} (n = the node's zones).
 read() returns one recorded frame then None at EOF. stamp_offset_ns explicitly
 aligns recorded acquisition times to the ROS clock used by the consumer. Replay
 cadence is not a model of device timing; use rosbag for timed ROS integration.

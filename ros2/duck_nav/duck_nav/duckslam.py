@@ -56,6 +56,7 @@ class Intrinsics:
     fy: float
     cx: float
     cy: float
+    dist: tuple = ()            # plumb_bob (k1, k2, p1, p2[, k3]) for the raw, unrectified image; () = ideal pinhole
 
     @staticmethod
     def from_fovy(width, height, fovy_deg):
@@ -66,9 +67,31 @@ class Intrinsics:
 SIM_CAMERA = Intrinsics.from_fovy(320, 240, 60.0)       # the simulated ideal camera only
 
 
+def distort(xn, yn, dist):
+    """Ideal normalised image coordinates (x right, y down) -> distorted, OpenCV plumb_bob model."""
+    k1, k2, p1, p2, k3 = (tuple(dist) + (0.0,) * 5)[:5]
+    r2 = xn * xn + yn * yn
+    radial = 1 + r2 * (k1 + r2 * (k2 + r2 * k3))
+    return (xn * radial + 2 * p1 * xn * yn + p2 * (r2 + 2 * xn * xn),
+            yn * radial + p1 * (r2 + 2 * yn * yn) + 2 * p2 * xn * yn)
+
+
+def undistort(xd, yd, dist, iters=20):
+    """Inverse of `distort` by fixed-point iteration (as cv2.undistortPoints); exact enough for moderate lenses."""
+    xn, yn = xd, yd
+    for _ in range(iters):
+        dx, dy = distort(xn, yn, dist)
+        xn, yn = xn + (xd - dx), yn + (yd - dy)
+    return xn, yn
+
+
 def pixel_to_level(u, v, z, R_bc, t_bc, K=SIM_CAMERA):
-    """Pixel (u, v) at camera-axis depth z -> point in the level body frame (MuJoCo camera: looks along -z, y up)."""
-    pc = np.array([(u - K.cx) * z / K.fx, -(v - K.cy) * z / K.fy, -z])
+    """Pixel (u, v) of the raw image at camera-axis depth z -> point in the level body frame (MuJoCo camera: looks
+    along -z, y up). Lens distortion in K.dist is removed first, so YOLO boxes from the raw image land correctly."""
+    xn, yn = (u - K.cx) / K.fx, (v - K.cy) / K.fy
+    if K.dist:
+        xn, yn = undistort(xn, yn, K.dist)
+    pc = np.array([xn * z, -yn * z, -z])
     return R_bc @ pc + t_bc
 
 
@@ -77,8 +100,11 @@ def level_to_pixel(p_level, R_bc, t_bc, K):
     pc = (np.atleast_2d(p_level) - t_bc) @ R_bc         # R_bc^T (p - t), row form
     z = -pc[:, 2]
     with np.errstate(divide="ignore", invalid="ignore"):
-        u = K.cx + pc[:, 0] * K.fx / z
-        v = K.cy - pc[:, 1] * K.fy / z
+        xn, yn = pc[:, 0] / z, -pc[:, 1] / z
+        if K.dist:
+            xn, yn = distort(xn, yn, K.dist)
+        u = K.cx + xn * K.fx
+        v = K.cy + yn * K.fy
     return u, v, z
 
 
