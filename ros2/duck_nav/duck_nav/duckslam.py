@@ -249,6 +249,7 @@ class DuckSLAM:
         self.map_version = 0             # bumped by update_map; invalidates the cached likelihood tables
         self._tables = None
         self.match_cov = None            # 3x3 covariance of the last correlative match (x, y, theta)
+        self.match_gap = None            # score gap to the best separate peak (when peak_margin > 0)
         self.last_offset = None          # measured (undamped) pose offset of the last applied match
         # online odometry calibration: slip = observed / commanded-model forward motion, from scan corrections
         self.slip = 1.0
@@ -434,7 +435,8 @@ class DuckSLAM:
 
     def match_correlative(self, ang, r, hit, current_scan=None, window=0.30, ang_window=math.radians(12),
                           ang_step=math.radians(1.0), sigma=0.05, prior_xy=0.20, prior_th=math.radians(8),
-                          max_std_xy=0.06, max_std_th=math.radians(3.0), min_overlap=0.6, neff_cap=40, gain=1.0):
+                          max_std_xy=0.06, max_std_th=math.radians(3.0), min_overlap=0.6, neff_cap=40, gain=1.0,
+                          peak_margin=0.0, peak_radius=0.125, peak_ang=math.radians(5), peak_cap=8.0):
         """Exhaustive correlative match over +-`window` m and +-`ang_window`, with an exact two-level bound,
         a Gaussian odometry prior, and the match covariance from the posterior over the local grid (Olson eq. 3).
 
@@ -442,7 +444,7 @@ class DuckSLAM:
         the well-constrained direction is corrected (reason "partial") and False is returned, so the motion
         gate stays conservative. Sets match_reason, match_overlap and match_cov."""
         info = self.info
-        self.match_overlap = 0.0; self.match_cov = None; self.last_offset = None
+        self.match_overlap = 0.0; self.match_cov = None; self.last_offset = None; self.match_gap = None
         if hit.sum() < self.min_hits:
             self.match_reason = "insufficient_hits"; return False
         if (self.logodds > 0.8).sum() < 80:
@@ -525,6 +527,16 @@ class DuckSLAM:
         if math.sqrt(cov[2, 2]) > max_std_th:
             self.match_reason = "ambiguous_heading"; return False
         evals, evecs = np.linalg.eigh(cov[:2, :2])
+        if peak_margin > 0 and math.sqrt(evals[0]) <= max_std_xy:
+            # The covariance above only sees +-4 cells around the optimum, so a second, separate peak elsewhere in the
+            # search window (a box edge or wall end seen 0.6 m along a wall) does not widen it. Find the best score
+            # among candidates that differ from the optimum in a CONSTRAINED direction (both axes for a full match,
+            # the across-wall axis for a partial one, whose along-wall ridge is expected) or in heading.
+            v_ex = None if math.sqrt(evals[1]) <= max_std_xy else evecs[:, 0]
+            self.match_gap = self._second_peak_gap(ub, blocks, B, best_s, (bx_, by_, bt), score, prior, L, ix0, iy0,
+                                                   dth, v_ex, peak_radius, peak_ang, peak_cap)
+            if self.match_gap < peak_margin:
+                self.match_reason = "second_peak"; return False
         if math.sqrt(evals[1]) <= max_std_xy:
             self.pose += gain * mean; self.n_match += 1; self.last_offset = mean
             self.match_reason = "accepted"; return True
@@ -534,6 +546,33 @@ class DuckSLAM:
             self.last_offset = np.array([*(v * (v @ mean[:2])), mean[2]])
             self.match_reason = "partial"; return False
         self.match_reason = "ambiguous"; return False
+
+    def _second_peak_gap(self, ub, blocks, B, best_s, best, score, prior, L, ix0, iy0, dth, v_ex, radius, ang, cap):
+        """Score gap (log-likelihood units, capped at `cap`) between the optimum and the best candidate outside its
+        neighbourhood: farther than `ang` in heading, or farther than `radius` m in position (along `v_ex` only
+        when given). Exact, by the same block bounds as the main branch and bound."""
+        res = self.info.res
+        bx_, by_, bt = best
+        second = best_s - cap
+        fine = np.arange(B)
+        for flat in np.argsort(ub, axis=None)[::-1]:
+            if ub.flat[flat] <= second:
+                break
+            t_i, bx, by = np.unravel_index(flat, ub.shape)
+            ox = blocks[bx] + fine; oy = blocks[by] + fine
+            dx = (ox[:, None] - bx_) * res; dy = (oy[None, :] - by_) * res
+            if abs(dth[t_i] - dth[bt]) > ang:
+                keep = np.ones((B, B), bool)
+            elif v_ex is None:
+                keep = np.hypot(dx, dy) > radius
+            else:
+                keep = np.abs(v_ex[0] * dx + v_ex[1] * dy) > radius
+            if not keep.any():
+                continue
+            v = score(L, ix0[t_i][None, None, :] + ox[:, None, None], iy0[t_i][None, None, :] + oy[None, :, None])
+            v = v + prior(ox[:, None], oy[None, :], dth[t_i])
+            second = max(second, float(v[keep].max()))
+        return best_s - second
 
     def update_map(self, ang, r, hit, free_weight=0.35, hit_weight=1.2):
         self.map_version += 1
@@ -582,8 +621,26 @@ class FrameLocalizer:
                  map_turn=math.radians(3), scan_timeout=0.75, match_timeout=1.5, use_sweep=True,
                  loop_closure=False, graph_max_nodes=160, reloc_confirm=False, confirm_xy=0.06,
                  confirm_th=math.radians(4), bootstrap_turn=0.0, map_max_std=0.0, map_accepted_only=False,
-                 reloc_partial=True, unknown_ll=None, confirm_free_xy=0.0, confirm_free_th=0.0):
+                 reloc_partial=True, unknown_ll=None, confirm_free_xy=0.0, confirm_free_th=0.0, match_kw=None,
+                 partial_tracks=False, map_min_gap=0.0, reloc_peak_margin=0.0):
         self.slam = slam
+        # map_min_gap (log-likelihood units, 0 = off): after bootstrap, map a frame only when its match was accepted
+        # with at least this score gap to any separate peak (DuckSLAM.match_correlative peak test). An aliased match
+        # may still correct the pose (it is damped and later matches can undo it), but it must not become map evidence:
+        # once mapped, the next frames match the wrong map and the error is permanent.
+        self.map_min_gap = map_min_gap
+        # reloc_peak_margin (0 = off): while relocalising (wide window, weak prior), reject a match whose best separate
+        # peak scores within this of the optimum. Normal tracking keeps its small damped corrections: rejecting them
+        # too cost 10-20 % of the time the motion gate allowed driving in replay, and the duck stood still.
+        self.reloc_peak_margin = reloc_peak_margin
+        # partial_tracks: a partial match (pose fixed across a wall and in heading, free along it) restarts the
+        # relocalisation timer. Facing one wall is under-determined, not lost; the wide relocalisation search with its
+        # weak prior is exactly where such a view aliases (replay v4snew_s5: a confirmed 0.6 m jump along a wall after
+        # 50 s of harmless partial matches).
+        self.partial_tracks = partial_tracks
+        self.match_kw = dict(match_kw or {})     # extra DuckSLAM.match_correlative keywords (e.g. peak_margin)
+        if map_min_gap > 0 and not self.match_kw.get("peak_margin"):
+            self.match_kw["peak_margin"] = 1e-9          # compute the gap; reject only exact ties
         slam.unknown_ll = unknown_ll
         # map_max_std (m, 0 = off): after bootstrap, map a frame only when its match was accepted with the larger
         # position std of the match covariance at most this. Each accepted match moves the pose by the mean of a
@@ -646,9 +703,11 @@ class FrameLocalizer:
             if self.matcher == "correlative":
                 kw = dict(window=self.reloc_window, ang_window=self.reloc_ang, prior_xy=1.0, prior_th=0.6) \
                     if self.relocalizing else {}
+                if self.relocalizing and self.reloc_peak_margin > 0:
+                    kw["peak_margin"] = self.reloc_peak_margin
                 before = slam.pose.copy()
                 accepted = slam.match_correlative(*cons, current_scan=fresh, gain=1.0 if self.relocalizing else self.gain,
-                                                  **kw)
+                                                  **{**self.match_kw, **kw})
                 if self.relocalizing and not self.reloc_partial and slam.match_reason == "partial":
                     slam.pose = before; slam.last_offset = None
                 if not self.relocalizing:
@@ -682,6 +741,8 @@ class FrameLocalizer:
         if good and self.map_max_std > 0 and not self.bootstrap:
             cov = slam.match_cov
             good = accepted and cov is not None and math.sqrt(float(np.linalg.eigvalsh(cov[:2, :2])[1])) <= self.map_max_std
+        if good and self.map_min_gap > 0 and not self.bootstrap:
+            good = accepted and slam.match_gap is not None and slam.match_gap >= self.map_min_gap
         should_map = self.bootstrap or slam.match_reason == "map_not_ready" or (good and moved)
         if self.graph is not None:
             # The graph owns every mapped scan: rebuilding must never discard untracked evidence.
@@ -722,6 +783,8 @@ class FrameLocalizer:
                 self.bootstrap = False
         elif self.last_ok is None and not self.bootstrap:
             self.last_ok = ts
+        elif self.partial_tracks and not self.relocalizing and slam.match_reason == "partial":
+            self.last_ok = ts            # constrained across a wall: under-determined, not lost (no wide search)
         if self.slip:
             slam.observe_slip()
         corr = slam.pose - pose_acq

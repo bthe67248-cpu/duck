@@ -576,3 +576,72 @@ def test_partial_match_is_not_applied_while_relocalising_when_disabled():
             if loc.relocalizing and s.match_reason == "partial":
                 applied.append(bool(np.any(corr)))
         assert applied and all(applied) == allow and any(applied) == allow
+
+
+# ---- ambiguous (second-peak) matches ----------------------------------------------------------
+def aliased_reference():
+    """A wall at x = 1 with two identical 0.4 m stubs at y = 0 and y = 0.5: a view of the wall and one stub fits
+    either stub equally well."""
+    s = ds.DuckSLAM(min_hits=12)
+    for y in np.arange(-2, 2.01, INFO.res):
+        s.logodds[INFO.cell(1.0, y)] = 3
+    for x in np.arange(0.6, 1.0, INFO.res):
+        s.logodds[INFO.cell(x, 0.0)] = 3; s.logodds[INFO.cell(x, 0.5)] = 3
+    return s
+
+
+def wall_and_stub_scan():
+    pts = [(1.0, y) for y in np.linspace(-0.2, 0.2, 17)] + [(x, 0.0) for x in np.linspace(0.65, 0.95, 13)]
+    p = np.array(pts)
+    return np.arctan2(p[:, 1], p[:, 0]), np.hypot(p[:, 0], p[:, 1]), np.ones(len(p), bool)
+
+
+def test_second_peak_rejects_an_aliased_wide_search_that_the_local_covariance_accepts():
+    a, r, h = wall_and_stub_scan()
+    wide = dict(window=0.8, ang_window=math.radians(25), prior_xy=1.0, prior_th=0.6)
+    s = aliased_reference(); s.pose[:] = (0.0, 0.26, 0.0)    # halfway between the stubs
+    assert s.match_correlative(a, r, h, **wide), s.match_reason              # old behaviour: a confident jump
+    s = aliased_reference(); s.pose[:] = (0.0, 0.26, 0.0)
+    assert not s.match_correlative(a, r, h, peak_margin=1.0, **wide)
+    assert s.match_reason == "second_peak" and s.match_gap < 1.0
+    assert tuple(s.pose) == (0.0, 0.26, 0.0)
+
+
+def test_second_peak_keeps_unique_matches_and_wall_partials():
+    s = corner_reference(); s.pose[:] = (0.05, -0.04, math.radians(2))
+    a, r, h = corner_scan(np.linspace(-40, 110, 60))
+    assert s.match_correlative(a, r, h, peak_margin=1.0), s.match_reason
+    assert s.match_gap > 2.0
+    s = ds.DuckSLAM(min_hits=12)                         # along a wall the ridge is expected, not a second peak
+    for y in np.arange(-2, 2.01, INFO.res):
+        s.logodds[INFO.cell(1.0, y)] = 3; s.logodds[INFO.cell(1.025, y)] = 3
+    s.pose[:] = (0.1, 0.1, 0.0)
+    a = np.radians(np.linspace(-25, 25, 40)); r = 1 / np.cos(a)
+    assert not s.match_correlative(a, r, np.ones(40, bool), peak_margin=1.0)
+    assert s.match_reason == "partial" and abs(s.pose[0]) < 0.03
+
+
+def test_map_min_gap_keeps_ambiguous_matches_out_of_the_map():
+    a, r, h = wall_and_stub_scan()
+    for gap, mapped in ((0.0, True), (2.0, False)):
+        s = aliased_reference()
+        loc = ds.FrameLocalizer(s, use_sweep=False, map_min_gap=gap, relocalize_after=0.0, reloc_confirm=False)
+        loc.bootstrap = False; loc.last_ok = -10.0       # past bootstrap, relocalising (wide search)
+        v0 = s.map_version
+        loc.step(0.0, np.array([0.0, 0.26, 0.0]), a, r, h)
+        assert (s.map_version != v0) == mapped, (gap, s.match_reason, s.match_gap)
+
+
+def test_partial_matches_along_a_wall_do_not_start_relocalisation_when_tracking():
+    for tracks in (False, True):
+        s = ds.DuckSLAM(min_hits=12)
+        for y in np.arange(-2, 2.01, INFO.res):
+            s.logodds[INFO.cell(1.0, y)] = 3; s.logodds[INFO.cell(1.025, y)] = 3
+        loc = ds.FrameLocalizer(s, use_sweep=False, relocalize_after=1.0, partial_tracks=tracks)
+        loc.bootstrap = False; loc.last_ok = 0.0
+        a = np.radians(np.linspace(-25, 25, 40)); r = 1 / np.cos(a); h = np.ones(40, bool)
+        reloc = False
+        for i in range(40):
+            loc.step(0.1 * i, np.array([0.0, 0.1, 0.0]), a, r, h)
+            reloc = reloc or loc.relocalizing
+        assert reloc != tracks
