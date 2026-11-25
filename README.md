@@ -1,6 +1,8 @@
-# Duckling V3 simulation
+# Duckling V4 simulation
 
 MuJoCo model, Simulink balance controller, and a ROS 2 SLAM + YOLO navigation stack for a small Microduck-based biped. Everything here runs in simulation; nothing has been validated on hardware yet.
+
+**V4 (current):** body with the UNO Q + HAT stack, a 2S LiPo and a Sipeed A010 depth sensor inside, wider head with an opening jaw. SLAM with the body-fixed A010 reaches the beacon on 6/6 simulated seeds (mean SLAM error 0.40 m); design, SLAM changes and results: [`design/v4/README.md`](design/v4/README.md). The V3 model and its results have been removed; the notes below about V3 are history.
 
 **Post-merge work against `d08af6c`:** [review and handoff](results/post_merge/HANDOFF.md), including experimental opt-in loop closure, parallel-trial/replay tooling, seed-2 failure analysis, and fresh mechanical checks. No new closed-loop accuracy or real-time-rate equivalence claim is made by this update. A later simulation check ([SIM_VALIDATION.md](results/post_merge/SIM_VALIDATION.md)) found the default path unchanged within noise and the opt-in loop closure worse; keep it off.
 
@@ -26,7 +28,7 @@ Everything lives in one folder, kept off OneDrive so the Python venv and build f
 | `matlab\` | `duck_numbers.m`, `build_duck_sim.m`, `duck_sim.slx`, `run_tests.m` |
 | `ros2\` | ROS 2 install script, `duck_description` and `duck_nav` packages, build/run/smoke scripts |
 | `policies\` | Official pretrained Microduck ONNX policies (downloaded) |
-| `results\` | `pre_fix\` (old results, kept for comparison), `post_fix\` (current), `geometry_v3\` (renders), reports and reviews |
+| `results\` | `pre_fix\` (old results, kept for comparison), `post_fix\` (current), reports and reviews |
 | `TODO.md`, `UNO_Q_GUIDE.md` | What is left, in order, and the step-by-step plan for the Arduino UNO Q |
 | `ros2\parked_commands\` | Word-command layer for the ROS 2 stack. Written, never installed or tested |
 
@@ -167,7 +169,7 @@ Every pair with `K_TH` between 1.5 and 2.5 survives all of it; at 3.0 it needs `
 
 Full output: `results\post_fix\test_results.txt` (pre-fix: `results\pre_fix\test_results.txt`).
 
-Plots: `results\post_fix\test2_stand.png`, `results\post_fix\test3_push.png`. Model renders: `results\geometry_v3\`.
+Plots: `results\post_fix\test2_stand.png`, `results\post_fix\test3_push.png`.
 
 Cross-check without MATLAB (same controller in Python):
 
@@ -257,7 +259,7 @@ Setup (PowerShell, from `C:\dev\duckling_sim`):
 .\.venv\Scripts\python.exe scripts\make_duck.py --base robot_groundcontact.xml --tag gc
 ```
 
-The second line builds `model\duck_v4_gc.xml`: the same V3 duck on upstream's ground-contact model, where the body can lie on the floor (the walk model only collides at the feet). It also carries the head camera used in Part E. To fetch the policies, download each `.onnx` listed in `policies\manifest.json` from `https://huggingface.co/pollen-robotics/microduck-policies/resolve/main/<file>`.
+The second line builds `model\duck_v4_gc.xml`: the same V4 duck on upstream's ground-contact model, where the body can lie on the floor (the walk model only collides at the feet). It also carries the head camera used in Part E. To fetch the policies, download each `.onnx` listed in `policies\manifest.json` from `https://huggingface.co/pollen-robotics/microduck-policies/resolve/main/<file>`.
 
 Run everything and record GIFs:
 
@@ -450,26 +452,6 @@ Details, method and run folders: [`results/slam_tuning/README.md`](results/slam_
 Against `main` on the same three realistic seeds: more of the room explored on every seed (mean 91% vs 79%),
 the beacon reached on 2 of 3 seeds for both, and about the same mean SLAM error (0.52 vs 0.51 m). Without loop
 closure the realistic profile still drifts late in long runs. Simulation only.
-
-### Older results (corrected V3 model, same room, 300 s limit)
-
-Final code, `results\post_fix\ros2_nav_*_v3model_final\` and `*_seed1\`, `*_seed2\`:
-
-| | Ideal depth camera | Realistic, seed 0 | Realistic, seed 1 | Realistic, seed 2 |
-|-|-|-|-|-|
-| Exploration | stalled at 142 s (99% of the room mapped, 22 frontier cells left) | TIMEOUT, 66% mapped | TIMEOUT, 83% mapped | TIMEOUT, 72% mapped |
-| Beacon (true distance < 0.45 m) | reached, 49 s | **not reached** (closest 1.10 m) | reached, 83 s | reached, 225 s |
-| Beacon position error | 0.15 m | 0.41 m | 0.45 m | 2.52 m |
-| SLAM error, mean / max | **0.09 / 0.31 m** | 0.36 / 0.86 m | 0.48 / 0.98 m | **1.24 / 2.75 m** |
-| Falls | 0 | 1 | 1 | 0 |
-
-An earlier realistic run, before the last review fixes, reached the beacon with 0.25 m mean error (`*_realistic_v3model\`).
-
-**What this says.**
-- With an ideal depth camera the stack works well.
-- With the camera and 64 ToF zones the duck will actually carry, it is **not reliable yet**. SLAM error ranges from 0.25 m to 1.2 m mean, the map drifts and doubles walls, and no realistic run finished exploring.
-- When it reaches the beacon, that is partly from wandering, not from an accurate map (seed 2: the beacon estimate was 2.5 m off).
-- Better localisation for sparse ranges (more scan-match constraints over the head sweep, loop closure, slowing down when the match is weak) is the next real work, before trusting navigation on the robot.
 
 Pre-fix results (old model, old code, latest-message scoring) are in `results\pre_fix\ros2_nav\`. They are not comparable one-to-one.
 
