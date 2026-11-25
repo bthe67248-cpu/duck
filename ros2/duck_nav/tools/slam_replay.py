@@ -29,6 +29,13 @@ Config keys (defaults = current slam_node behaviour):
   flow_latency seconds from the second image's stamp until its estimate is usable (default 0.03)
   flow_method  image (default) | rect | rect_or_image: per-pair tracker (see duck_nav.flowodom.estimate)
   Historical map/kw/slip options require --legacy. Offline ordering does not reproduce ROS queueing.
+
+--profile v4 (default, the launch defaults): Sipeed A010 in the V4 chest, 25 x 25 zones over 70 x 60 deg, 2.5 m,
+  confirmed relocalisation, bootstrap mapping until turned 6.6 rad, plus the body-sensor policy (launch body_slam:=true);
+  --profile v4old: the same without it. --profile v3: VL53L5CX 8 x 8 / 45 deg / 2.0 m on
+  the head (older bags). --zones / --fov / --fov-v / --max-range override the sensor geometry.
+--dump CSV: one row per processed ToF frame of the first config (truth and estimate at acquisition, match reason,
+  overlap, accepted / mapped / relocalising / bootstrap flags, hits): the per-frame diagnosis of where drift starts.
 """
 import argparse
 import bisect
@@ -48,10 +55,27 @@ ap.add_argument("--output", type=Path, help="write machine-readable metrics JSON
 ap.add_argument("--duration", type=float, default=600.0, help="maximum simulated seconds from first event")
 ap.add_argument("--loop-closure", action="store_true", help="enable shared FrameLocalizer pose graph")
 ap.add_argument("--legacy", action="store_true", help="use historical matcher policy instead of shared node policy")
+ap.add_argument("--profile", choices=("v4", "v4old", "v3"), default="v4", help="sensor + localiser defaults (see above)")
+ap.add_argument("--zones", type=int, help="zones per side (overrides the profile)")
+ap.add_argument("--fov", type=float, help="horizontal field of view, deg")
+ap.add_argument("--fov-v", type=float, help="vertical field of view, deg (default: profile)")
+ap.add_argument("--max-range", type=float, help="ToF ranges used for mapping, m")
+ap.add_argument("--dump", type=Path, help="per-frame CSV of the first config")
 ap.add_argument("--src", default=str(Path(__file__).resolve().parents[1]))
 args = ap.parse_args()
 if not math.isfinite(args.duration) or args.duration <= 0:
     ap.error("--duration must be finite and positive")
+PROFILES = dict(v4=dict(zones=25, fov=70.0, fov_v=60.0, max_range=2.5,
+                        loc=dict(reloc_confirm=True, bootstrap_turn=6.6, map_move=0.1, map_turn=0.17, unknown_ll=-1.125,
+                                 reloc_partial=False, confirm_free_xy=0.08, confirm_free_th=0.07)),
+                v4old=dict(zones=25, fov=70.0, fov_v=60.0, max_range=2.5,     # before the body-sensor fixes (a010-sim)
+                           loc=dict(reloc_confirm=True, bootstrap_turn=6.6)),
+                v3=dict(zones=8, fov=45.0, fov_v=45.0, max_range=2.0, loc={}))
+PROF = dict(PROFILES[args.profile])
+for _k in ("zones", "fov", "fov_v", "max_range"):
+    if getattr(args, _k) is not None:
+        PROF[_k] = getattr(args, _k)
+NZ = int(PROF["zones"])
 sys.path.insert(0, args.src)
 import duck_nav.duckslam as ds  # noqa: E402
 
@@ -140,9 +164,9 @@ def sim_time(t_rx):                                   # receive (wall) time -> s
 
 
 def read_tof(msg):
-    ranges = np.full(64, np.nan); valid = np.zeros(64, bool)
+    ranges = np.full(NZ * NZ, np.nan); valid = np.zeros(NZ * NZ, bool)
     for rng, st, z in point_cloud2.read_points(msg, field_names=("range", "status", "zone"), skip_nans=False):
-        if st == 0 and np.isfinite(rng):
+        if st == 0 and np.isfinite(rng) and 0 <= int(z) < NZ * NZ:
             ranges[int(z)] = rng; valid[int(z)] = True
     return ranges, valid
 
@@ -162,7 +186,8 @@ for tp, m, t_rx in msgs:
     elif tp == "/slam/pose":
         live.append((stamp(m.header), m.pose.position.x, m.pose.position.y))
     elif tp == "/ground_truth/pose":
-        gt.append((stamp(m.header), m.pose.position.x, m.pose.position.y))
+        q = m.pose.orientation
+        gt.append((stamp(m.header), m.pose.position.x, m.pose.position.y, ds.quat_yaw((q.w, q.x, q.y, q.z))))
 events.sort(key=lambda e: (e[0], e[1]))
 gt.sort(); gts = [g[0] for g in gt]
 if not events or not gt:
@@ -191,7 +216,12 @@ def truth_err(t, x, y):
     return None
 
 
-def run(cfg):
+def truth_at(t):
+    i = bisect.bisect_left(gts, t)
+    return gt[i] if i < len(gt) and abs(gts[i] - t) < 0.011 else None
+
+
+def run(cfg, dump=None):
     allowed = set(DEFAULT) | {"debug", "trace", "slip", "slip_kw", "attitude"}
     if set(cfg) - allowed:
         ap.error("unknown config keys: " + ", ".join(sorted(set(cfg) - allowed)))
@@ -204,8 +234,8 @@ def run(cfg):
         if args.legacy:
             ap.error("--loop-closure requires the shared policy (omit --legacy)")
         c["loc"] = {**c.get("loc", {}), "loop_closure": True}
-    slam = ds.DuckSLAM(ds.OdomGains(), max_r=2.0, min_hits=c["min_hits"])
-    rays = ds.tof_zone_rays(8, 45.0, 45.0)
+    slam = ds.DuckSLAM(ds.OdomGains(), max_r=PROF["max_range"], min_hits=c["min_hits"])
+    rays = ds.tof_zone_rays(NZ, PROF["fov"], PROF["fov_v"])
     tilt = ds.make_attitude_filter(c.get("attitude", "quaternion"))
     health = ds.LocalizationHealth(0.75, 1.5)
     sweep = ds.ScanWindow(c["sweep"]) if c["sweep"] > 0 else None
@@ -216,6 +246,7 @@ def run(cfg):
     slips = []
     relocs = 0
     loc_kw = dict(matcher=c["matcher"], sweep=c["sweep"], fresh=c["fresh"], map_move=0.0, map_turn=0.0)
+    loc_kw.update(PROF["loc"])
     loc_kw.update(c.get("loc", {}))
     if use_flow:
         loc_kw["slip"] = False                           # flow is metric: no online slip scaling
@@ -297,15 +328,27 @@ def run(cfg):
         k = min(cand, key=lambda q: abs(q - ts))
         pose_acq = hist[k].copy()
         R, tt = sp
-        ang, r, hit = slam.scan_from_tof(ranges, valid, rays, R, tt, "radial", fov_h_deg=45.0)
+        ang, r, hit = slam.scan_from_tof(ranges, valid, rays, R, tt, "radial", fov_h_deg=PROF["fov"], n=NZ)
         n_frames += 1
         if not len(ang):                                 # empty frames are not health observations (slam_node too)
             continue
         if loc is not None:                              # the shared node policy (duckslam.FrameLocalizer)
             current = slam.pose.copy()
             t0 = time.perf_counter()
+            v0 = slam.map_version
             accepted, corr = loc.step(ts, pose_acq, ang, r, hit)
             match_s.append(time.perf_counter() - t0)
+            if dump is not None:
+                tr = truth_at(ts)
+                if tr is not None:
+                    pc = pose_acq + corr
+                    dump.append((ts - start_t, tr[1], tr[2], tr[3], pose_acq[0], pose_acq[1], pose_acq[2], pc[0], pc[1], pc[2],
+                                 math.hypot(pc[0] - tr[1], pc[1] - tr[2]),
+                                 math.degrees((pc[2] - tr[3] + math.pi) % (2 * math.pi) - math.pi),
+                                 slam.match_reason, round(slam.match_overlap, 3), int(accepted), int(slam.map_version != v0),
+                                 int(loc.relocalizing), int(loc.bootstrap), int(hit.sum()), len(ang), loc.health.state(ts),
+                                 round(math.sqrt(float(np.linalg.eigvalsh(slam.match_cov[:2, :2])[1])), 4)
+                                 if slam.match_cov is not None else ""))
             reasons[slam.match_reason] = reasons.get(slam.match_reason, 0) + 1
             n_acc += bool(accepted); slips.append(slam.slip)
             relocs += loc.relocalizing
@@ -383,7 +426,16 @@ if live:
     if len(le):
         reference = dict(samples=len(le), error_m=dict(mean=float(le.mean()), median=float(np.median(le)), max=float(le.max())))
         print(f"{dur:.0f} s bag; recorded live /slam/pose: {json.dumps(reference)}")
-results = [run(cfg) for cfg in configs]
+rows = [] if args.dump else None
+results = [run(cfg, rows if i == 0 else None) for i, cfg in enumerate(configs)]
+if args.dump:
+    import csv
+    args.dump.parent.mkdir(parents=True, exist_ok=True)
+    with open(args.dump, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["t", "gt_x", "gt_y", "gt_yaw", "acq_x", "acq_y", "acq_yaw", "x", "y", "yaw", "err_m", "yaw_err_deg",
+                    "reason", "overlap", "accepted", "mapped", "reloc", "bootstrap", "hits", "bins", "health", "std_xy"])
+        w.writerows(rows)
 if args.output:
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(dict(schema_version=1, bag=str(Path(args.bag).resolve()), duration_s=dur,

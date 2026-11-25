@@ -1,8 +1,8 @@
 """Validate measured model inputs without importing MuJoCo or modifying source code.
 
 Null means unknown, never zero. Link weights include everything rigidly attached
-to that link; trunk_base excludes the separately added shield. jaw_soft includes
-both V3 shells. Weights alone do not measure a centre of mass or inertia tensor.
+to that link; trunk_base includes the V4 body shell and everything inside it; jaw_soft includes
+both V4 head shells and the mouth servo, but not the jaw. Weights alone do not measure a centre of mass or inertia tensor.
 """
 import hashlib
 import json
@@ -14,7 +14,7 @@ LINKS = (
     "neck", "neck_pitch", "yaw_roll_motion", "jaw_soft", "bearing_roll",
     "hip_l_2", "upper_leg_right", "leg_2", "ankle_right",
 )
-PRINTS = ("duck_head_upper_v3", "duck_head_lower_v3", "hat_rear_shield_v3")
+PRINTS = ("head_upper_v4", "head_lower_v4", "jaw_v4", "body_shell_v4")
 
 
 def number(value, name, *, zero=False):
@@ -32,7 +32,7 @@ def load_calibration(path):
     if not isinstance(data, dict):
         raise ValueError("calibration must be a JSON object")
     allowed = {"schema_version", "notes", "measured_mass_kg", "print_mass_g",
-               "shield_pos_m", "head_shift_m", "servo", "whole_robot_mass_kg"}
+               "head_shift_m", "servo", "whole_robot_mass_kg"}
     extra = set(data) - allowed
     if extra:
         raise ValueError(f"unknown calibration fields: {sorted(extra)}")
@@ -46,7 +46,7 @@ def load_calibration(path):
             raise ValueError(f"{section}: expected an object containing only {names}")
         out[section] = {key: number(value, f"{section}.{key}", zero=key in ("kv", "delay_s"))
                         for key, value in values.items() if value is not None}
-    for section in ("shield_pos_m", "head_shift_m"):
+    for section in ("head_shift_m",):
         value = data.get(section)
         if value is None:
             continue

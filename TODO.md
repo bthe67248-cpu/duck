@@ -12,14 +12,14 @@ Everything in this repo runs in simulation on estimated numbers. These steps mak
 - [ ] Talk to one Feetech HD-1910 servo over the half-duplex bus
 - [ ] Read the QMI8658A IMU over I2C
 
-## 2. Print and measure the robot (goes into `scripts/make_duck_v3.py`, top block)
+## 2. Print and measure the robot (goes into `scripts/make_duck.py`, top block)
 
 - [ ] Print the visible rigid parts in black PLA at 30% infill. Save the slicer project and record the slicer version, filament density, orientation, walls, top/bottom layers, infill and support mass
-- [ ] Weigh each V3 print after removing supports → `V3_PART_MASS_G` (provisional now: upper head 51.5 g, lower head 43.1 g, rear shield 32.3 g)
+- [ ] Weigh each V4 print (head shells, jaw, body shell) after removing supports → `PART_MASS_G` in `scripts/make_duck.py`; weigh the bought parts → `BOUGHT_G`. Old note: (provisional now: upper head 51.5 g, lower head 43.1 g, rear shield 32.3 g)
 - [ ] Weigh each link with servos and screws: `trunk_base`, `jaw_soft`, `upper_leg_left/right`, `leg`, `leg_2`, `ankle_left/right` → `MEASURED_MASS`
 - [ ] Build the installed mass ledger (prints, servos, UNO Q, HAT, battery, BMS, camera, ToF, wiring, fasteners). Do not count both the old Raspberry Pi electronics and their replacements
 - [ ] Measure the shield centre in the torso frame → `SHIELD_POS`. **This matters most:** at the guessed position the shield hits the legs and blocks get-up in simulation. Check leg and head clearance through their full range
-- [ ] Check the V3 head position against the real robot → `HEAD_SHIFT`
+- [ ] Check the V4 head position against the real robot → `HEAD_SHIFT`
 - [ ] Check the new bill's wall thickness, seam fit and internal clearance
 - [ ] Count the servos (model has 14, the XGO-Duck parts list names 15)
 
@@ -31,7 +31,7 @@ Everything in this repo runs in simulation on estimated numbers. These steps mak
 
 ## 4. Re-run the simulation with real numbers
 
-- [ ] `make_duck_v3.py`, `make_duck_v3.py --base robot_groundcontact.xml --tag gc`, `stand_numbers.py`, then in MATLAB `startup_duck`, `duck_numbers`, `build_duck_sim`, `run_tests`
+- [ ] `make_duck.py`, `make_duck.py --base robot_groundcontact.xml --tag gc`, `stand_numbers.py`, then in MATLAB `startup_duck`, `duck_numbers`, `build_duck_sim`, `run_tests`
 - [ ] `scripts/motions.py all`: no leg-on-shield contacts; walk, obstacles and get-up pass
 - [ ] `scripts/tune_gains.py` again: the safe gain band depends on servo stiffness and delay
 - [ ] Gate: model mass within 5% of the scale, all Simulink assertions pass, p·td below 0.3

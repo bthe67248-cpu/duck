@@ -6,13 +6,13 @@ set -eo pipefail
 P=${DUCK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}   # repo root (override with DUCK_ROOT)
 source /opt/ros/jazzy/setup.bash
 python3 -m pip install --user --break-system-packages -q onnxruntime mujoco "numpy<2"
-for f in policies/velstand.onnx policies/alpha_sitstand.onnx policies/roulade.onnx policies/alpha_ground_pick.onnx yolo/duck_yolo.onnx model/duck_v3_gc.xml model/duck_v3_gc_world.xml model/world.json; do
+for f in policies/velstand.onnx policies/alpha_sitstand.onnx policies/roulade.onnx policies/alpha_ground_pick.onnx yolo/duck_yolo.onnx model/duck_v4_gc.xml model/duck_v4_gc_world.xml model/world.json; do
   [ -f "$P/$f" ] || { echo "MISSING $P/$f (run scripts/preflight.py on Windows first)"; exit 1; }
 done
 PKG=$P/ros2/duck_nav
 mkdir -p "$PKG/models" "$PKG/mjcf/assets" ~/duck_ws/src
 cp "$P/policies/velstand.onnx" "$P/policies/alpha_sitstand.onnx" "$P/policies/roulade.onnx" "$P/policies/alpha_ground_pick.onnx" "$P/yolo/duck_yolo.onnx" "$PKG/models/"
-cp "$P/model/duck_v3_gc.xml" "$P/model/duck_v3_gc_world.xml" "$P/model/world.json" "$PKG/mjcf/"
+cp "$P/model/duck_v4_gc.xml" "$P/model/duck_v4_gc_world.xml" "$P/model/world.json" "$PKG/mjcf/"
 cp "$P"/model/assets/*.stl "$PKG/mjcf/assets/"
 rm -rf ~/duck_ws/src/duck_nav ~/duck_ws/src/duck_description
 cp -r "$PKG" "$P/ros2/duck_description" ~/duck_ws/src/

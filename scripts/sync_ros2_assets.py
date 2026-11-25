@@ -1,8 +1,8 @@
 r"""sync_ros2_assets.py -- copy the regenerated model files into the ROS 2 packages (what ros2/setup_nav.sh does).
 
 Usage:  .venv\Scripts\python.exe scripts\sync_ros2_assets.py
-Copies model/duck_v3_gc.xml, duck_v3_gc_world.xml, world.json and all model/assets/*.stl into
-ros2/duck_nav/mjcf/ and (xml + assets) ros2/duck_description/mjcf/, plus model/duck_v3.xml and duck_v3_scene.xml
+Copies model/duck_v4_gc.xml, duck_v4_gc_world.xml, world.json and all model/assets/*.stl into
+ros2/duck_nav/mjcf/ and (xml + assets) ros2/duck_description/mjcf/, plus model/duck_v4.xml and duck_v4_scene.xml
 into duck_description/mjcf. Stale head meshes (files in the package assets that model/assets no longer has) are
 removed from the package copies only. The copies are git-ignored; this only refreshes them.
 """
@@ -11,9 +11,9 @@ from pathlib import Path
 
 ROOT = Path(os.environ.get("DUCKLING_ROOT", Path(__file__).resolve().parents[1]))
 M = ROOT / "model"
-jobs = {ROOT / "ros2" / "duck_nav" / "mjcf": ["duck_v3_gc.xml", "duck_v3_gc_world.xml", "world.json"],
-        ROOT / "ros2" / "duck_description" / "mjcf": ["duck_v3_gc.xml", "duck_v3_gc_world.xml", "world.json",
-                                                      "duck_v3.xml", "duck_v3_scene.xml"]}
+jobs = {ROOT / "ros2" / "duck_nav" / "mjcf": ["duck_v4_gc.xml", "duck_v4_gc_world.xml", "world.json"],
+        ROOT / "ros2" / "duck_description" / "mjcf": ["duck_v4_gc.xml", "duck_v4_gc_world.xml", "world.json",
+                                                      "duck_v4.xml", "duck_v4_scene.xml"]}
 for dst, files in jobs.items():
     (dst / "assets").mkdir(parents=True, exist_ok=True)
     for f in files:

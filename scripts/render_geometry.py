@@ -1,7 +1,7 @@
 r"""render_geometry.py -- assembled-robot renders (visual meshes) for the acceptance evidence.
 
 Usage:  .venv\Scripts\python.exe scripts\render_geometry.py [model scene xml] [out dir]
-Default: model/duck_v3_gc_scene.xml -> results/geometry_v3/{front,side,rear,three_quarter,mouth_closeup}.png
+Default: model/duck_v4_gc_scene.xml -> results/geometry_v4/{front,side,rear,three_quarter,mouth_closeup}.png
 plus collision_proxies_*.png showing the S1 primitives (geom group 3) over the visual meshes.
 """
 import os, sys
@@ -10,8 +10,8 @@ import mujoco, numpy as np
 from PIL import Image
 
 ROOT = Path(os.environ.get("DUCKLING_ROOT", Path(__file__).resolve().parents[1]))
-xml = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "model" / "duck_v3_gc_scene.xml"
-out = Path(sys.argv[2]) if len(sys.argv) > 2 else ROOT / "results" / "geometry_v3"
+xml = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "model" / "duck_v4_gc_scene.xml"
+out = Path(sys.argv[2]) if len(sys.argv) > 2 else ROOT / "results" / "geometry_v4"
 out.mkdir(parents=True, exist_ok=True)
 m = mujoco.MjModel.from_xml_path(str(xml)); d = mujoco.MjData(m)
 m.vis.global_.offwidth, m.vis.global_.offheight = 1600, 1200

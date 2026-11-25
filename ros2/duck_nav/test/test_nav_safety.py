@@ -39,7 +39,8 @@ def nav(monkeypatch):
         monkeypatch.setitem(sys.modules, name, module)
     module = importlib.import_module("duck_nav.nav_node")
     node = object.__new__(module.NavNode)
-    parameters = {"pose_timeout": 0.5, "map_timeout": 3.0, "slam_state_timeout": 0.75}
+    parameters = {"pose_timeout": 0.5, "map_timeout": 3.0, "slam_state_timeout": 0.75,
+                  "survey_turn": 0.0, "survey_rate": 0.5, "weak_look_after": 0.0}   # body-depth turns off by default
     node.get_parameter = lambda key: message(value=parameters[key])
     node.now = lambda: 5.0
     node.get_logger = lambda: message(info=lambda _: None)
@@ -50,6 +51,7 @@ def nav(monkeypatch):
     node.path = [(0.0, 0.0), (1.0, 0.0)]
     node.status = ""; node.lock = threading.RLock()
     node.unstick_until = 0.0; node.progress_ref = None
+    node.survey_done = False; node.survey_last = None; node.survey_acc = 0.0; node.weak_since = None
     for name in ("pub_cmd", "pub_head", "pub_status"):
         records = []
         setattr(node, name, message(publish=records.append, records=records))
@@ -120,3 +122,39 @@ def test_revision_during_planning_discards_old_plan(nav, monkeypatch):
     nav.apply_plan = lambda *args: pytest.fail('stale plan applied after graph optimization')
     nav.replan()
     assert nav.path is None
+
+
+def test_survey_turns_in_place_while_weak_but_never_on_stale_inputs(nav):
+    params = {"pose_timeout": 0.5, "map_timeout": 3.0, "slam_state_timeout": 0.75,
+              "survey_turn": 1.0, "survey_rate": 0.5, "weak_look_after": 0.0}
+    nav.get_parameter = lambda key: message(value=params[key])
+    nav.slam_state = "weak"
+    nav.drive_step()
+    assert nav.pub_cmd.records[-1].angular.z == pytest.approx(0.5) and nav.pub_cmd.records[-1].linear.x == 0
+    nav.pose = (0.0, 0.0, 1.2); nav.drive_step()               # turned past survey_turn: survey done
+    assert nav.survey_done and nav.pub_status.records[-1].data == "slam weak"
+    nav.survey_done = False; nav.survey_last = None
+    nav.pose_t = 3.0                                            # stale pose: no turning
+    nav.drive_step()
+    assert nav.pub_cmd.records[-1].angular.z == 0 and nav.pub_status.records[-1].data == "stale pose"
+
+
+def test_look_around_only_after_a_long_weak_spell(nav):
+    params = {"pose_timeout": 0.5, "map_timeout": 3.0, "slam_state_timeout": 0.75,
+              "survey_turn": 0.0, "survey_rate": 0.5, "weak_look_after": 2.0}
+    nav.get_parameter = lambda key: message(value=params[key])
+    nav.slam_state = "weak"
+    nav.drive_step(); assert nav.pub_cmd.records[-1].angular.z == 0
+    nav.now = lambda: 7.5; nav.pose_t = nav.map_t = nav.slam_state_t = 7.5
+    nav.drive_step(); assert nav.pub_cmd.records[-1].angular.z == pytest.approx(0.5)
+    nav.slam_state = "ok"; nav.drive_step(); assert nav.weak_since is None
+
+
+def test_blind_sensor_turns_to_look_but_never_drives(nav):
+    params = {"pose_timeout": 0.5, "map_timeout": 3.0, "slam_state_timeout": 0.75,
+              "survey_turn": 0.0, "survey_rate": 0.5, "weak_look_after": 2.0}
+    nav.get_parameter = lambda key: message(value=params[key])
+    nav.slam_state = "blind"
+    nav.drive_step(); assert nav.pub_cmd.records[-1].linear.x == 0 and nav.pub_cmd.records[-1].angular.z == 0
+    nav.now = lambda: 7.5; nav.pose_t = nav.map_t = nav.slam_state_t = 7.5
+    nav.drive_step(); assert nav.pub_cmd.records[-1].angular.z == pytest.approx(0.5) and nav.pub_cmd.records[-1].linear.x == 0

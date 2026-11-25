@@ -44,6 +44,16 @@ class NavNode(Node):
         self.declare_parameter("min_explored_m2", 2.0)   # reachable known-free area needed before "complete"
         self.declare_parameter("no_frontier_plans", 5)   # consecutive no-frontier plans before judging
         self.declare_parameter("goal_reached_m", 0.36)
+        # body-fixed depth sensor (no head sweep for mapping): turn in place to map all round at start-up, and turn
+        # slowly to find mapped walls again when localisation stays weak. 0 = off (head-mounted sensor).
+        self.declare_parameter("survey_turn", 0.0)        # rad of in-place turning before exploring (2*pi = full turn)
+        self.declare_parameter("survey_rate", 0.5)        # turn command during the survey / look-around
+        self.declare_parameter("weak_look_after", 0.0)    # s of "slam weak" before turning in place to look around
+        # body yaw oscillation while walking (head-sweep substitute for a body-fixed sensor): +- yaw_sweep_rate rad/s
+        # added to the steering command, period yaw_sweep_period s. 0 = off.
+        self.declare_parameter("yaw_sweep_rate", 0.0)
+        self.declare_parameter("yaw_sweep_period", 3.0)
+        self.survey_done = False; self.survey_last = None; self.survey_acc = 0.0; self.weak_since = None
         for name in ("pose_timeout", "map_timeout", "slam_state_timeout", "speed_bound_mps"):
             ds.positive_finite(self.get_parameter(name).value, name)
         self.enabled = bool(self.get_parameter("autonomous").value)
@@ -242,6 +252,38 @@ class NavNode(Node):
             msg.poses.append(ps)
         self.pub_plan.publish(msg)
 
+    # ---- body-fixed depth: survey and look-around ----------------------------------------------
+    def look_around(self, t, fault):
+        """Start-up survey turn and look-around while weak (body-fixed depth sensor). True: a turn was sent.
+        Only soft faults (slam weak / initializing) are overridden; stale pose/map/state still stop the robot."""
+        cmd = Twist(); cmd.angular.z = float(self.get_parameter("survey_rate").value)
+        soft = fault is None or fault.startswith(("slam weak", "slam initializing", "slam blind"))
+        survey = float(self.get_parameter("survey_turn").value)
+        if survey > 0 and not self.survey_done:
+            if self.pose is None or self.grid is None or not soft:
+                return False
+            if self.survey_last is None:
+                self.survey_last, self.survey_acc = self.pose[2], 0.0
+                self.say("survey: turning in place to map all round")
+            self.survey_acc += abs((self.pose[2] - self.survey_last + math.pi) % (2 * math.pi) - math.pi)
+            self.survey_last = self.pose[2]
+            if self.survey_acc < survey:
+                self.pub_cmd.publish(cmd); return True
+            self.survey_done = True; self.say("survey done")
+            return False
+        after = float(self.get_parameter("weak_look_after").value)
+        if after > 0 and fault is not None and fault.startswith(("slam weak", "slam blind")):
+            self.weak_since = t if self.weak_since is None else self.weak_since
+            if t - self.weak_since > after:
+                # turn 1.5 s, hold still 2 s: a confirmed relocalisation needs two agreeing matches
+                if (t - self.weak_since - after) % 3.5 < 1.5:
+                    if self.status != "slam weak: looking around":
+                        self.say("slam weak: looking around")
+                    self.pub_cmd.publish(cmd); return True
+            return False
+        self.weak_since = None
+        return False
+
     # ---- driving ------------------------------------------------------------------------------
     def drive(self):
         with self.lock:                                  # enable/finish cannot slip in between check and publish
@@ -253,6 +295,8 @@ class NavNode(Node):
         t = self.now()
         self.pub_head.publish(Float64(data=0.9 * math.sin(2 * math.pi * t / 4.0)))      # head sweep
         fault = self.fault()
+        if self.look_around(t, fault):
+            return
         if fault or self.mode in ("out_of_map", "start_blocked"):
             self.stop(fault, center_head=False); return      # keep gathering head-sweep constraints while still
         cmd = Twist()
@@ -271,6 +315,10 @@ class NavNode(Node):
                 cmd.angular.z = 1.2 * float(np.sign(e))
             else:
                 cmd.linear.x = float(self.get_parameter("walk_cmd").value); cmd.angular.z = float(np.clip(2.0 * e, -1.0, 1.0))
+                sweep = float(self.get_parameter("yaw_sweep_rate").value)
+                if sweep > 0 and self.mode != "escape":
+                    period = max(float(self.get_parameter("yaw_sweep_period").value), 0.5)
+                    cmd.angular.z = float(np.clip(cmd.angular.z + sweep * math.sin(2 * math.pi * t / period), -1.2, 1.2))
                 if not ds.motion_clear(self.grid, self.pose, float(self.get_parameter("speed_bound_mps").value),
                                        cmd.angular.z, info=self.info,
                                        clearance=float(self.get_parameter("clearance").value),

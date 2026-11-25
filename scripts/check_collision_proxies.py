@@ -1,7 +1,8 @@
 r"""check_collision_proxies.py -- how well do the S1 collision primitives follow the print meshes?
 
 Usage:  .venv\Scripts\python.exe scripts\check_collision_proxies.py
-Uses dense surface samples of the print meshes. Head: upper+lower+bill together (lower-mesh frame, upper shifted +22.35 mm).
+Uses dense surface samples of the print meshes. Head: upper+lower together (lower-mesh frame, upper shifted +22.35 mm);
+jaw: the jaw mesh (lower-mesh frame, mouth closed); body: the V4 body shell (torso frame).
 Reports, per group: % of mesh samples more than 2 mm outside every proxy (under-coverage), the worst such distance, and
 the 95th/max distance of proxy-surface samples to the nearest mesh sample (over-reach; for a hollow shell the proxy
 surface is compared with the outer+inner wall, so interior-lying proxy faces are not penalised heavily).
@@ -16,7 +17,7 @@ ROOT = Path(os.environ.get("DUCKLING_ROOT", Path(__file__).resolve().parents[1])
 P = json.loads((ROOT / "scripts" / "collision_proxies.json").read_text())
 ASSET = ROOT / "model" / "assets"
 SEAM_MM = 22.35
-SHIFT = {"duck_head_lower_v3": 0.0, "duck_head_upper_v3": SEAM_MM, "hat_rear_shield_v3": 0.0}
+SHIFT = {"head_lower_v4": 0.0, "head_upper_v4": SEAM_MM, "jaw_v4": 0.0, "body_shell_v4": 0.0, "torso": 0.0}
 
 
 def sdist(pr, pts):
@@ -42,13 +43,17 @@ def mesh_pts(name, n=120000):
     return pts + [0, 0, SHIFT[name]]
 
 
-groups = {"head": (["duck_head_upper_v3", "duck_head_lower_v3"], P["head"]), "shield": (["hat_rear_shield_v3"], P["shield"])}
+groups = {"head": (["head_upper_v4", "head_lower_v4"], P["head"]), "jaw": (["jaw_v4"], P["jaw"]),
+          "body": (["body_shell_v4"], [dict(name=f"body_{b['name']}_collision", type="box", frame="torso",
+                                             size_mm=[(h - l) / 2 for l, h in zip(b["lo"], b["hi"])],
+                                             centre_mm=[(h + l) / 2 for l, h in zip(b["lo"], b["hi"])])
+                                        for b in json.loads((ROOT / "design/v4/v4_params.json").read_text())["body"]["outer"]])}
 rep = {}
 for g, (meshes, prs) in groups.items():
     pts = np.vstack([mesh_pts(m) for m in meshes])
     shifted = []
     for p in prs:
-        q = dict(p); q["centre_mm"] = list(np.array(p["centre_mm"]) + [0, 0, SHIFT.get(p.get("frame", "hat_rear_shield_v3"), 0.0)])
+        q = dict(p); q["centre_mm"] = list(np.array(p["centre_mm"]) + [0, 0, SHIFT.get(p.get("frame", "torso"), 0.0)])
         shifted.append(q)
     d = np.min([sdist(p, pts) for p in shifted], axis=0)
     tree = cKDTree(pts)

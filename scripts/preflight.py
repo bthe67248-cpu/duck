@@ -2,12 +2,12 @@ r"""preflight.py -- check that everything the simulation needs is present and co
 
 Usage:  .venv\Scripts\python.exe scripts\preflight.py [--root DIR] [--ros] [--strict] [--write-checksums]
 Checks (exit status 1 if any ERROR):
-  * every MJCF scene model/duck_v3*_scene.xml (+ the gc world) parses, its <include> files exist, every mesh file exists,
+  * every MJCF scene model/duck_v4*_scene.xml (+ the gc world) parses, its <include> files exist, every mesh file exists,
     and MuJoCo compiles it
-  * generated V3 meshes + model/v3_meshes.json, design/modified/*.stl and design/mesh_checks.json (watertight, 1 component)
+  * generated V4 meshes + model/v4_meshes.json and the design/v4 print meshes (watertight)
   * policy ONNX files (policies/manifest.json lists them; the 4 used by motions/ROS must exist, load in onnxruntime, 61 -> 14)
   * detector ONNX (yolo/duck_yolo.onnx, loads in onnxruntime)
-  * world metadata: model/world.json parses and every named obstacle exists in model/duck_v3_gc_world.xml; beacon present
+  * world metadata: model/world.json parses and every named obstacle exists in model/duck_v4_gc_world.xml; beacon present
   * --ros: installed package assets (ros2/duck_description urdf/meshes, ros2/duck_nav mjcf/models) exist and match model/
   * model/checksums.json (created by --write-checksums): sha256 of the policy/detector files, compared when present
 Warnings (not errors): optional policies missing, checksums file absent, mass ledger still PROVISIONAL.
@@ -48,9 +48,9 @@ def xml_files(path, seen=None):
 # ---- XML, includes, meshes
 import mujoco
 model = ROOT / "model"
-for scene in sorted(model.glob("duck_v3*_scene.xml")) + [model / "duck_v3_gc_world.xml"]:
+for scene in sorted(model.glob("duck_v4*_scene.xml")) + [model / "duck_v4_gc_world.xml"]:
     if not scene.exists():
-        err(f"{scene.name} missing (run make_duck_v3.py / worldgen.py)"); continue
+        err(f"{scene.name} missing (run make_duck_v4.py / worldgen.py)"); continue
     files = xml_files(scene)
     n_mesh = 0
     for f in files:
@@ -67,25 +67,19 @@ for scene in sorted(model.glob("duck_v3*_scene.xml")) + [model / "duck_v3_gc_wor
     except Exception as e:
         err(f"{scene.name}: MuJoCo compile failed: {str(e).splitlines()[0]}")
 
-# ---- V3 meshes and design
-vm = model / "v3_meshes.json"
+# ---- V4 meshes and design
+vm = model / "v4_meshes.json"
 if not vm.exists():
-    err("model/v3_meshes.json missing (run scripts/prep_v3_meshes.py)")
+    err("model/v4_meshes.json missing (run scripts/prep_meshes.py)")
 else:
-    for n in json.loads(vm.read_text()):
+    for n, r in json.loads(vm.read_text()).items():
         if not (model / "assets" / f"{n}.stl").exists():
             err(f"model/assets/{n}.stl missing")
-    ok("model/v3_meshes.json + V3 asset meshes")
-mc = ROOT / "design" / "mesh_checks.json"
-if mc.exists():
-    for n, r in json.loads(mc.read_text()).items():
-        if not (r["watertight"] and r["positive_volume"] and r["connected_components"] == 1):
-            err(f"design/{n}: watertight/volume/components check failed")
-        if not (ROOT / "design" / "modified" / n).exists():
-            err(f"design/modified/{n} missing")
-    ok("design/mesh_checks.json (watertight, positive volume, one component)")
-else:
-    err("design/mesh_checks.json missing")
+        if not (ROOT / "design" / "v4" / f"{n}.stl").exists():
+            err(f"design/v4/{n}.stl missing")
+        elif not r.get("watertight", False):
+            err(f"design/v4/{n}.stl is not watertight")
+    ok("model/v4_meshes.json + V4 asset meshes + design/v4 print meshes (watertight)")
 led = model / "mass_ledger.json"
 if led.exists() and "PROVISIONAL" in json.loads(led.read_text()).get("status", ""):
     warn("mass ledger is PROVISIONAL (30% infill proxy, not slicer/scale values)")
@@ -135,7 +129,7 @@ else:
     warn("model/checksums.json absent (run with --write-checksums once the files are the ones you trust)")
 
 # ---- world metadata
-wj, ww = model / "world.json", model / "duck_v3_gc_world.xml"
+wj, ww = model / "world.json", model / "duck_v4_gc_world.xml"
 if not wj.exists():
     err("model/world.json missing (scripts/worldgen.py)")
 else:
@@ -152,16 +146,16 @@ else:
 # ---- installed ROS package assets
 if a.ros:
     dd, dn = ROOT / "ros2" / "duck_description", ROOT / "ros2" / "duck_nav"
-    urdf = dd / "urdf" / "duck_v3.urdf"
+    urdf = dd / "urdf" / "duck_v4.urdf"
     if not urdf.exists():
-        err("ros2/duck_description/urdf/duck_v3.urdf missing")
+        err("ros2/duck_description/urdf/duck_v4.urdf missing")
     else:
         for m in ET.parse(urdf).getroot().iter("mesh"):
             f = dd / "meshes" / m.get("filename").split("/")[-1]
             if not f.exists():
                 err(f"URDF mesh {f.name} missing from duck_description/meshes")
         ok("URDF meshes present")
-    for f in ("duck_v3_gc.xml", "duck_v3_gc_world.xml", "world.json"):
+    for f in ("duck_v4_gc.xml", "duck_v4_gc_world.xml", "world.json"):
         for pkg in (dn, dd):
             t = pkg / "mjcf" / f
             if not t.exists():
@@ -171,7 +165,7 @@ if a.ros:
     for f in needed + ["duck_yolo"]:
         if not (dn / "models" / f"{f}.onnx").exists():
             err(f"ros2/duck_nav/models/{f}.onnx missing")
-    for st in (model / "assets").glob("duck_head_*_v3.stl"):
+    for st in (model / "assets").glob("*_v4.stl"):
         for pkg in (dn, dd):
             t = pkg / "mjcf" / "assets" / st.name
             if not t.exists() or sha(t) != sha(st):

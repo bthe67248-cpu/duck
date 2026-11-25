@@ -1,13 +1,13 @@
 r"""worldgen.py -- build MuJoCo worlds (walls, boxes, floor clutter, beacon) around the V3 duck.
 
-Usage:  .venv\Scripts\python.exe scripts\worldgen.py      -> writes model\duck_v3_gc_world.xml (the ROS 2 demo world)
+Usage:  .venv\Scripts\python.exe scripts\worldgen.py      -> writes model\duck_v4_gc_world.xml (the ROS 2 demo world)
 Also imported by yolo_dataset.py, which asks for random worlds.
 """
 import random
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SCENE = ROOT / "model" / "duck_v3_gc_scene.xml"
+SCENE = ROOT / "model" / "duck_v4_gc_scene.xml"
 GEOM = '<geom name="{n}" type="box" size="{sx:.3f} {sy:.3f} {sz:.3f}" pos="{x:.3f} {y:.3f} {sz:.3f}" euler="0 0 {yaw:.3f}" rgba="{c}"/>\n'
 
 
@@ -71,7 +71,7 @@ def random_world(rng: random.Random):
 
 if __name__ == "__main__":
     xml, items, goal = demo_world()
-    out = ROOT / "model" / "duck_v3_gc_world.xml"
+    out = ROOT / "model" / "duck_v4_gc_world.xml"
     out.write_text(xml)
     import json
     js = [dict(name=n, x=x, y=y, sx=sx, sy=sy, sz=sz, yaw=yaw, rgba=[float(v) for v in c.split()]) for n, x, y, sx, sy, sz, yaw, c in items]

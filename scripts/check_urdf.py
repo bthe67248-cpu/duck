@@ -4,7 +4,7 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 import mujoco, numpy as np
 ROOT = Path(__file__).resolve().parents[1]
-m = mujoco.MjModel.from_xml_path(str(ROOT / "model" / "duck_v3_scene.xml")); d = mujoco.MjData(m)
+m = mujoco.MjModel.from_xml_path(str(ROOT / "model" / "duck_v4_scene.xml")); d = mujoco.MjData(m)
 mujoco.mj_resetDataKeyframe(m, d, mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_KEY, "STAND")); mujoco.mj_forward(m, d)
 q = {m.joint(i).name: d.qpos[m.jnt_qposadr[i]] for i in range(1, m.njnt)}
 def rot_rpy(r, p, y):
@@ -13,7 +13,7 @@ def rot_rpy(r, p, y):
 def rot_axis(a, t):
     a = np.array(a) / np.linalg.norm(a); K = np.array([[0, -a[2], a[1]], [a[2], 0, -a[0]], [-a[1], a[0], 0]])
     return np.eye(3) + math.sin(t) * K + (1 - math.cos(t)) * K @ K
-urdf = ET.parse(ROOT / "ros2" / "duck_description" / "urdf" / "duck_v3.urdf").getroot()
+urdf = ET.parse(ROOT / "ros2" / "duck_description" / "urdf" / "duck_v4.urdf").getroot()
 T = {"trunk_base": (d.xmat[1].reshape(3, 3).copy(), d.xpos[1].copy())}
 worst = 0.0
 for j in urdf.findall("joint"):                      # joints are written parent-before-child

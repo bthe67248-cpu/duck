@@ -1,7 +1,7 @@
 r"""push_test.py -- MuJoCo-only cross-check of the Simulink balance loop (no MATLAB needed).
 
 Usage:
-  .venv\Scripts\python.exe scripts\push_test.py model\duck_v3_scene.xml <push N> [--off] [--view]
+  .venv\Scripts\python.exe scripts\push_test.py model\duck_v4_scene.xml <push N> [--off] [--view]
       [--kth K] [--kd K] [--khip K] [--delay N] [--T seconds] [--search [--cap N]]
 
 Same structure as the Simulink Controller: 100 Hz, complementary tilt filter from gyro+accel,

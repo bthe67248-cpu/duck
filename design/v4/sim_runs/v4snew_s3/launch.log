@@ -1,0 +1,766 @@
+[INFO] [launch]: All log files can be found below ~/.ros/log/2026-11-24-17-42-28-422415-DESKTOP-D7NMGD0-3708
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [world_sim-1]: process started with pid [3832]
+[INFO] [robot_state_publisher-2]: process started with pid [3833]
+[INFO] [yolo_node-3]: process started with pid [3834]
+[INFO] [slam_node-4]: process started with pid [3835]
+[INFO] [nav_node-5]: process started with pid [3836]
+[INFO] [score_node-6]: process started with pid [3837]
+[robot_state_publisher-2] [WARN] [1795570948.641074473] [kdl_parser]: The root link trunk_base has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
+[robot_state_publisher-2] [INFO] [1795570948.641200876] [robot_state_publisher]: Robot initialized
+[yolo_node-3] [INFO] [1795570949.535231359] [duck_yolo]: YOLO input 320x256, classes ['beacon', 'box']
+[slam_node-4] [INFO] [1795570949.665759888] [duck_slam]: relocalisation window +-0.80 m / +-25.0 deg after 3.0 s unhealthy, confirm True, bootstrap until turned 6.6 rad; map keyframes 0.10 m / 10 deg, unknown_ll -1.125, reloc partial False, unconfirmed reloc up to 0.08 m
+[world_sim-1] Dropped Escape call with ulEscapeCode : 0x03007703
+[world_sim-1] [INFO] [1795570950.894393570] [world_sim]: world_sim up (realistic sensors): 50 Hz policy, 200 Hz physics, camera 320x240 at 5 Hz, ToF 25x25 at 17 Hz, latency 0.06 s, FOV 70x60 deg, range 0.2-2.5 m, mount body
+[nav_node-5] [INFO] [1795570950.939485517] [duck_nav]: [t=0.1 s] waiting for observations
+[nav_node-5] [INFO] [1795570951.919730183] [duck_nav]: [t=1.1 s] survey: turning in place to map all round
+[nav_node-5] [INFO] [1795570952.813115582] [duck_nav]: [t=2.0 s] slam weak
+[nav_node-5] [INFO] [1795570955.579248190] [duck_nav]: [t=4.0 s] exploring
+[nav_node-5] [INFO] [1795570961.540764797] [duck_nav]: [t=10.0 s] slam weak
+[nav_node-5] [INFO] [1795570964.649974757] [duck_nav]: [t=13.1 s] exploring
+[nav_node-5] [INFO] [1795570969.445869426] [duck_nav]: [t=17.9 s] survey done
+[slam_node-4] [INFO] [1795570969.609632838] [duck_slam]: frame processing: mean 19.7 ms, p95 27.6 ms, max 38.9 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795570969.726481136] [duck_nav]: [t=18.2 s] exploring
+[nav_node-5] [INFO] [1795570977.100644657] [duck_nav]: [t=25.6 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795570977.749036692] [duck_nav]: [t=26.2 s] exploring
+[nav_node-5] [INFO] [1795570977.810398615] [duck_nav]: [t=26.3 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795570978.792822979] [duck_nav]: [t=27.2 s] exploring
+[nav_node-5] [INFO] [1795570978.799321345] [duck_nav]: [t=27.3 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795570979.746132630] [duck_nav]: [t=28.2 s] exploring
+[nav_node-5] [INFO] [1795570979.796855558] [duck_nav]: [t=28.3 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795570980.767822686] [duck_nav]: [t=29.2 s] exploring
+[nav_node-5] [INFO] [1795570980.798021920] [duck_nav]: [t=29.3 s] path clearance guard: turning in place and replanning
+[yolo_node-3] [INFO] [1795570981.535270712] [duck_yolo]: 149 frames, 19 ms/inference, detections so far: {'beacon': 0, 'box': 41}
+[world_sim-1] [INFO] [1795570981.578748531] [world_sim]: sim 30 s, wall 30 s, render 45 ms per camera frame
+[nav_node-5] [INFO] [1795570981.733725648] [duck_nav]: [t=30.2 s] exploring
+[nav_node-5] [INFO] [1795570981.753645206] [duck_nav]: [t=30.2 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795570982.728419729] [duck_nav]: [t=31.2 s] exploring
+[nav_node-5] [INFO] [1795570982.736944190] [duck_nav]: [t=31.2 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795570983.702525347] [duck_nav]: [t=32.2 s] exploring
+[nav_node-5] [INFO] [1795570983.803380975] [duck_nav]: [t=32.3 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795570984.819153756] [duck_nav]: [t=33.3 s] exploring
+[nav_node-5] [INFO] [1795570984.847842108] [duck_nav]: no progress for 8 s: turning in place and replanning
+[nav_node-5] [INFO] [1795570984.848564499] [duck_nav]: [t=33.3 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795570985.784464818] [duck_nav]: [t=34.2 s] exploring
+[nav_node-5] [INFO] [1795570987.627445772] [duck_nav]: [t=35.4 s] slam weak
+[slam_node-4] [INFO] [1795570988.336733677] [duck_slam]: frame processing: mean 14.1 ms, p95 22.2 ms, max 29.9 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795570988.481583423] [duck_nav]: [t=36.2 s] exploring
+[nav_node-5] [INFO] [1795570989.627854688] [duck_nav]: [t=37.4 s] slam weak
+[nav_node-5] [INFO] [1795570990.515864729] [duck_nav]: [t=38.2 s] exploring
+[nav_node-5] [INFO] [1795570990.895615950] [duck_nav]: [t=38.6 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795570991.582705395] [duck_nav]: [t=39.3 s] exploring
+[nav_node-5] [INFO] [1795570991.627951777] [duck_nav]: [t=39.4 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795570992.565767719] [duck_nav]: [t=40.3 s] exploring
+[nav_node-5] [INFO] [1795570992.608818922] [duck_nav]: [t=40.3 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795570993.586439781] [duck_nav]: [t=41.3 s] exploring
+[nav_node-5] [INFO] [1795570993.667446328] [duck_nav]: [t=41.4 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795570994.477540564] [duck_nav]: [t=42.2 s] exploring
+[nav_node-5] [INFO] [1795570994.527656427] [duck_nav]: [t=42.3 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795570995.584134396] [duck_nav]: [t=43.3 s] exploring
+[nav_node-5] [INFO] [1795570995.742850217] [duck_nav]: [t=43.5 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795570996.498712681] [duck_nav]: [t=44.2 s] exploring
+[nav_node-5] [INFO] [1795570996.535669206] [duck_nav]: [t=44.3 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795570997.477647524] [duck_nav]: [t=45.2 s] exploring
+[nav_node-5] [INFO] [1795570997.529476816] [duck_nav]: [t=45.3 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795570997.827824205] [duck_nav]: no progress for 8 s: turning in place and replanning
+[nav_node-5] [INFO] [1795570998.479928368] [duck_nav]: [t=46.2 s] exploring
+[nav_node-5] [INFO] [1795570999.847166152] [duck_nav]: [t=47.6 s] slam weak
+[nav_node-5] [INFO] [1795571000.032126026] [duck_nav]: [t=47.8 s] slam blind
+[nav_node-5] [INFO] [1795571000.109461550] [duck_nav]: [t=47.8 s] slam weak
+[nav_node-5] [INFO] [1795571002.497136950] [duck_nav]: [t=50.2 s] exploring
+[nav_node-5] [INFO] [1795571002.534765566] [duck_nav]: [t=50.3 s] slam weak
+[slam_node-4] [INFO] [1795571006.336790657] [duck_slam]: frame processing: mean 12.9 ms, p95 22.4 ms, max 39.5 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795571007.446177661] [duck_nav]: [t=55.2 s] slam blind
+[nav_node-5] [INFO] [1795571007.527514097] [duck_nav]: [t=55.3 s] slam weak
+[nav_node-5] [INFO] [1795571009.927687547] [duck_nav]: [t=57.7 s] slam blind
+[nav_node-5] [INFO] [1795571009.975578260] [duck_nav]: [t=57.7 s] slam weak
+[yolo_node-3] [INFO] [1795571012.268764070] [duck_yolo]: 299 frames, 20 ms/inference, detections so far: {'beacon': 0, 'box': 79}
+[world_sim-1] [INFO] [1795571012.313278642] [world_sim]: sim 60 s, wall 60 s, render 44 ms per camera frame
+[nav_node-5] [INFO] [1795571018.070639411] [duck_nav]: [t=65.8 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571018.269564954] [duck_nav]: [t=66.0 s] slam weak
+[nav_node-5] [INFO] [1795571018.270614932] [duck_nav]: [t=66.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571020.007969218] [duck_nav]: [t=67.0 s] slam weak
+[nav_node-5] [INFO] [1795571020.020405810] [duck_nav]: [t=67.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571020.263164312] [duck_nav]: [t=67.3 s] slam weak
+[nav_node-5] [INFO] [1795571021.514797820] [duck_nav]: [t=68.5 s] slam blind
+[nav_node-5] [INFO] [1795571021.561593664] [duck_nav]: [t=68.6 s] slam weak
+[nav_node-5] [INFO] [1795571021.906366971] [duck_nav]: [t=68.9 s] slam blind
+[nav_node-5] [INFO] [1795571022.013623463] [duck_nav]: [t=69.0 s] slam weak
+[nav_node-5] [INFO] [1795571022.062129536] [duck_nav]: [t=69.1 s] slam blind
+[nav_node-5] [INFO] [1795571022.112658061] [duck_nav]: [t=69.1 s] slam weak
+[nav_node-5] [INFO] [1795571022.265802312] [duck_nav]: [t=69.3 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571023.000940598] [duck_nav]: [t=70.0 s] slam weak
+[nav_node-5] [INFO] [1795571023.004334409] [duck_nav]: [t=70.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571023.760792442] [duck_nav]: [t=70.8 s] slam weak
+[slam_node-4] [INFO] [1795571025.135939598] [duck_slam]: frame processing: mean 18.2 ms, p95 37.7 ms, max 51.3 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795571025.761419725] [duck_nav]: [t=72.8 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571026.016500226] [duck_nav]: [t=73.0 s] slam weak
+[nav_node-5] [INFO] [1795571026.018391115] [duck_nav]: [t=73.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571027.007489163] [duck_nav]: [t=74.0 s] slam weak
+[nav_node-5] [INFO] [1795571027.008373091] [duck_nav]: [t=74.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571027.277396555] [duck_nav]: [t=74.3 s] slam weak
+[nav_node-5] [INFO] [1795571027.363078287] [duck_nav]: [t=74.4 s] slam blind
+[nav_node-5] [INFO] [1795571027.402482470] [duck_nav]: [t=74.4 s] slam weak
+[nav_node-5] [INFO] [1795571029.264329607] [duck_nav]: [t=76.3 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571030.034570397] [duck_nav]: [t=77.0 s] slam weak
+[nav_node-5] [INFO] [1795571030.035795591] [duck_nav]: [t=77.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571030.763682823] [duck_nav]: [t=77.8 s] slam weak
+[nav_node-5] [INFO] [1795571032.762042444] [duck_nav]: [t=79.8 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571033.009044388] [duck_nav]: [t=80.0 s] slam weak
+[nav_node-5] [INFO] [1795571033.010521455] [duck_nav]: [t=80.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571034.001701820] [duck_nav]: [t=81.0 s] slam weak
+[nav_node-5] [INFO] [1795571034.003220182] [duck_nav]: [t=81.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571034.264326880] [duck_nav]: [t=81.3 s] slam weak
+[nav_node-5] [INFO] [1795571036.265282261] [duck_nav]: [t=83.3 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571037.003325222] [duck_nav]: [t=84.0 s] slam weak
+[nav_node-5] [INFO] [1795571037.008975652] [duck_nav]: [t=84.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571037.764046112] [duck_nav]: [t=84.8 s] slam weak
+[nav_node-5] [INFO] [1795571039.225245218] [duck_nav]: [t=86.2 s] exploring
+[nav_node-5] [INFO] [1795571040.509545517] [duck_nav]: [t=87.5 s] slam weak
+[nav_node-5] [INFO] [1795571042.263369828] [duck_nav]: [t=89.2 s] exploring
+[nav_node-5] [INFO] [1795571042.603182472] [duck_nav]: [t=89.6 s] slam weak
+[yolo_node-3] [INFO] [1795571043.000398685] [duck_yolo]: 449 frames, 20 ms/inference, detections so far: {'beacon': 0, 'box': 115}
+[world_sim-1] [INFO] [1795571043.050617419] [world_sim]: sim 90 s, wall 90 s, render 46 ms per camera frame
+[nav_node-5] [INFO] [1795571043.271919467] [duck_nav]: [t=90.3 s] exploring
+[nav_node-5] [INFO] [1795571043.981335353] [duck_nav]: [t=91.0 s] slam weak
+[slam_node-4] [INFO] [1795571044.149782274] [duck_slam]: frame processing: mean 35.6 ms, p95 59.6 ms, max 75.7 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795571044.237852655] [duck_nav]: [t=91.2 s] exploring
+[nav_node-5] [INFO] [1795571044.507109419] [duck_nav]: [t=91.5 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571045.233202866] [duck_nav]: [t=92.2 s] exploring
+[nav_node-5] [INFO] [1795571045.271764464] [duck_nav]: [t=92.3 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571046.190797283] [duck_nav]: [t=93.2 s] exploring
+[nav_node-5] [INFO] [1795571049.908483425] [duck_nav]: [t=96.9 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571050.292348325] [duck_nav]: [t=97.3 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1795571053.013225502] [duck_nav]: [t=99.3 s] exploring
+[nav_node-5] [INFO] [1795571057.322106988] [duck_nav]: [t=103.6 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571058.116631122] [duck_nav]: [t=104.4 s] exploring
+[nav_node-5] [INFO] [1795571058.144333109] [duck_nav]: [t=104.4 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571059.062009980] [duck_nav]: [t=105.3 s] exploring
+[nav_node-5] [INFO] [1795571059.103254316] [duck_nav]: [t=105.4 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571060.015379891] [duck_nav]: [t=106.3 s] exploring
+[nav_node-5] [INFO] [1795571060.051353260] [duck_nav]: [t=106.3 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571061.066623456] [duck_nav]: [t=107.3 s] exploring
+[nav_node-5] [INFO] [1795571061.110465447] [duck_nav]: [t=107.4 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571062.011100297] [duck_nav]: [t=108.2 s] exploring
+[nav_node-5] [INFO] [1795571062.014474499] [duck_nav]: [t=108.3 s] path clearance guard: turning in place and replanning
+[slam_node-4] [INFO] [1795571062.892375384] [duck_slam]: frame processing: mean 11.3 ms, p95 19.7 ms, max 37.2 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795571063.040120674] [duck_nav]: [t=109.3 s] exploring
+[nav_node-5] [INFO] [1795571063.048324826] [duck_nav]: [t=109.3 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571064.041215471] [duck_nav]: [t=110.3 s] exploring
+[nav_node-5] [INFO] [1795571064.056089737] [duck_nav]: [t=110.3 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571065.066569614] [duck_nav]: [t=111.3 s] exploring
+[nav_node-5] [INFO] [1795571065.132287136] [duck_nav]: [t=111.4 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571065.407735643] [duck_nav]: no progress for 8 s: turning in place and replanning
+[nav_node-5] [INFO] [1795571066.135289547] [duck_nav]: [t=112.4 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1795571067.069512017] [duck_nav]: [t=113.3 s] exploring
+[nav_node-5] [INFO] [1795571068.523863170] [duck_nav]: [t=114.8 s] slam weak
+[nav_node-5] [INFO] [1795571069.343069873] [duck_nav]: [t=115.6 s] slam blind
+[nav_node-5] [INFO] [1795571069.443993024] [duck_nav]: [t=115.7 s] slam weak
+[nav_node-5] [INFO] [1795571071.542784700] [duck_nav]: [t=117.8 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571071.744418712] [duck_nav]: [t=118.0 s] slam weak
+[nav_node-5] [INFO] [1795571071.745947273] [duck_nav]: [t=118.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571072.742650025] [duck_nav]: [t=119.0 s] slam weak
+[nav_node-5] [INFO] [1795571072.743943485] [duck_nav]: [t=119.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571073.051752103] [duck_nav]: [t=119.3 s] slam weak
+[yolo_node-3] [INFO] [1795571073.741523004] [duck_yolo]: 599 frames, 21 ms/inference, detections so far: {'beacon': 0, 'box': 290}
+[world_sim-1] [INFO] [1795571073.795502537] [world_sim]: sim 120 s, wall 120 s, render 48 ms per camera frame
+[nav_node-5] [INFO] [1795571075.044464325] [duck_nav]: [t=121.3 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571075.744852137] [duck_nav]: [t=122.0 s] slam weak
+[nav_node-5] [INFO] [1795571075.746959119] [duck_nav]: [t=122.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571076.549766692] [duck_nav]: [t=122.8 s] slam weak
+[nav_node-5] [INFO] [1795571078.551513080] [duck_nav]: [t=124.8 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571078.741946792] [duck_nav]: [t=125.0 s] slam blind
+[nav_node-5] [INFO] [1795571078.743112226] [duck_nav]: [t=125.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571079.745057232] [duck_nav]: [t=126.0 s] slam weak
+[nav_node-5] [INFO] [1795571079.747036907] [duck_nav]: [t=126.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571080.047286263] [duck_nav]: [t=126.3 s] slam weak
+[slam_node-4] [INFO] [1795571083.023845283] [duck_slam]: frame processing: mean 34.3 ms, p95 77.6 ms, max 120.9 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795571083.459000988] [duck_nav]: [t=129.7 s] slam blind
+[nav_node-5] [INFO] [1795571083.511949925] [duck_nav]: [t=129.8 s] slam weak
+[nav_node-5] [INFO] [1795571084.122406612] [duck_nav]: [t=130.4 s] slam blind
+[nav_node-5] [INFO] [1795571084.205615650] [duck_nav]: [t=130.5 s] slam weak
+[nav_node-5] [INFO] [1795571091.524176101] [duck_nav]: [t=137.0 s] slam blind
+[nav_node-5] [INFO] [1795571091.623443094] [duck_nav]: [t=137.1 s] slam weak
+[nav_node-5] [INFO] [1795571091.885072724] [duck_nav]: [t=137.4 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571092.529217635] [duck_nav]: [t=138.0 s] slam weak
+[nav_node-5] [INFO] [1795571092.529935673] [duck_nav]: [t=138.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571093.844904905] [duck_nav]: [t=139.3 s] exploring
+[nav_node-5] [INFO] [1795571096.423745104] [duck_nav]: [t=141.9 s] slam weak
+[nav_node-5] [INFO] [1795571097.844773590] [duck_nav]: [t=143.3 s] exploring
+[nav_node-5] [INFO] [1795571099.291322172] [duck_nav]: [t=144.8 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571099.922398377] [duck_nav]: [t=145.4 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1795571101.848137924] [duck_nav]: [t=147.3 s] exploring
+[slam_node-4] [INFO] [1795571102.027745297] [duck_slam]: frame processing: mean 19.0 ms, p95 51.9 ms, max 77.8 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795571102.985496947] [duck_nav]: [t=148.4 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571103.921093632] [duck_nav]: [t=149.4 s] inside the clearance margin: backing out along known-free cells
+[yolo_node-3] [INFO] [1795571104.522183960] [duck_yolo]: 749 frames, 20 ms/inference, detections so far: {'beacon': 0, 'box': 422}
+[world_sim-1] [INFO] [1795571104.567890855] [world_sim]: sim 150 s, wall 150 s, render 46 ms per camera frame
+[nav_node-5] [INFO] [1795571105.848957517] [duck_nav]: [t=151.3 s] exploring
+[nav_node-5] [INFO] [1795571107.027917183] [duck_nav]: [t=152.5 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571107.891092231] [duck_nav]: [t=153.4 s] exploring
+[nav_node-5] [INFO] [1795571107.892876261] [duck_nav]: [t=153.4 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571108.852757533] [duck_nav]: [t=154.3 s] exploring
+[nav_node-5] [INFO] [1795571108.886549979] [duck_nav]: [t=154.4 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571109.961258431] [duck_nav]: [t=155.4 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1795571111.839549144] [duck_nav]: [t=157.3 s] exploring
+[nav_node-5] [INFO] [1795571113.284098166] [duck_nav]: [t=158.8 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571113.968847002] [duck_nav]: [t=159.4 s] exploring
+[nav_node-5] [INFO] [1795571113.985451257] [duck_nav]: [t=159.5 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571114.852756287] [duck_nav]: [t=160.3 s] slam blind
+[nav_node-5] [INFO] [1795571117.547009994] [duck_nav]: [t=163.0 s] slam weak
+[nav_node-5] [INFO] [1795571117.824363146] [duck_nav]: [t=163.3 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571119.295699763] [duck_nav]: [t=164.0 s] slam weak
+[nav_node-5] [INFO] [1795571119.296949027] [duck_nav]: [t=164.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571120.684702965] [duck_nav]: [t=165.4 s] exploring
+[nav_node-5] [INFO] [1795571120.712905785] [duck_nav]: [t=165.4 s] path clearance guard: turning in place and replanning
+[slam_node-4] [INFO] [1795571120.783163539] [duck_slam]: frame processing: mean 8.5 ms, p95 22.1 ms, max 31.0 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795571121.702777571] [duck_nav]: [t=166.4 s] exploring
+[nav_node-5] [INFO] [1795571122.887640671] [duck_nav]: [t=167.6 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571123.612052032] [duck_nav]: [t=168.3 s] exploring
+[nav_node-5] [INFO] [1795571123.647247106] [duck_nav]: [t=168.4 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571123.884925079] [duck_nav]: [t=168.6 s] slam weak
+[nav_node-5] [INFO] [1795571125.704840893] [duck_nav]: [t=170.4 s] exploring
+[nav_node-5] [INFO] [1795571130.408567056] [duck_nav]: [t=175.1 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571130.694383240] [duck_nav]: [t=175.4 s] exploring
+[yolo_node-3] [INFO] [1795571135.286345208] [duck_yolo]: 899 frames, 26 ms/inference, detections so far: {'beacon': 0, 'box': 553}
+[world_sim-1] [INFO] [1795571135.368191740] [world_sim]: sim 180 s, wall 180 s, render 66 ms per camera frame
+[slam_node-4] [INFO] [1795571138.784274872] [duck_slam]: frame processing: mean 17.2 ms, p95 30.2 ms, max 49.7 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795571145.618359231] [duck_nav]: [t=190.2 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571145.657464922] [duck_nav]: [t=190.4 s] exploring
+[nav_node-5] [INFO] [1795571145.688210166] [duck_nav]: [t=190.4 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571146.666329921] [duck_nav]: [t=191.4 s] exploring
+[nav_node-5] [INFO] [1795571146.687610617] [duck_nav]: [t=191.4 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571147.756711782] [duck_nav]: [t=192.5 s] exploring
+[nav_node-5] [INFO] [1795571147.788661457] [duck_nav]: [t=192.5 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571148.657095980] [duck_nav]: [t=193.3 s] exploring
+[nav_node-5] [INFO] [1795571148.660126584] [duck_nav]: [t=193.4 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571149.662128874] [duck_nav]: [t=194.4 s] exploring
+[nav_node-5] [INFO] [1795571149.725930070] [duck_nav]: [t=194.4 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571150.637748071] [duck_nav]: [t=195.3 s] exploring
+[nav_node-5] [INFO] [1795571150.650886398] [duck_nav]: [t=195.4 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571152.361047236] [duck_nav]: [t=196.3 s] exploring
+[nav_node-5] [INFO] [1795571152.408209582] [duck_nav]: [t=196.4 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571153.448932381] [duck_nav]: [t=197.4 s] exploring
+[nav_node-5] [INFO] [1795571153.506479520] [duck_nav]: [t=197.5 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571154.332739670] [duck_nav]: [t=198.3 s] exploring
+[nav_node-5] [INFO] [1795571154.334564103] [duck_nav]: no progress for 8 s: turning in place and replanning
+[nav_node-5] [INFO] [1795571154.335257801] [duck_nav]: [t=198.3 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571155.407941379] [duck_nav]: [t=199.4 s] exploring
+[nav_node-5] [INFO] [1795571156.399342854] [duck_nav]: [t=200.3 s] slam weak
+[slam_node-4] [INFO] [1795571157.530462468] [duck_slam]: frame processing: mean 10.3 ms, p95 22.5 ms, max 36.0 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795571159.355404528] [duck_nav]: [t=203.3 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571160.360356293] [duck_nav]: [t=204.3 s] exploring
+[nav_node-5] [INFO] [1795571162.505270058] [duck_nav]: [t=206.4 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1795571163.019538123] [duck_nav]: [t=207.0 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571163.455906893] [duck_nav]: [t=207.4 s] exploring
+[yolo_node-3] [INFO] [1795571166.038772739] [duck_yolo]: 1049 frames, 19 ms/inference, detections so far: {'beacon': 0, 'box': 712}
+[world_sim-1] [INFO] [1795571166.084808364] [world_sim]: sim 210 s, wall 210 s, render 45 ms per camera frame
+[slam_node-4] [INFO] [1795571175.592095105] [duck_slam]: frame processing: mean 12.6 ms, p95 24.8 ms, max 72.7 ms over 300 frames (625 zones)
+[slam_node-4] [INFO] [1795571176.319968549] [duck_slam]: beacon located by YOLO + tof: (4.08, 1.64) in the map
+[nav_node-5] [INFO] [1795571181.422097848] [duck_nav]: [t=225.4 s] heading for the beacon
+[slam_node-4] [INFO] [1795571194.368691726] [duck_slam]: frame processing: mean 15.1 ms, p95 25.7 ms, max 32.8 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795571194.709780785] [duck_nav]: no progress for 8 s: turning in place and replanning
+[yolo_node-3] [INFO] [1795571196.805309334] [duck_yolo]: 1199 frames, 26 ms/inference, detections so far: {'beacon': 60, 'box': 785}
+[world_sim-1] [INFO] [1795571196.864833846] [world_sim]: sim 240 s, wall 240 s, render 57 ms per camera frame
+[nav_node-5] [INFO] [1795571206.138588673] [duck_nav]: [t=249.2 s] slam weak
+[nav_node-5] [INFO] [1795571210.767613703] [duck_nav]: [t=254.0 s] slam blind
+[nav_node-5] [INFO] [1795571210.823915936] [duck_nav]: [t=254.0 s] slam weak
+[nav_node-5] [INFO] [1795571211.307929174] [duck_nav]: [t=254.5 s] slam blind
+[nav_node-5] [INFO] [1795571211.385938526] [duck_nav]: [t=254.6 s] slam weak
+[slam_node-4] [INFO] [1795571212.360659829] [duck_slam]: frame processing: mean 18.1 ms, p95 30.1 ms, max 48.4 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795571213.671847077] [duck_nav]: [t=256.9 s] slam blind
+[nav_node-5] [INFO] [1795571213.710112578] [duck_nav]: [t=256.9 s] slam weak
+[nav_node-5] [INFO] [1795571219.549360956] [duck_nav]: [t=262.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571219.586863408] [duck_nav]: [t=262.0 s] slam weak
+[nav_node-5] [INFO] [1795571219.589539796] [duck_nav]: [t=262.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571220.584750884] [duck_nav]: [t=263.0 s] slam weak
+[nav_node-5] [INFO] [1795571220.585548589] [duck_nav]: [t=263.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571221.979745533] [duck_nav]: [t=264.4 s] heading for the beacon
+[yolo_node-3] [INFO] [1795571227.583359070] [duck_yolo]: 1349 frames, 21 ms/inference, detections so far: {'beacon': 115, 'box': 811}
+[world_sim-1] [INFO] [1795571227.634853418] [world_sim]: sim 270 s, wall 270 s, render 46 ms per camera frame
+[nav_node-5] [INFO] [1795571228.589516919] [duck_nav]: [t=271.0 s] beacon reached; exploring the rest of the room
+[slam_node-4] [INFO] [1795571231.238060617] [duck_slam]: frame processing: mean 17.5 ms, p95 28.9 ms, max 70.2 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795571246.090259161] [duck_nav]: [t=288.5 s] slam weak
+[nav_node-5] [INFO] [1795571248.049164084] [duck_nav]: [t=290.5 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571248.084486313] [duck_nav]: [t=290.5 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571249.005679154] [duck_nav]: [t=291.4 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571249.057105971] [duck_nav]: [t=291.5 s] path clearance guard: turning in place and replanning
+[slam_node-4] [INFO] [1795571249.245760593] [duck_slam]: frame processing: mean 14.1 ms, p95 24.1 ms, max 34.4 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795571250.792924424] [duck_nav]: [t=292.4 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571250.794579863] [duck_nav]: [t=292.4 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571251.897273341] [duck_nav]: [t=293.5 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571251.932534978] [duck_nav]: [t=293.6 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571252.819408406] [duck_nav]: [t=294.4 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571252.830930362] [duck_nav]: [t=294.5 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571253.804712923] [duck_nav]: [t=295.4 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571253.838300054] [duck_nav]: [t=295.5 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571254.766089098] [duck_nav]: [t=296.4 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571254.770854933] [duck_nav]: [t=296.4 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571255.818098548] [duck_nav]: no progress for 8 s: turning in place and replanning
+[nav_node-5] [INFO] [1795571255.830879595] [duck_nav]: [t=297.4 s] beacon reached; exploring the rest of the room
+[yolo_node-3] [INFO] [1795571258.371012657] [duck_yolo]: 1499 frames, 19 ms/inference, detections so far: {'beacon': 134, 'box': 878}
+[world_sim-1] [INFO] [1795571258.419838145] [world_sim]: sim 300 s, wall 300 s, render 46 ms per camera frame
+[nav_node-5] [INFO] [1795571259.996135994] [duck_nav]: [t=301.6 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571260.884506369] [duck_nav]: [t=302.5 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571261.759259116] [duck_nav]: [t=303.3 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571261.862718359] [duck_nav]: [t=303.5 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571261.873184102] [duck_nav]: [t=303.5 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571262.815405107] [duck_nav]: [t=304.4 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571262.833195429] [duck_nav]: [t=304.5 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571263.839211942] [duck_nav]: [t=305.5 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571263.876433118] [duck_nav]: [t=305.5 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571264.812495582] [duck_nav]: [t=306.4 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571264.831103647] [duck_nav]: [t=306.5 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571265.809634933] [duck_nav]: [t=307.4 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571265.829711396] [duck_nav]: [t=307.5 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571266.861426439] [duck_nav]: [t=308.5 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571266.878515306] [duck_nav]: [t=308.5 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571267.904673046] [duck_nav]: [t=309.5 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571267.949424400] [duck_nav]: [t=309.6 s] path clearance guard: turning in place and replanning
+[slam_node-4] [INFO] [1795571268.026396718] [duck_slam]: frame processing: mean 13.9 ms, p95 24.1 ms, max 39.3 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795571268.990116005] [duck_nav]: [t=310.6 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571268.991511553] [duck_nav]: [t=310.6 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571269.161737738] [duck_nav]: no progress for 8 s: turning in place and replanning
+[nav_node-5] [INFO] [1795571269.809697199] [duck_nav]: [t=311.4 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571274.178038726] [duck_nav]: [t=315.8 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571274.807973900] [duck_nav]: [t=316.4 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571276.152076162] [duck_nav]: [t=317.8 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571276.898037729] [duck_nav]: [t=318.5 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571276.936352715] [duck_nav]: [t=318.6 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571278.104947656] [duck_nav]: [t=319.7 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1795571278.950144657] [duck_nav]: [t=320.5 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571278.965829836] [duck_nav]: [t=320.6 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571279.937874753] [duck_nav]: [t=321.5 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571280.044574398] [duck_nav]: [t=321.7 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571280.966325291] [duck_nav]: [t=322.6 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571282.131274266] [duck_nav]: [t=323.8 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571282.860296903] [duck_nav]: [t=324.5 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571282.880057134] [duck_nav]: [t=324.5 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571284.756498062] [duck_nav]: [t=325.6 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1795571286.731060270] [duck_nav]: [t=327.6 s] beacon reached; exploring the rest of the room
+[slam_node-4] [INFO] [1795571286.801475535] [duck_slam]: frame processing: mean 12.0 ms, p95 22.4 ms, max 31.3 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795571287.049027632] [duck_nav]: [t=327.9 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571287.671608908] [duck_nav]: [t=328.5 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571287.746709051] [duck_nav]: [t=328.6 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571288.823309864] [duck_nav]: [t=329.7 s] inside the clearance margin: backing out along known-free cells
+[yolo_node-3] [INFO] [1795571289.145397321] [duck_yolo]: 1649 frames, 19 ms/inference, detections so far: {'beacon': 148, 'box': 950}
+[world_sim-1] [INFO] [1795571289.190888273] [world_sim]: sim 330 s, wall 330 s, render 45 ms per camera frame
+[nav_node-5] [INFO] [1795571289.773465193] [duck_nav]: [t=330.6 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571290.429208433] [duck_nav]: [t=331.2 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571290.776086254] [duck_nav]: [t=331.6 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1795571290.826226850] [duck_nav]: [t=331.7 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571290.906979757] [duck_nav]: no progress for 8 s: turning in place and replanning
+[nav_node-5] [INFO] [1795571291.730954072] [duck_nav]: [t=332.6 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571296.113130483] [duck_nav]: [t=337.0 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571296.727243475] [duck_nav]: [t=337.6 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571298.823948499] [duck_nav]: [t=339.7 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1795571298.872647519] [duck_nav]: [t=339.7 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571299.748607891] [duck_nav]: [t=340.6 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571302.855336066] [duck_nav]: [t=343.7 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571303.790933172] [duck_nav]: [t=344.6 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571303.810316391] [duck_nav]: [t=344.7 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571304.717309057] [duck_nav]: [t=345.6 s] beacon reached; exploring the rest of the room
+[slam_node-4] [INFO] [1795571304.816360285] [duck_slam]: frame processing: mean 13.2 ms, p95 23.5 ms, max 39.5 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795571306.810203436] [duck_nav]: [t=347.7 s] slam blind
+[nav_node-5] [INFO] [1795571306.946868874] [duck_nav]: [t=347.8 s] slam weak
+[nav_node-5] [INFO] [1795571310.208000192] [duck_nav]: [t=351.1 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571311.154754812] [duck_nav]: [t=352.0 s] slam weak
+[nav_node-5] [INFO] [1795571311.155701165] [duck_nav]: [t=352.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571311.651308218] [duck_nav]: [t=352.5 s] slam weak
+[nav_node-5] [INFO] [1795571313.646786130] [duck_nav]: [t=354.5 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571314.152273408] [duck_nav]: [t=355.0 s] slam weak
+[nav_node-5] [INFO] [1795571314.153402768] [duck_nav]: [t=355.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571315.161044993] [duck_nav]: [t=356.0 s] slam weak
+[nav_node-5] [INFO] [1795571317.524648866] [duck_nav]: [t=357.6 s] beacon reached; exploring the rest of the room
+[yolo_node-3] [INFO] [1795571319.956453327] [duck_yolo]: 1799 frames, 20 ms/inference, detections so far: {'beacon': 194, 'box': 1033}
+[world_sim-1] [INFO] [1795571320.004091511] [world_sim]: sim 360 s, wall 360 s, render 45 ms per camera frame
+[nav_node-5] [INFO] [1795571322.758835387] [duck_nav]: [t=362.8 s] slam weak
+[nav_node-5] [INFO] [1795571322.820236583] [duck_nav]: [t=362.9 s] slam blind
+[nav_node-5] [INFO] [1795571322.870691476] [duck_nav]: [t=362.9 s] slam weak
+[nav_node-5] [INFO] [1795571323.458461157] [duck_nav]: [t=363.5 s] beacon reached; exploring the rest of the room
+[slam_node-4] [INFO] [1795571323.614035251] [duck_slam]: frame processing: mean 15.0 ms, p95 34.5 ms, max 50.6 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795571334.519307900] [duck_nav]: [t=374.6 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571334.964341742] [duck_nav]: [t=375.0 s] robot cell is mapped occupied or boxed in: stopping
+[nav_node-5] [INFO] [1795571335.477216178] [duck_nav]: [t=375.5 s] slam weak
+[nav_node-5] [INFO] [1795571337.363374302] [duck_nav]: [t=377.4 s] slam blind
+[nav_node-5] [INFO] [1795571337.462828047] [duck_nav]: [t=377.5 s] slam weak
+[nav_node-5] [INFO] [1795571337.961556590] [duck_nav]: [t=378.0 s] slam blind
+[nav_node-5] [INFO] [1795571338.068820258] [duck_nav]: [t=378.1 s] slam weak
+[nav_node-5] [INFO] [1795571338.538105905] [duck_nav]: [t=378.6 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571338.962601721] [duck_nav]: [t=379.0 s] slam weak
+[nav_node-5] [INFO] [1795571338.964120359] [duck_nav]: [t=379.0 s] slam weak: looking around
+[nav_node-5] [INFO] [1795571339.988647940] [duck_nav]: [t=380.0 s] slam weak
+[slam_node-4] [INFO] [1795571342.054206333] [duck_slam]: frame processing: mean 21.2 ms, p95 60.6 ms, max 87.5 ms over 300 frames (625 zones)
+[nav_node-5] [INFO] [1795571342.835031651] [duck_nav]: [t=382.9 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1795571344.749901903] [duck_nav]: [t=384.8 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571344.752904651] [duck_nav]: [t=384.8 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1795571344.757666083] [duck_nav]: [t=384.8 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571345.603179170] [duck_nav]: [t=385.6 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571346.919211830] [duck_nav]: [t=387.0 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571347.577567762] [duck_nav]: [t=387.6 s] beacon reached; exploring the rest of the room
+[nav_node-5] [INFO] [1795571347.680994528] [duck_nav]: [t=387.7 s] path clearance guard: turning in place and replanning
+[nav_node-5] [INFO] [1795571348.725785455] [duck_nav]: [t=388.7 s] inside the clearance margin: backing out along known-free cells
+[yolo_node-3] [INFO] [1795571350.735971931] [duck_yolo]: 1949 frames, 21 ms/inference, detections so far: {'beacon': 194, 'box': 1084}
+[world_sim-1] [INFO] [1795571350.784753937] [world_sim]: sim 390 s, wall 390 s, render 47 ms per camera frame
+[nav_node-5] [INFO] [1795571351.363274305] [duck_nav]: [t=390.6 s] no reachable frontier
+[nav_node-5] [INFO] [1795571353.459759893] [duck_nav]: [t=392.7 s] inside the clearance margin: backing out along known-free cells
+[nav_node-5] [INFO] [1795571354.558683438] [duck_nav]: [t=393.8 s] no reachable frontier
+[nav_node-5] [INFO] [1795571357.646522210] [duck_nav]: [t=396.9 s] slam weak
+[nav_node-5] [INFO] [1795571359.315969533] [duck_nav]: [t=398.6 s] exploration stalled: no usable frontier but the room is not closed (19.5 m2 reachable, open frontier 39 cells)
+[score_node-6] [INFO] [1795571359.875906986] [duck_score]: RUN FINISHED
+[score_node-6] exploration         : exploration stalled: no usable frontier but the room is not closed (19.5 m2 reachable, open frontier 39 cells)
+[score_node-6] beacon              : reached at 269 s (true distance < 0.45 m)
+[score_node-6] beacon estimate     : [4.226, 1.509], true (4.0, 1.3), error 0.308 m
+[score_node-6] SLAM position error : mean 0.295 m, max 0.603 m, final 0.232 m (19835 stamp-matched samples)
+[score_node-6] path walked         : 32.1 m, falls 0
+[score_node-6] YOLO                : 1994 frames, detections {'box': 1103, 'beacon': 194}
+[score_node-6] room coverage       : 96% of the room interior classified
+[score_node-6] events:
+[score_node-6]      0.0 s  waiting for observations
+[score_node-6]      0.0 s  survey: turning in place to map all round
+[score_node-6]      2.0 s  slam weak
+[score_node-6]      4.0 s  exploring
+[score_node-6]     10.0 s  slam weak
+[score_node-6]     13.1 s  exploring
+[score_node-6]     17.9 s  survey done
+[score_node-6]     18.2 s  exploring
+[score_node-6]     25.6 s  path clearance guard: turning in place and replanning
+[score_node-6]     26.2 s  exploring
+[score_node-6]     26.3 s  path clearance guard: turning in place and replanning
+[score_node-6]     27.3 s  exploring
+[score_node-6]     27.3 s  path clearance guard: turning in place and replanning
+[score_node-6]     28.2 s  exploring
+[score_node-6]     28.3 s  path clearance guard: turning in place and replanning
+[score_node-6]     29.2 s  exploring
+[score_node-6]     29.3 s  path clearance guard: turning in place and replanning
+[score_node-6]     30.2 s  exploring
+[score_node-6]     30.2 s  path clearance guard: turning in place and replanning
+[score_node-6]     31.2 s  exploring
+[score_node-6]     31.2 s  path clearance guard: turning in place and replanning
+[score_node-6]     32.2 s  exploring
+[score_node-6]     32.3 s  path clearance guard: turning in place and replanning
+[score_node-6]     33.3 s  exploring
+[score_node-6]     33.3 s  path clearance guard: turning in place and replanning
+[score_node-6]     34.2 s  exploring
+[score_node-6]     35.4 s  slam weak
+[score_node-6]     36.2 s  exploring
+[score_node-6]     37.4 s  slam weak
+[score_node-6]     38.2 s  exploring
+[score_node-6]     38.6 s  path clearance guard: turning in place and replanning
+[score_node-6]     39.3 s  exploring
+[score_node-6]     39.4 s  path clearance guard: turning in place and replanning
+[score_node-6]     40.3 s  exploring
+[score_node-6]     40.3 s  path clearance guard: turning in place and replanning
+[score_node-6]     41.3 s  exploring
+[score_node-6]     41.4 s  path clearance guard: turning in place and replanning
+[score_node-6]     42.2 s  exploring
+[score_node-6]     42.3 s  path clearance guard: turning in place and replanning
+[score_node-6]     43.3 s  exploring
+[score_node-6]     43.5 s  path clearance guard: turning in place and replanning
+[score_node-6]     44.2 s  exploring
+[score_node-6]     44.3 s  path clearance guard: turning in place and replanning
+[score_node-6]     45.2 s  exploring
+[score_node-6]     45.3 s  path clearance guard: turning in place and replanning
+[score_node-6]     46.2 s  exploring
+[score_node-6]     47.6 s  slam weak
+[score_node-6]     47.8 s  slam blind
+[score_node-6]     47.8 s  slam weak
+[score_node-6]     50.2 s  exploring
+[score_node-6]     50.3 s  slam weak
+[score_node-6]     55.2 s  slam blind
+[score_node-6]     55.3 s  slam weak
+[score_node-6]     57.7 s  slam blind
+[score_node-6]     57.7 s  slam weak
+[score_node-6]     65.8 s  slam weak: looking around
+[score_node-6]     66.0 s  slam weak
+[score_node-6]     66.0 s  slam weak: looking around
+[score_node-6]     67.0 s  slam weak
+[score_node-6]     67.0 s  slam weak: looking around
+[score_node-6]     67.3 s  slam weak
+[score_node-6]     68.5 s  slam blind
+[score_node-6]     68.6 s  slam weak
+[score_node-6]     68.9 s  slam blind
+[score_node-6]     69.0 s  slam weak
+[score_node-6]     69.1 s  slam blind
+[score_node-6]     69.1 s  slam weak
+[score_node-6]     69.3 s  slam weak: looking around
+[score_node-6]     70.0 s  slam weak
+[score_node-6]     70.0 s  slam weak: looking around
+[score_node-6]     70.8 s  slam weak
+[score_node-6]     72.8 s  slam weak: looking around
+[score_node-6]     73.0 s  slam weak
+[score_node-6]     73.0 s  slam weak: looking around
+[score_node-6]     74.0 s  slam weak
+[score_node-6]     74.0 s  slam weak: looking around
+[score_node-6]     74.3 s  slam weak
+[score_node-6]     74.4 s  slam blind
+[score_node-6]     74.4 s  slam weak
+[score_node-6]     76.3 s  slam weak: looking around
+[score_node-6]     77.0 s  slam weak
+[score_node-6]     77.0 s  slam weak: looking around
+[score_node-6]     77.8 s  slam weak
+[score_node-6]     79.8 s  slam weak: looking around
+[score_node-6]     80.0 s  slam weak
+[score_node-6]     80.0 s  slam weak: looking around
+[score_node-6]     81.0 s  slam weak
+[score_node-6]     81.0 s  slam weak: looking around
+[score_node-6]     81.3 s  slam weak
+[score_node-6]     83.3 s  slam weak: looking around
+[score_node-6]     84.0 s  slam weak
+[score_node-6]     84.0 s  slam weak: looking around
+[score_node-6]     84.8 s  slam weak
+[score_node-6]     86.2 s  exploring
+[score_node-6]     87.5 s  slam weak
+[score_node-6]     89.3 s  exploring
+[score_node-6]     89.6 s  slam weak
+[score_node-6]     90.3 s  exploring
+[score_node-6]     91.0 s  slam weak
+[score_node-6]     91.2 s  exploring
+[score_node-6]     91.5 s  path clearance guard: turning in place and replanning
+[score_node-6]     92.2 s  exploring
+[score_node-6]     92.3 s  path clearance guard: turning in place and replanning
+[score_node-6]     93.2 s  exploring
+[score_node-6]     96.9 s  path clearance guard: turning in place and replanning
+[score_node-6]     97.3 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]     99.3 s  exploring
+[score_node-6]    103.6 s  path clearance guard: turning in place and replanning
+[score_node-6]    104.4 s  exploring
+[score_node-6]    104.4 s  path clearance guard: turning in place and replanning
+[score_node-6]    105.3 s  exploring
+[score_node-6]    105.4 s  path clearance guard: turning in place and replanning
+[score_node-6]    106.3 s  exploring
+[score_node-6]    106.3 s  path clearance guard: turning in place and replanning
+[score_node-6]    107.3 s  exploring
+[score_node-6]    107.4 s  path clearance guard: turning in place and replanning
+[score_node-6]    108.3 s  exploring
+[score_node-6]    108.3 s  path clearance guard: turning in place and replanning
+[score_node-6]    109.3 s  exploring
+[score_node-6]    109.3 s  path clearance guard: turning in place and replanning
+[score_node-6]    110.3 s  exploring
+[score_node-6]    110.3 s  path clearance guard: turning in place and replanning
+[score_node-6]    111.3 s  exploring
+[score_node-6]    111.4 s  path clearance guard: turning in place and replanning
+[score_node-6]    112.4 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    113.3 s  exploring
+[score_node-6]    114.8 s  slam weak
+[score_node-6]    115.6 s  slam blind
+[score_node-6]    115.7 s  slam weak
+[score_node-6]    117.8 s  slam weak: looking around
+[score_node-6]    118.0 s  slam weak
+[score_node-6]    118.0 s  slam weak: looking around
+[score_node-6]    119.0 s  slam weak
+[score_node-6]    119.0 s  slam weak: looking around
+[score_node-6]    119.3 s  slam weak
+[score_node-6]    121.3 s  slam weak: looking around
+[score_node-6]    122.0 s  slam weak
+[score_node-6]    122.0 s  slam weak: looking around
+[score_node-6]    122.8 s  slam weak
+[score_node-6]    124.8 s  slam weak: looking around
+[score_node-6]    125.0 s  slam blind
+[score_node-6]    125.0 s  slam weak: looking around
+[score_node-6]    126.0 s  slam weak
+[score_node-6]    126.0 s  slam weak: looking around
+[score_node-6]    126.3 s  slam weak
+[score_node-6]    129.7 s  slam blind
+[score_node-6]    129.8 s  slam weak
+[score_node-6]    130.4 s  slam blind
+[score_node-6]    130.5 s  slam weak
+[score_node-6]    137.0 s  slam blind
+[score_node-6]    137.1 s  slam weak
+[score_node-6]    137.4 s  slam weak: looking around
+[score_node-6]    138.0 s  slam weak
+[score_node-6]    138.0 s  slam weak: looking around
+[score_node-6]    139.3 s  exploring
+[score_node-6]    141.9 s  slam weak
+[score_node-6]    143.3 s  exploring
+[score_node-6]    144.8 s  path clearance guard: turning in place and replanning
+[score_node-6]    145.4 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    147.3 s  exploring
+[score_node-6]    148.5 s  path clearance guard: turning in place and replanning
+[score_node-6]    149.4 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    151.3 s  exploring
+[score_node-6]    152.5 s  path clearance guard: turning in place and replanning
+[score_node-6]    153.4 s  exploring
+[score_node-6]    153.4 s  path clearance guard: turning in place and replanning
+[score_node-6]    154.3 s  exploring
+[score_node-6]    154.4 s  path clearance guard: turning in place and replanning
+[score_node-6]    155.4 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    157.3 s  exploring
+[score_node-6]    158.8 s  path clearance guard: turning in place and replanning
+[score_node-6]    159.4 s  exploring
+[score_node-6]    159.5 s  path clearance guard: turning in place and replanning
+[score_node-6]    160.3 s  slam blind
+[score_node-6]    163.0 s  slam weak
+[score_node-6]    163.3 s  slam weak: looking around
+[score_node-6]    164.0 s  slam weak
+[score_node-6]    164.0 s  slam weak: looking around
+[score_node-6]    165.4 s  exploring
+[score_node-6]    165.4 s  path clearance guard: turning in place and replanning
+[score_node-6]    166.4 s  exploring
+[score_node-6]    167.6 s  path clearance guard: turning in place and replanning
+[score_node-6]    168.3 s  exploring
+[score_node-6]    168.4 s  path clearance guard: turning in place and replanning
+[score_node-6]    168.6 s  slam weak
+[score_node-6]    170.4 s  exploring
+[score_node-6]    175.1 s  path clearance guard: turning in place and replanning
+[score_node-6]    175.4 s  exploring
+[score_node-6]    190.3 s  path clearance guard: turning in place and replanning
+[score_node-6]    190.4 s  exploring
+[score_node-6]    190.4 s  path clearance guard: turning in place and replanning
+[score_node-6]    191.4 s  exploring
+[score_node-6]    191.4 s  path clearance guard: turning in place and replanning
+[score_node-6]    192.5 s  exploring
+[score_node-6]    192.5 s  path clearance guard: turning in place and replanning
+[score_node-6]    193.4 s  exploring
+[score_node-6]    193.4 s  path clearance guard: turning in place and replanning
+[score_node-6]    194.4 s  exploring
+[score_node-6]    194.4 s  path clearance guard: turning in place and replanning
+[score_node-6]    195.3 s  exploring
+[score_node-6]    195.4 s  path clearance guard: turning in place and replanning
+[score_node-6]    196.3 s  exploring
+[score_node-6]    196.4 s  path clearance guard: turning in place and replanning
+[score_node-6]    197.4 s  exploring
+[score_node-6]    197.5 s  path clearance guard: turning in place and replanning
+[score_node-6]    198.3 s  exploring
+[score_node-6]    198.3 s  path clearance guard: turning in place and replanning
+[score_node-6]    199.4 s  exploring
+[score_node-6]    200.4 s  slam weak
+[score_node-6]    203.3 s  slam weak: looking around
+[score_node-6]    204.3 s  exploring
+[score_node-6]    206.5 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    207.0 s  path clearance guard: turning in place and replanning
+[score_node-6]    207.4 s  exploring
+[score_node-6]    225.4 s  heading for the beacon
+[score_node-6]    249.3 s  slam weak
+[score_node-6]    254.0 s  slam blind
+[score_node-6]    254.0 s  slam weak
+[score_node-6]    254.5 s  slam blind
+[score_node-6]    254.6 s  slam weak
+[score_node-6]    256.9 s  slam blind
+[score_node-6]    256.9 s  slam weak
+[score_node-6]    262.0 s  slam weak: looking around
+[score_node-6]    262.0 s  slam weak
+[score_node-6]    262.0 s  slam weak: looking around
+[score_node-6]    263.0 s  slam weak
+[score_node-6]    263.0 s  slam weak: looking around
+[score_node-6]    264.4 s  heading for the beacon
+[score_node-6]    269.1 s  beacon reached (true distance 0.45 m)
+[score_node-6]    271.0 s  beacon reached; exploring the rest of the room
+[score_node-6]    288.5 s  slam weak
+[score_node-6]    290.5 s  beacon reached; exploring the rest of the room
+[score_node-6]    290.5 s  path clearance guard: turning in place and replanning
+[score_node-6]    291.4 s  beacon reached; exploring the rest of the room
+[score_node-6]    291.5 s  path clearance guard: turning in place and replanning
+[score_node-6]    292.4 s  beacon reached; exploring the rest of the room
+[score_node-6]    292.4 s  path clearance guard: turning in place and replanning
+[score_node-6]    293.5 s  beacon reached; exploring the rest of the room
+[score_node-6]    293.6 s  path clearance guard: turning in place and replanning
+[score_node-6]    294.4 s  beacon reached; exploring the rest of the room
+[score_node-6]    294.5 s  path clearance guard: turning in place and replanning
+[score_node-6]    295.4 s  beacon reached; exploring the rest of the room
+[score_node-6]    295.5 s  path clearance guard: turning in place and replanning
+[score_node-6]    296.4 s  beacon reached; exploring the rest of the room
+[score_node-6]    296.4 s  path clearance guard: turning in place and replanning
+[score_node-6]    297.5 s  beacon reached; exploring the rest of the room
+[score_node-6]    301.6 s  path clearance guard: turning in place and replanning
+[score_node-6]    302.5 s  beacon reached; exploring the rest of the room
+[score_node-6]    303.4 s  path clearance guard: turning in place and replanning
+[score_node-6]    303.5 s  beacon reached; exploring the rest of the room
+[score_node-6]    303.5 s  path clearance guard: turning in place and replanning
+[score_node-6]    304.4 s  beacon reached; exploring the rest of the room
+[score_node-6]    304.5 s  path clearance guard: turning in place and replanning
+[score_node-6]    305.5 s  beacon reached; exploring the rest of the room
+[score_node-6]    305.5 s  path clearance guard: turning in place and replanning
+[score_node-6]    306.4 s  beacon reached; exploring the rest of the room
+[score_node-6]    306.5 s  path clearance guard: turning in place and replanning
+[score_node-6]    307.4 s  beacon reached; exploring the rest of the room
+[score_node-6]    307.5 s  path clearance guard: turning in place and replanning
+[score_node-6]    308.5 s  beacon reached; exploring the rest of the room
+[score_node-6]    308.5 s  path clearance guard: turning in place and replanning
+[score_node-6]    309.5 s  beacon reached; exploring the rest of the room
+[score_node-6]    309.6 s  path clearance guard: turning in place and replanning
+[score_node-6]    310.6 s  beacon reached; exploring the rest of the room
+[score_node-6]    310.6 s  path clearance guard: turning in place and replanning
+[score_node-6]    311.4 s  beacon reached; exploring the rest of the room
+[score_node-6]    315.8 s  path clearance guard: turning in place and replanning
+[score_node-6]    316.4 s  beacon reached; exploring the rest of the room
+[score_node-6]    317.8 s  path clearance guard: turning in place and replanning
+[score_node-6]    318.5 s  beacon reached; exploring the rest of the room
+[score_node-6]    318.6 s  path clearance guard: turning in place and replanning
+[score_node-6]    319.7 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    320.6 s  beacon reached; exploring the rest of the room
+[score_node-6]    320.6 s  path clearance guard: turning in place and replanning
+[score_node-6]    321.6 s  beacon reached; exploring the rest of the room
+[score_node-6]    321.7 s  path clearance guard: turning in place and replanning
+[score_node-6]    322.6 s  beacon reached; exploring the rest of the room
+[score_node-6]    323.8 s  path clearance guard: turning in place and replanning
+[score_node-6]    324.5 s  beacon reached; exploring the rest of the room
+[score_node-6]    324.5 s  path clearance guard: turning in place and replanning
+[score_node-6]    325.6 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    327.6 s  beacon reached; exploring the rest of the room
+[score_node-6]    327.9 s  path clearance guard: turning in place and replanning
+[score_node-6]    328.5 s  beacon reached; exploring the rest of the room
+[score_node-6]    328.6 s  path clearance guard: turning in place and replanning
+[score_node-6]    329.7 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    330.6 s  beacon reached; exploring the rest of the room
+[score_node-6]    331.3 s  path clearance guard: turning in place and replanning
+[score_node-6]    331.6 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    331.7 s  path clearance guard: turning in place and replanning
+[score_node-6]    332.6 s  beacon reached; exploring the rest of the room
+[score_node-6]    337.0 s  path clearance guard: turning in place and replanning
+[score_node-6]    337.6 s  beacon reached; exploring the rest of the room
+[score_node-6]    339.7 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    339.7 s  path clearance guard: turning in place and replanning
+[score_node-6]    340.6 s  beacon reached; exploring the rest of the room
+[score_node-6]    343.7 s  path clearance guard: turning in place and replanning
+[score_node-6]    344.6 s  beacon reached; exploring the rest of the room
+[score_node-6]    344.7 s  path clearance guard: turning in place and replanning
+[score_node-6]    345.6 s  beacon reached; exploring the rest of the room
+[score_node-6]    347.7 s  slam blind
+[score_node-6]    347.8 s  slam weak
+[score_node-6]    351.1 s  slam weak: looking around
+[score_node-6]    352.0 s  slam weak
+[score_node-6]    352.0 s  slam weak: looking around
+[score_node-6]    352.5 s  slam weak
+[score_node-6]    354.5 s  slam weak: looking around
+[score_node-6]    355.0 s  slam weak
+[score_node-6]    355.0 s  slam weak: looking around
+[score_node-6]    356.0 s  slam weak
+[score_node-6]    357.6 s  beacon reached; exploring the rest of the room
+[score_node-6]    362.8 s  slam weak
+[score_node-6]    362.9 s  slam blind
+[score_node-6]    362.9 s  slam weak
+[score_node-6]    363.5 s  beacon reached; exploring the rest of the room
+[score_node-6]    374.6 s  path clearance guard: turning in place and replanning
+[score_node-6]    375.0 s  robot cell is mapped occupied or boxed in: stopping
+[score_node-6]    375.5 s  slam weak
+[score_node-6]    377.4 s  slam blind
+[score_node-6]    377.5 s  slam weak
+[score_node-6]    378.0 s  slam blind
+[score_node-6]    378.1 s  slam weak
+[score_node-6]    378.6 s  slam weak: looking around
+[score_node-6]    379.0 s  slam weak
+[score_node-6]    379.0 s  slam weak: looking around
+[score_node-6]    380.0 s  slam weak
+[score_node-6]    382.9 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    384.8 s  path clearance guard: turning in place and replanning
+[score_node-6]    384.8 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    384.8 s  path clearance guard: turning in place and replanning
+[score_node-6]    385.6 s  beacon reached; exploring the rest of the room
+[score_node-6]    387.0 s  path clearance guard: turning in place and replanning
+[score_node-6]    387.6 s  beacon reached; exploring the rest of the room
+[score_node-6]    387.7 s  path clearance guard: turning in place and replanning
+[score_node-6]    388.8 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    390.6 s  no reachable frontier
+[score_node-6]    392.7 s  inside the clearance margin: backing out along known-free cells
+[score_node-6]    393.8 s  no reachable frontier
+[score_node-6]    396.9 s  slam weak
+[score_node-6]    398.6 s  exploration stalled: no usable frontier but the room is not closed (19.5 m2 reachable, open frontier 39 cells)
+[slam_node-4] [INFO] [1795571360.846677088] [duck_slam]: frame processing: mean 17.1 ms, p95 30.3 ms, max 38.2 ms over 300 frames (625 zones)
+[robot_state_publisher-2] [INFO] [1795571365.280690016] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[INFO] [robot_state_publisher-2]: process has finished cleanly [pid 3833]
+[INFO] [score_node-6]: process has finished cleanly [pid 3837]
+[INFO] [yolo_node-3]: process has finished cleanly [pid 3834]
+[INFO] [nav_node-5]: process has finished cleanly [pid 3836]
+[INFO] [slam_node-4]: process has finished cleanly [pid 3835]
+[INFO] [world_sim-1]: process has finished cleanly [pid 3832]

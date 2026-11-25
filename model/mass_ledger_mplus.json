@@ -1,37 +1,88 @@
 {
- "status": "PROVISIONAL: 30% infill wall-proxy masses, not slicer/scale values",
+ "status": "PROVISIONAL: unmeasured components and upstream COM/inertia remain estimates",
+ "model_robot_sha256": "417cb6299cdbd37bedf63ed1499d9c18c964176a93ebbc30cb73ab2e681c9085",
  "pla_density_g_mm3": 0.00124,
  "parts": {
-  "duck_head_upper_v3": {
-   "mass_g": 51.5,
-   "status": "PROVISIONAL 30% infill wall-proxy (handoff table; not a slicer value)",
-   "volume_mm3": 44064.1,
-   "area_mm2": 33726.9
+  "head_upper_v4": {
+   "mass_g": 62.32,
+   "status": "PROVISIONAL 30% infill wall-proxy formula (not a slicer value)",
+   "volume_mm3": 57614.8,
+   "area_mm2": 39255.0
   },
-  "duck_head_lower_v3": {
-   "mass_g": 43.11,
-   "status": "PROVISIONAL 30% infill wall-proxy formula, recomputed for the current mesh (not a slicer value)",
-   "volume_mm3": 41254.8,
-   "area_mm2": 26654.5
+  "head_lower_v4": {
+   "mass_g": 46.32,
+   "status": "PROVISIONAL 30% infill wall-proxy formula (not a slicer value)",
+   "volume_mm3": 48078.9,
+   "area_mm2": 27302.0
+  },
+  "mouth_servo_v4": {
+   "mass_g": 18.0,
+   "status": "ESTIMATE (bought part, not weighed)"
   },
   "_head_link": {
    "upstream_mass_g": 188.8,
    "removed_upstream_parts_g_ESTIMATE": {
+    "face_part": 7.2,
     "jaw_soft": 23.1,
     "top_head_shell": 37.0,
+    "elec_rpi_robot_hat_pcb": 1.9,
     "soft_mouth_top": 3.3,
+    "noenoeil": 5.3,
     "jaw": 11.6,
-    "bottom_head_shell": 29.5
+    "bottom_head_shell": 29.5,
+    "pcb__raspberry_pi_zero_2_w": 3.7
    },
-   "remainder_g": 84.2,
-   "new_mass_g": 178.8,
-   "note": "replaced, not added: upstream shells/jaw/soft mouth subtracted, V3 shells added"
+   "remainder_g": 66.0,
+   "new_mass_g": 192.7,
+   "note": "replaced, not added: upstream shells/mouth/face plate/head boards subtracted, V4 shells + mouth servo added; the jaw is a separate body"
   },
-  "hat_rear_shield_v3": {
-   "mass_g": 32.3,
-   "status": "PROVISIONAL 30% infill wall-proxy (handoff table; not a slicer value)",
-   "volume_mm3": 26068.4,
-   "area_mm2": 22030.5
+  "jaw_v4": {
+   "mass_g": 4.38,
+   "status": "PROVISIONAL 30% infill wall-proxy formula (not a slicer value)",
+   "volume_mm3": 3534.0,
+   "area_mm2": 4184.2
+  },
+  "body_shell_v4": {
+   "mass_g": 71.02,
+   "status": "PROVISIONAL 30% infill wall-proxy formula (not a slicer value)",
+   "volume_mm3": 57271.3,
+   "area_mm2": 60575.7
+  },
+  "pcb_stack_v4": {
+   "mass_g": 45.0,
+   "status": "ESTIMATE (bought part, not weighed)"
+  },
+  "a010_v4": {
+   "mass_g": 10.0,
+   "status": "ESTIMATE (bought part, not weighed)"
+  },
+  "xt60_v4": {
+   "mass_g": 6.0,
+   "status": "ESTIMATE (bought part, not weighed)"
+  },
+  "_torso_link": {
+   "upstream_mass_g": 219.1,
+   "removed_upstream_parts_g_ESTIMATE": {
+    "right_shell": 13.9,
+    "banana_pcb_locker": 0.6,
+    "left_shell": 14.1
+   },
+   "new_mass_g": 322.6,
+   "note": "upstream battery mass kept for the 2S LiPo (assumed equal)"
   }
- }
+ },
+ "measured_link_mass_kg": {},
+ "head_shift_m": [
+  0.0,
+  0.0,
+  0.0
+ ],
+ "neck_pitch_max_rad": 0.7,
+ "servo_overrides": {
+  "kp": null,
+  "kv": null,
+  "stall": null
+ },
+ "robot_mass_kg": 0.8689,
+ "note": "Link masses rescale existing inertia at unchanged COM; weights alone do not calibrate COM/inertia."
 }
