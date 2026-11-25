@@ -80,7 +80,8 @@ def nodes(context):
              parameters=[{"autonomous": ParameterValue(LaunchConfiguration("autonomous"), value_type=bool),
                           "survey_turn": ParameterValue(LaunchConfiguration("survey_turn"), value_type=float),
                           "weak_look_after": ParameterValue(LaunchConfiguration("weak_look_after"), value_type=float),
-                          "yaw_sweep_rate": ParameterValue(LaunchConfiguration("yaw_sweep_rate"), value_type=float)},
+                          "yaw_sweep_rate": ParameterValue(LaunchConfiguration("yaw_sweep_rate"), value_type=float),
+                          "corner_handling": ParameterValue(LaunchConfiguration("corner_handling"), value_type=bool)},
                          sim_time]),
         Node(package="duck_nav", executable="score_node", output="screen",
              parameters=[{"timeout": ParameterValue(LaunchConfiguration("timeout"), value_type=float),
@@ -132,6 +133,7 @@ def generate_launch_description():
         DeclareLaunchArgument("weak_look_after", default_value="3.0"),      # s weak before looking around (body depth)
         DeclareLaunchArgument("body_slam", default_value="true"),           # body-sensor mapping policy (realistic)
         DeclareLaunchArgument("yaw_sweep_rate", default_value="0.0"),       # rad/s body yaw oscillation while walking
+        DeclareLaunchArgument("corner_handling", default_value="true"),     # false: plain pure pursuit + clearance guard
         DeclareLaunchArgument("autonomous", default_value="true"),
         DeclareLaunchArgument("timeout", default_value="600.0"),
         DeclareLaunchArgument("seed", default_value="0"),
