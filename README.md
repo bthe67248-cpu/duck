@@ -16,7 +16,7 @@ MuJoCo model, Simulink balance controller, and a ROS 2 SLAM + YOLO navigation st
 
 ## What was set up, and how to replicate it
 
-Everything lives in one folder, kept off OneDrive so the Python venv and build files do not sync. The examples use `C:\dev\duckling_sim`. The scripts find the folder from their own location, so another path works too; `DUCKLING_ROOT` / `DUCK_ROOT` override it.
+Everything lives in one folder (keep it out of cloud-synced folders: the Python venv and build files are large). The examples use `C:\dev\duckling_sim`. The scripts find the folder from their own location, so another path works too; `DUCKLING_ROOT` / `DUCK_ROOT` override it.
 
 | Folder | What is in it |
 |-|-|
@@ -38,15 +38,17 @@ Before building anything, check that every file the pipeline needs is there:
 .\.venv\Scripts\python.exe scripts\preflight.py
 ```
 
-## What I found on the machine
+## Toolchain
 
-- Your duck files: `%USERPROFILE%\Downloads\Duckling_V3_Design_and_MuJoCo\` (also the `.zip`). As the PDF says, they are print meshes plus a 2-joint head demo, not a robot model, so the full-robot model comes from upstream (PDF "Route A").
-- MATLAB R2026b with **only** MATLAB, Simulink, Simscape and Simscape Electrical. No Control System Toolbox, System Identification Toolbox, Robotics System Toolbox or Simscape Multibody. So:
-  - `lqr` is replaced by `matlab\lqr_base.m` (base-MATLAB Riccati solver; it reproduces the PDF's `[-13.61 -1.43 2.56]`).
-  - `importrobot` / `smimport` (the Simscape route in the "Industry Way" PDF) cannot run on this install. The MuJoCo-in-Simulink route can, and is what is built here.
-  - `tfest` (servo fitting) is not available; the overshoot formulas in the PDF still work by hand.
-- Visual Studio 2022 C++ compiler was already installed and MATLAB sees it.
-- WSL2 with Ubuntu 24.04 (no ROS installed), AMD RX 9070 GPU (no CUDA, so no policy training here, as the PDF warns).
+- The duck's print meshes and the 2-joint head demo are not a robot model, so the full-robot model comes from upstream
+  `microduck_rl`, with the duck's own parts added by `scripts/make_duck.py`.
+- MATLAB + Simulink only; no Control System, System Identification, Robotics System Toolbox or Simscape Multibody is used:
+  - `lqr` is replaced by `matlab\lqr_base.m` (base-MATLAB Riccati solver; it gives `[-13.61 -1.43 2.56]`).
+  - The plant is MuJoCo inside Simulink (`importrobot` / `smimport` would need Robotics System Toolbox / Simscape Multibody).
+  - Servo fitting uses the overshoot formulas by hand (no `tfest`).
+- A C++ compiler that MATLAB's `mex` can use (MSVC on Windows) for the blockset.
+- ROS 2 Jazzy on Ubuntu 24.04 (WSL on Windows).
+- Retraining the walking policy needs an NVIDIA GPU.
 
 ## Part A: MuJoCo model (PowerShell)
 
@@ -98,7 +100,7 @@ Things that differed from the PDF:
 One-time build of the blockset (downloads MuJoCo 3.3.6 and GLFW 3.3.7 into the blockset folder, then compiles 4 MEX files with MSVC):
 
 ```powershell
-& "C:\Program Files\MATLAB\R2026b\bin\matlab.exe" -batch "run('C:/dev/duckling_sim/matlab/build_blockset.m')"
+matlab -batch "run('C:/dev/duckling_sim/matlab/build_blockset.m')"
 ```
 
 Why a custom build script: release 4.x of the blockset ships no prebuilt `.mltbx`, and its own `build` needs `gmake`. `build_blockset.m` runs the repo's `install` and then calls `mex` directly.
@@ -181,7 +183,7 @@ Add `--off` for no balance loop, `--delay 2` for extra delay.
 
 ## Part C: ROS 2
 
-ROS 2 Jazzy runs inside WSL2 (Ubuntu 24.04); RViz windows appear on the Windows desktop through WSLg. Note: you wrote "demo for the drone". I found no drone files anywhere on the PC, so I took that to mean the duck and built the demo around it.
+ROS 2 Jazzy runs inside WSL2 (Ubuntu 24.04); RViz windows appear on the Windows desktop through WSLg.
 
 **1. Install ROS 2 Jazzy** (about 15 minutes, 3 GB). Run in PowerShell; `-u root` avoids the sudo password:
 
@@ -244,9 +246,9 @@ ros2 topic echo /duck/pitch_deg
 
 The first push (0.10 N·s) is absorbed; the second (0.40 N·s) knocks it over; reset stands it back up; the last turns the balance loop off so you can watch it tip. Other topics: `/joint_states` (100 Hz), `/imu`, `/tf`.
 
-**Headless check** (no window): `wsl -d Ubuntu-24.04 -- bash /mnt/c/dev/duckling_sim/ros2/smoke_test.sh`. Result on this PC: both nodes up, `/joint_states` at 100.0 Hz, torso stays at z = 0.114 m after the 2 N push, falls after 8 N, back to 0.115 m after reset. RViz started with OpenGL 4.5 and no errors; I did not look at the window itself, so check that the model draws correctly.
+**Headless check** (no window): `wsl -d Ubuntu-24.04 -- bash /mnt/c/dev/duckling_sim/ros2/smoke_test.sh`. Result: both nodes up, `/joint_states` at 100.0 Hz, torso stays at z = 0.114 m after the 2 N push, falls after 8 N, back to 0.115 m after reset. RViz started with OpenGL 4.5 and no errors; I did not look at the window itself, so check that the model draws correctly.
 
-MATLAB and ROS 2 are not connected to each other: that needs ROS Toolbox, which this MATLAB install does not have. Both run the same controller against the same MuJoCo model.
+MATLAB and ROS 2 are not connected to each other: that needs ROS Toolbox, which is not used here. Both run the same controller against the same MuJoCo model.
 
 ## Part D: Motions in MuJoCo (walk, obstacles, fall and get up, dance)
 
@@ -477,8 +479,8 @@ Pre-fix results (old model, old code, latest-message scoring) are in `results\pr
 - **Camera and ToF hardware**: nothing bought or tested. Before freezing the head CAD, check on the real parts: board drawing and lens envelope, USB enumeration and streaming on the UNO Q (and whether a hub is needed), ToF power at 3.3 V logic (the Pololu carrier's pull-ups follow VIN), zone order, range convention (radial or along the boresight: `tof_range_convention`), and a rigid shared bracket. Then calibrate camera intrinsics and the camera-to-ToF extrinsics.
 - **A ROS node for the real ToF**, and a hardware publisher for `/camera/pose_level` from the neck encoders and IMU. Its frame must be the MuJoCo camera convention (looks along −z, y up), while `usb_camera_node` stamps images in the REP-103 optical frame.
 - **YOLO on real images.** The detector has only ever seen MuJoCo renders. Collect and label photos from the real black duck's camera (split by recording session), retrain, and benchmark the ONNX model on the UNO Q.
-- **Simscape Multibody / URDF import in MATLAB, linearisation, margins** ("Industry Way" Steps 1 and 4): need toolboxes this MATLAB install does not have.
-- **Retraining the walking policy** on your measured masses and Feetech servo model: needs an NVIDIA GPU (yours is AMD) or a rented one. With the corrected masses the pretrained walk fails its criteria (Part D), so this is now required, not optional.
+- **Simscape Multibody / URDF import in MATLAB, linearisation, margins** ("Industry Way" Steps 1 and 4): need Simscape Multibody / Robotics System Toolbox, not used here.
+- **Retraining the walking policy** on your measured masses and Feetech servo model: needs an NVIDIA GPU (local or rented). With the corrected masses the pretrained walk fails its criteria (Part D), so this is now required, not optional.
 - **Dependency pinning and a fresh-workspace build** (part of S8) are not done.
 - **Anything on the UNO Q**: see `UNO_Q_GUIDE.md` for the step-by-step plan.
 - **Roll (sideways) balance**: only pitch is controlled. The PDF's "repeat for roll" step is still open.

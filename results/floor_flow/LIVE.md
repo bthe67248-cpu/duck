@@ -29,7 +29,7 @@ beacon. Run folders: `live_runs/flw_s*` (flow) and `live_runs/cmd_s*` (command).
 - **Run-to-run noise is as large as the effect.** The command-only runs here (mean 0.60 m, beacon 2 / 6) are much
   worse than the same configuration a day earlier (`results/heading`: 0.40 m, 6 / 6). Six paired seeds in one room
   cannot separate the two odometry sources at the SLAM level.
-- Live cost: 28-39 ms per image pair at 5 Hz with three trials sharing the PC; 62-92 % of pairs had a fit.
+- Live cost: 28-39 ms per image pair at 5 Hz with three trials sharing one desktop CPU; 62-92 % of pairs had a fit.
 
 ## Decision
 

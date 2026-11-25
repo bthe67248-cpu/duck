@@ -380,7 +380,7 @@ class SlamNode(Node):
                                               if self.loc.graph is not None else "")))
         self.publish_state()
         self.frames.put(ns, (data, pose_acq.copy()))
-        # processing cost per depth frame (this PC; the UNO Q is slower), logged every 300 frames
+        # processing cost per depth frame (the UNO Q is slower than a desktop CPU), logged every 300 frames
         self.proc_ms = getattr(self, "proc_ms", []) + [(time.perf_counter() - t_proc) * 1000]
         if len(self.proc_ms) >= 300:
             a = np.array(self.proc_ms); self.proc_ms = []
