@@ -113,7 +113,7 @@ replay and the node share the per-frame logic (`duckslam.FrameLocalizer`).
    (synthetic: 20/20 from up to 85 cm / 20°, 6 ms).
 6. **Empty ToF frames are not failed matches** (counting them reset the health streak and diverged).
 7. **Faster matcher**: the old grid search vectorised (identical result, ~30×); the correlative search runs in
-   ~8 ms per frame on the PC (expect 5–10× on the UNO Q's A53 cores).
+   ~8 ms per frame on a desktop CPU (expect 5–10× on the UNO Q's A53 cores).
 8. **Camera + ToF beacon ranging**: camera ray through the box centre at the ToF depth (zones are 5.6° apart,
    the camera bearing is far more precise); known target height gives a box-size depth used as a fallback and
    to reject ToF hits on the background.

@@ -88,7 +88,7 @@ Headlines
 ## 4. Runtime
 
 Wall time per image pair of the flow step only (rectify both images, features, two LK runs, RANSAC), Python + OpenCV 4.6
-on this PC under WSL: 13-28 ms per pair, mean 19 ms. These figures come from running the rect and image jobs
+on a desktop CPU under WSL: 13-28 ms per pair, mean 19 ms. These figures come from running the rect and image jobs
 concurrently, so they are inflated; run alone on hdg_s3 60 s the rect tracker took 13 ms and the old image tracker 11 ms.
 Excludes bag reading and the command integration.
 

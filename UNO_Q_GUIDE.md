@@ -8,8 +8,8 @@ This is the plan for moving what now runs in simulation (`C:\dev\duckling_sim`) 
 
 | Part | What it is | What it means for the duck |
 |-|-|-|
-| Qualcomm QRB2210 | 4 × Cortex-A53 at 2.0 GHz, Adreno 702 GPU, Debian Linux | Runs the policy, camera, YOLO, SLAM, navigation, ROS 2. Roughly 5 to 10 times slower than your PC per core |
-| RAM / storage | Yours is the 4 GB model (ABX00173): 4 GB RAM, 32 GB eMMC | Enough for ROS 2 in Docker plus YOLO, SLAM and the policy together. Others have run a TurtleBot3 ROS 2 container on this model |
+| Qualcomm QRB2210 | 4 × Cortex-A53 at 2.0 GHz, Adreno 702 GPU, Debian Linux | Runs the policy, camera, YOLO, SLAM, navigation, ROS 2. Roughly 5 to 10 times slower per core than a desktop CPU |
+| RAM / storage | The duck uses the 4 GB model (ABX00173): 4 GB RAM, 32 GB eMMC | Enough for ROS 2 in Docker plus YOLO, SLAM and the policy together. Others have run a TurtleBot3 ROS 2 container on this model |
 | STM32U585 | Cortex-M33, 160 MHz, 2 MB flash, 786 KB RAM, Arduino sketches on Zephyr | Servo bus, IMU, 100 Hz loop, safety watchdog |
 | Bridge | MessagePack-RPC over an internal UART, `arduino-router` service on Linux, `Arduino_RouterBridge` library on the MCU | The official XGO UNO Q runtime documents a 2 Mbps Bridge configuration; this is a configured link rate, not measured application throughput on your custom board |
 
@@ -21,7 +21,7 @@ This is the plan for moving what now runs in simulation (`C:\dev\duckling_sim`) 
 | `yolo_node` | Code moves over. **The trained model does not**: it has only ever seen MuJoCo renders. Retrain on photos (Step 7) |
 | Walking / get-up policies | **Do not transfer.** They were trained for the Microduck with Dynamixel XL330 servos; your duck has Feetech bus servos. Even in simulation, with the corrected V3 masses and the rear shield's collision shapes, walk, obstacles and get-up now fail (README Part D). Start from the XGO-Duck project's own runtime and policy (Step 4) |
 | Balance loop from Simulink (2.34·pitch + 0.186·rate) | The structure moves over. The gains are for the simulated servo stiffness and provisional masses; recompute after the bench test and weighing (Step 3). The backward push margin is small (about 1 N for 0.05 s in simulation) |
-| `world_sim` | Stays on the PC. On the robot it is replaced by two small driver nodes (Step 5) |
+| `world_sim` | Stays on the development computer. On the robot it is replaced by two small driver nodes (Step 5) |
 | Model masses, servo model | Still estimates. Print masses are provisional 30% infill numbers (upper head 51.5 g, lower head 43.1 g, rear shield 32.3 g); the whole chain is only as good as these (Step 3) |
 
 ## Step 1. Get onto the board and take stock
@@ -82,7 +82,7 @@ Then in MATLAB: `startup_duck`, `build_duck_sim`, `run_tests`. Then `scripts\tun
 
 1. **Standing first, with the balance loop on the STM32.** Port `tiltFilter` and the two gains into the 100 Hz loop (it is about ten lines of C). Robot on the floor, a hand ready. Compare the knee sag with the simulated 4.6°: that single number checks mass and servo stiffness together.
 2. **Walking: evaluate the official XGO-Duck UNO Q runtime and policy as an adaptation starting point.** [Runtime](https://github.com/LuwuDynamics/xgoduck_runtime_arduino), [training](https://github.com/LuwuDynamics/xgoduck_rl). It is not validated for your custom head, shield, masses or HAT. Verify servo variant/firmware, IDs, signs, zero offsets, limits, IMU axes, HAT wiring, observation order and action scaling before supported tests. The stock runtime has 14 policy-controlled joints and a separate mouth servo, ID 34: [mapping source](https://github.com/LuwuDynamics/xgoduck_runtime_arduino/blob/master/python/rl_core.py). That explains the stock 15-servo total; verify whether your integral-bill build retains the mouth actuator.
-3. If you want the Microduck behaviours (get-up, roll, sit): retrain in `microduck_rl` with your masses and a Feetech servo model. That needs an NVIDIA GPU (rented; your RX 9070 will not run it). Check each retrained policy in `scripts\motions.py` before it goes on the robot.
+3. If you want the Microduck behaviours (get-up, roll, sit): retrain in `microduck_rl` with your masses and a Feetech servo model. That needs an NVIDIA GPU (local or rented). Check each retrained policy in `scripts\motions.py` before it goes on the robot.
 4. On Linux the policy is small: one ONNX Runtime call at 50 Hz. `world_sim.py` shows the exact observation layout (gyro, gravity direction, joint positions relative to STAND, joint velocities, last action, 13 command values).
 
 **Gate:** stands 60 s. Recovers from a light push. Walks 2 m in a straight line on the surface you will use, 5 times out of 5.
@@ -158,7 +158,7 @@ In WSL everything ran in real time on a desktop CPU. On the QRB2210, measure and
 | `yolo_node` | 5 Hz | 2 Hz | Smaller input, or an int8-quantised model |
 | `slam_node` scan matching | 10 Hz (ToF), ~8 ms per correlative match | 10 Hz; expect 40 to 80 ms per match on an A53 core | Narrow the window (`window`/`ang_window` in `match_correlative`) or port the branch-and-bound search to C++ |
 | `nav_node` planner | 1 Hz | 0.5 Hz | The wavefront is a Python loop over about 30,000 cells: port to C++ or use a coarser grid (5 cm cells) |
-| Map publishing | 1 Hz | 0.5 Hz | Publish only to the PC when RViz is connected |
+| Map publishing | 1 Hz | 0.5 Hz | Publish only to the development computer when RViz is connected |
 
 Measure with `top` and `ros2 topic hz`. The policy loop must never miss its 20 ms; everything else can be late.
 
@@ -166,9 +166,9 @@ Measure with `top` and `ros2 topic hz`. The policy loop must never miss its 20 m
 
 On the 4 GB board memory is not the limit: expect roughly 1 to 1.5 GB in use with everything running (my estimate, not measured). The four A53 cores are the limit, so the rate cuts above still apply.
 
-## Step 9. Watch it from the PC
+## Step 9. Watch it from the development computer
 
-Run RViz on the PC and the nodes on the duck, same `ROS_DOMAIN_ID`, same Wi-Fi. WSL2's default network hides it from ROS discovery; switch WSL to mirrored networking (`networkingMode=mirrored` in `.wslconfig`) or use a native Linux machine. Use the same `duck_nav.rviz`.
+Run RViz on the development computer and the nodes on the duck, same `ROS_DOMAIN_ID`, same Wi-Fi. WSL2's default network hides it from ROS discovery; switch WSL to mirrored networking (`networkingMode=mirrored` in `.wslconfig`) or use a native Linux machine. Use the same `duck_nav.rviz`.
 
 ## Step 10. Bring-up order, each with a stop condition
 
@@ -190,7 +190,7 @@ Record every run on the robot:
 ros2 bag record /joint_states /imu /cmd_vel /camera/image_raw /map /slam/pose
 ```
 
-Replay the same `/cmd_vel` through `world_sim` on the PC. Where the simulated duck and the real one disagree, fix the model first (mass, servo, friction), gains second. That is the step that makes the simulation worth having.
+Replay the same `/cmd_vel` through `world_sim` on the development computer. Where the simulated duck and the real one disagree, fix the model first (mass, servo, friction), gains second. That is the step that makes the simulation worth having.
 
 ## Order of work
 

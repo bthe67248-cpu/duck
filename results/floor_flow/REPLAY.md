@@ -45,7 +45,7 @@ through the live node's per-frame SLAM policy. Ground truth is used only for sco
   early wrong scan match changes a whole run. The three trackers cannot be ranked from these numbers, even though per
   frame pair the rect tracker is clearly more accurate (`NOTES.md`).
 - The deciding test is closed loop: flow in `slam_node`, several seeds, as for the heading filter. Cost measured
-  here: 11-28 ms per image pair in Python + OpenCV on the PC at 5 Hz (expect several times more on the UNO Q's A53
+  here: 11-28 ms per image pair in Python + OpenCV on a desktop CPU at 5 Hz (expect several times more on the UNO Q's A53
   cores, still within a 200 ms frame budget if it gets its own core; not measured on hardware).
 - The simulated floor is a strongly textured checker. Real floors may give far fewer features; plain or glossy
   floors could defeat floor flow entirely. Check feature counts on real camera images before relying on it.

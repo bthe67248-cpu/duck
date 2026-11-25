@@ -136,7 +136,7 @@ still worse than the head-mounted A010 (0.08 m), and late drift remains: three s
 the beacon was reached. The yaw sweep cut the worst-case error on those seeds (max under 1 m on all six, against 2.1 m)
 and reached the beacon sooner, at slightly lower coverage. On some seeds it was worse (seeds 3 and 4 by mean error),
 and with one run per seed the difference is within the noise, so it stays opt-in until a repeat confirms it. Frame cost
-is unchanged (mean 39–54 ms per 25 × 25 frame on this PC).
+is unchanged (mean 39–54 ms per 25 × 25 frame on a desktop CPU).
 
 Ideas not adopted: a wider normal search while turning was not needed once the ratchet was fixed (the relocalisation
 window variant above did nothing). The 0.13 m sensor height is not a problem for `scan_from_points`: at 60° vertical
@@ -144,8 +144,8 @@ FOV the lowest zones reach the floor at about 0.23 m, floor returns stay below t
 simulated 1 % range noise, and the residual error in the dumps was in translation along walls, not in floor/obstacle
 classification. On the real A010, range noise and multipath near the floor can be larger; check the floor threshold there.
 
-**100 × 100 vs 25 × 25:** SLAM frame cost on this PC 16–52 ms (25×25) vs 36–91 ms (100×100) per frame, about 2× more.
-On the UNO Q (A53, roughly 5–10× slower than this PC) 25×25 at about 5–10 Hz is plausible, 100×100 only at 1–3 Hz.
+**100 × 100 vs 25 × 25:** SLAM frame cost on a desktop CPU 16–52 ms (25×25) vs 36–91 ms (100×100) per frame, about 2× more.
+On the UNO Q (A53, roughly 5–10× slower than a desktop CPU) 25×25 at about 5–10 Hz is plausible, 100×100 only at 1–3 Hz.
 Accuracy was not better at 100×100 in these runs. Binning to 25×25 (or 50×50) is the sensible default.
 
 ## Files
