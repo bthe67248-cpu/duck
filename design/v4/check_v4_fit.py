@@ -29,8 +29,8 @@ from solid import Solid, box_mesh  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 MJ = ROOT / "model"
-V4_TORSO = ["body_shell_v4", "battery_v4", "pcb_stack_v4", "xt60_v4", "a010_v4"]
-TORSO_TARGETS = V4_TORSO + ["power_support"]
+V4_TORSO = ["body_shell_v4", "body_lid_v4", "keel_cover_v4", "battery_v4", "pcb_stack_v4", "xt60_v4", "a010_v4"]
+TORSO_TARGETS = V4_TORSO
 HEAD_SHELLS = ["head_upper_v4", "head_lower_v4"]
 V4_HEAD = HEAD_SHELLS + ["mouth_servo_v4", "jaw_v4"]
 NSUB = 4000                         # surface samples per part used as query points in the pose loops
@@ -77,6 +77,18 @@ def head_mesh_frame(model_xml):
     return mat([float(v) for v in geo.get("quat").split()]), np.array([float(v) for v in geo.get("pos").split()])
 
 
+def envelope_mesh(env):
+    """Closed mesh (metres) of a keep-out envelope: an axis-aligned box (lo, hi) or a box of half width `half_width`
+    along the segment p0 -> p1 (a rod or a cable run), in mm in the envelope's frame."""
+    if "p0" not in env:
+        return box_mesh(np.array(env["lo"]) / 1000, np.array(env["hi"]) / 1000)
+    p0, p1, hw = np.array(env["p0"], float), np.array(env["p1"], float), float(env["half_width"])
+    ax = p1 - p0; L = np.linalg.norm(ax); ez = ax / L
+    ex = np.cross(ez, [1.0, 0, 0] if abs(ez[0]) < 0.9 else [0, 1.0, 0]); ex /= np.linalg.norm(ex)
+    V, F = box_mesh(np.array([-hw, -hw, 0.0]), np.array([hw, hw, L]))
+    return (V @ np.stack([ex, np.cross(ez, ex), ez]) + p0) / 1000, F
+
+
 def build_parts(m, params, model_xml):
     parts = []
     for g in range(m.ngeom):
@@ -92,7 +104,7 @@ def build_parts(m, params, model_xml):
     tb, hd = m.body("trunk_base").id, m.body("jaw_soft").id
     R_h, p_h = head_mesh_frame(model_xml)
     for env in params.get("envelopes", []):
-        V, F = box_mesh(np.array(env["lo"]) / 1000, np.array(env["hi"]) / 1000)
+        V, F = envelope_mesh(env)
         if env["frame"] == "torso":
             parts.append(Part("envelope/" + env["name"], tb, V, F, "torso"))
         else:

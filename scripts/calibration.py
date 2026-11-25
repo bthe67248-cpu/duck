@@ -14,7 +14,7 @@ LINKS = (
     "neck", "neck_pitch", "yaw_roll_motion", "jaw_soft", "bearing_roll",
     "hip_l_2", "upper_leg_right", "leg_2", "ankle_right",
 )
-PRINTS = ("head_upper_v4", "head_lower_v4", "jaw_v4", "body_shell_v4")
+PRINTS = ("head_upper_v4", "head_lower_v4", "jaw_v4", "body_shell_v4", "body_lid_v4", "keel_cover_v4")
 
 
 def number(value, name, *, zero=False):
