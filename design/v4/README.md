@@ -1,23 +1,191 @@
 # Duckling V4: A010 depth sensor, boards and LiPo inside the body, opening mouth
 
-24 November 2026. **Simulation and concept CAD only.** No screw bosses, ribs, print splits or wire routing yet; every
-clearance must be checked on the real parts. V4 is now the only robot model: the V3 model, its rear shield, the V3 head
+24–25 November 2026. **Simulation and concept CAD only.** The body now has its assembly split, board standoffs,
+mounting bosses, battery retention and connector/cable envelopes, and the head clears the neck mechanism and the camera
+(see "Fit fixes and assembly geometry"); hinge, pushrod and head-shell fasteners are still to do, and every clearance
+must be checked on the real parts. V4 is now the only robot model: the V3 model, its rear shield, the V3 head
 STLs and the V3 generator have been deleted (they are in git history).
 
 ## What changed against V3
 
 | Area | V3 (deleted) | V4 |
 |-|-|-|
-| Body | upstream left/right shells + rear shield (clashed with the head in 129/600 sampled poses) | one body shell (`body_shell_v4.stl`, 57 cm³, about 79 g at 30 % infill with 2 mm walls) |
+| Body | upstream left/right shells + rear shield (clashed with the head in 129/600 sampled poses) | body shell + rear-bay lid + keel cover (`body_shell_v4`, `body_lid_v4`, `keel_cover_v4`: 79.5 cm³, 98.6 g at the default print settings), replacing the upstream battery holder too |
 | Boards | old Pi Zero + HAT in the head; 110 mm HAT behind the rear shield | UNO Q + resized 70 × 53.34 mm HAT stack in a rear bay behind the leg sweep |
 | Depth sensor | VL53L5CX 8×8 on the head | Sipeed MaixSense A010 in a chest pocket with a front window, level, 0.13 m above the floor |
-| Battery | NP-F970-style pack visual | 2S LiPo about 800–1000 mAh (60 × 28 × 15 mm placeholder) in a narrow keel, XT60 pair below it (XT30 also fits) |
+| Battery | NP-F970-style pack visual | 2S LiPo about 800–1000 mAh (60 × 28 × 15 mm placeholder) in a compartment over a connector well, panel-mount XT60 |
 | Head | rear servo stuck out about 7 mm; eye plate/ring (`face_part`, `noenoeil`) poked through the sides | 10 % wider, 16 mm longer at the back; eye plate and old head boards removed |
-| Mouth | fixed bill | lower half of the beak is a `jaw` on a `mouth` hinge (0–30°), position actuator `mouth` (actuator 16, after the push motors), XL330-size servo under the forehead |
+| Mouth | fixed bill | lower half of the beak is a `jaw` on a `mouth` hinge (0–30°), position actuator `mouth` (actuator 16, after the push motors), XL330 in the dome driving the jaw through a pushrod |
 | Limits | upstream | neck pitch capped at 0.70 rad (was 1.047): beyond that, with the head tipped back, the back of the head reaches the board bay |
 
-Mass (`model/mass_ledger.json`, estimates): robot 0.760 (upstream) → 0.804 kg. Torso 258 g (body shell about 71 g,
-boards 45 g, 2S LiPo 55 g). See "Mechanical validation and dynamics" below for the battery, head budget and servo delay.
+Mass (`model/mass_ledger.json`, estimates): robot 0.760 (upstream) → 0.819 kg. Torso 278 g (body shell, lid and cover
+99 g, boards 45 g, 2S LiPo 55 g), head 191 g with the jaw (budget 189 g). See "Fit fixes and assembly geometry" and
+"Mechanical validation and dynamics" below for the battery, head budget and servo delay.
+
+## Fit fixes and assembly geometry (second review, 25 November 2026)
+
+A second review found that the fit check now works, but the geometry it checks still clashed and the body had no way
+to be assembled: no split, standoffs, bosses, battery retention or room for the connectors. Both are addressed here.
+The CAD is still concept geometry (boxes and booleans driven by `v4_params.json`), now with the parts needed to put the
+duck together; "Still open" below lists what the real parts need before printing.
+
+### Static fit: before → after (`fit_check.json`, standing, mouth closed, penetration > 0.8 mm counts)
+
+| Pair | before (mm) | after (mm) | Fix |
+|-|-|-|-|
+| upper head shell / camera lens | 6.7 | 0 | lens opening Ø19 (17 mm lens + 1 mm), open down to the seam (`head.lens_opening`) |
+| mouth servo / M12 lens holder | 6.1 | 0 | mouth servo moved into the dome (below) |
+| lower head shell / head-roll servo (`yaw_roll_motion` XL330) | 5.1 | 0 | clearance box swept over the head-roll range |
+| lower head shell / neck-pitch bearing | 3.7 | 0 | clearance solid of revolution about the yaw axis, swept over roll |
+| lower head shell / neck-pitch bracket | 2.5 | 0 | same |
+| lower head shell / head XL330s (front, rear) | 2.3, 1.8 | 0 | pockets (servo box + 1.2 mm) |
+| upper shell, lower shell, motor support / mouth servo | 2.2, 1.0, 1.6 | 0 | mouth servo moved |
+| lower head shell / roll bearing | 1.1 | 0 | roll-swept clearance box |
+| 2S LiPo / upstream power support | 1.1 | – | power support (the old battery holder) removed; its 13 g is subtracted |
+| lower head shell / motor support | 0.9 | 0.9 | **explained**: the upstream motor support sits on the shell's ledge (a 0.3 mm² corner, CAD contact face; upstream parts show up to 1.1 mm the same way) |
+| keep-out envelopes (USB, XT60, balance plug, mouth-servo cable) | 2.0–5.8 | 0 | new connector layout and cable routes (below) |
+
+No other static pair is deeper than 0.8 mm (the next is the mouth-servo cable envelope against the servo, 0.6 mm:
+the plugs sit on it); the new body parts, boards, LiPo, XT60 and A010 do not touch.
+
+### Head
+
+- **Lens opening.** `build_v4.py` now cuts the upper shell from the committed source `head_upper_v4_whole.stl`
+  (renamed from `head_upper_v4.stl`; the cut shell is the new `head_upper_v4.stl`). `make_duck.py` places the head from
+  the uncut source, so the cut does not move it.
+- **Mouth servo.** A voxel search of the head cavity (all parts, 1 mm margin) found no place for an XL330 (34 × 20 ×
+  26 mm) under the forehead: the M12 holder, the motor support, the eye bosses of the upper shell and the lower shell's
+  floor slab fill it. The only free volume is the dome above the motor support, so the servo now lies flat there
+  (x −13…13, y −22…12, z 40…60 in the lower-head frame), output axis along x, parallel to the jaw hinge. A pushrod in
+  the plane x = 17 runs from the horn (front end, +x face) down to a 3 mm lever plate on the jaw heel (pin at y −40,
+  z 8, 7 mm behind and below the hinge): pulling the rod up opens the jaw. Keep-out envelopes `mouth_pushrod`
+  (oriented box along the rod) and `mouth_servo_cable` (plugs at the servo's rear end) are checked and clear.
+- **Clearance around the neck mechanism** (`head_clearance.py`, writes `head.clearance`): measures, from the upstream
+  parts in the generated model, the solid of revolution swept by everything on the neck-pitch body (and the neck body over
+  head pitch 0.35 ± 0.6 rad) about the head-yaw axis, plus boxes for the head-roll servo and roll bearings and the two
+  XL330s fixed in the head, each + 1.2 mm. `build_v4.py` subtracts the revolved profile and the roll boxes at 9 angles
+  over the head-roll range (±0.436 rad) and the fixed boxes as they are, so `build_v4.py` itself still needs only
+  `v4_params.json`. The floor opening around the neck grows and the inner ledges at the neck go; with the new jaw split
+  the lower shell goes from 48.1 to 38.2 cm³. The neck-pitch bracket still touched the shell at full roll (1.1 mm, 7/300 poses) until
+  the profile included the bracket's parts below the shell that roll up into it.
+- **Jaw.** The jaw/shell split is no longer a plane at the hinge: the jaw is the beak in front of the hinge plane plus a
+  quarter-disc heel (radius 10.5 mm) behind and below the hinge axis, and the lower shell loses that region grown by
+  the 2 mm gap plus the heel's sweep to 36° above the back of the hinge. The mating faces are arcs about the hinge, so the
+  gap is the same at every opening. Before: 0.48 mm rub at 15°, 1.0 mm at 30° (619/3000 poses). After: 0 mm at 0–30°
+  (checked every 5°, and in the pose envelope with the mouth sampled over its range). The jaw now includes the cheek
+  pieces inside the arc, so it is 5.9 g (was 4.4 g).
+
+### Body: assembly split, standoffs, bosses, battery retention, connectors
+
+Three prints instead of one closed shell (all in `v4_params.json` `body`; fasteners 12 × M2 + heat-set inserts,
+4 g in the ledger):
+
+| Part | What it does |
+|-|-|
+| `body_shell_v4` (68.9 cm³) | main shell. Board bay with a fixed **bulkhead** (x −60…−58) carrying four **UNO Q standoffs** (Ø7, 6 mm, M2.5 heat-set; UNO hole pattern, UNO side forward, HAT to the rear) and two **lid bosses** in the top corners; **battery compartment** walls up to the roof (with lightening windows) over a **connector well** with four **cover bosses**; **A010 rear posts** (the sensor is clamped between them and the window lip); **trunk mounts**: a flange under the rear-centre of the trunk plate (2 × M2 up into heat-set inserts pressed into the plate) and two bosses from the side walls to the hip-yaw XL330s' outer faces (2 × M2 into the servo cases); a cable window in the bulkhead |
+| `body_lid_v4` (7.4 cm³) | rear lid of the board bay, 1.6 mm with vents: two hooks drop into slots in the bay floor, 2 × M2 at the top; locating lip; U-slot for the USB cable |
+| `keel_cover_v4` (3.2 cm³) | bottom of the connector well, 4 × M2; two rails the LiPo stands on, the leads pass between them |
+
+Assembly: boards onto the standoffs through the open rear, then the lid; LiPo into its compartment from below with its
+XT60 male plugged into the panel-mount female in the well's rear wall, then the cover; the shell drops over the trunk
+(the neck through the notch) and bolts to the trunk plate and the hip-yaw servos. To swap or charge the pack, remove the
+cover (4 screws): the XT60 and the balance plug lie on it and the pack slides down.
+
+Layout changes against the 24 November body:
+- Board stack: 6 mm standoffs in front of it and 3 mm behind it for the HAT's solder tails; the stack moved 1.5 mm back
+  and 7 mm down (x −82…−66, z −40…30) so that the bay roof is level with the rest of the body (outer z 41, was 42.5) and
+  still clears a right-angle USB-C plug. Bay: x −85…−58 plus the 1.6 mm lid (−86.8), z −44…41 (was −35…42.5).
+- USB-C: the UNO form factor puts it on a short edge, the top of the upright stack; a straight plug needed 25 mm above
+  it. Now a **right-angle plug** (8 mm) with the cable out through the lid's U-slot (`usb_c_ra`, `usb_cable`).
+- Servo bus: two right-angle JST-EH headers on the HAT's top edge (left and right leg chains); the cables drop between
+  the stack and the bulkhead, pass the bulkhead window, run along the roof beside the battery compartment and down behind
+  each hip-yaw XL330 (`servo_bus_l_*`, `servo_bus_r_*`, four boxes per side).
+- LiPo: 1.5 mm clearance per side (was 0.5 / 1.0 mm) for ±1 mm pack tolerance and swelling (foam pads), held by the
+  compartment walls, the roof (2 mm, pad) and the cover's rails; leads out of the bottom.
+- XT60: a panel-mount female in the connector well's rear wall (8.2 × 15.8 mm cutout), the pack's male plugged into it
+  inside the well; the leads loop forward under the keel wall with a 7 mm bend (`lipo_leads_drop`, `lipo_leads_loop`);
+  the robot-side lead rises behind the well to the bulkhead window (`xt60_rear`, `power_lead`). Before: an XT60 that
+  could not be unplugged through a 5 × 12 mm hole and a 9.5 mm placeholder for a 16 mm part. `xt60_v4` is now the mated
+  pair inside the well (18 mm, 8 g).
+- Balance plug: lies on the cover in front of the lead loop (`balance_plug`), reachable when the cover is off.
+- A010 cable: from the sensor's rear along the centre line between the hip-yaw servos, across behind the right one,
+  back beside the battery compartment and up to the bulkhead window (`a010_cable_1…4`).
+- The keel cover is 2.5 mm narrower than the well on each side: in one sampled pose (hip roll inwards) the right shank
+  reached its edge by 1.5 mm.
+
+All 20 torso envelopes and 2 head envelopes are clear of every part at rest. They are estimates: check them against the
+real connectors and cables.
+
+### Pose envelope and recorded motions: before → after
+
+"Clash" = a pair deeper than 0.8 mm that is clear at rest (no pair clashes at rest any more, so this is every clash).
+Before: the 24 November run (old geometry, old recordings). After: `fit_check.json` from this branch, with the motions
+re-recorded on the new model (`motions.py all --record`, 20 ms servo delay, every 50 Hz frame); `*_oldtraj` = the old
+roulade and fall recordings replayed on the new geometry.
+
+| Check | before | after | Remaining contacts |
+|-|-|-|-|
+| Pose envelope (3000 random poses) | 3000 poses with a clash (800 in pairs clear at rest) | **77** | only foot against foot or shank (random hip yaw/roll crossing the legs, up to 3.3 mm, as before); no head, jaw, body or envelope pair |
+| balance, walk, pick, dance, sit/stand | none | none | sit/stand: 1 frame of foot proxies on the body front (no mesh clash) |
+| obstacles | 7 frames (shank through the XT60 plug envelope, 4.1 mm) | **0** | the plug is now inside the well |
+| roulade | 11 frames, 1.2 mm | 27 frames, **1.2 mm** (old recording: 18, 1.2 mm) | **explained**: the jaw meets the chest while the head is tucked in the roll; the collision proxies touch in the same frames (19), i.e. the head rests on the body in simulation. A 1.5 mm relief on the chest's top-front edge would remove it |
+| fall + get-up | 668 frames, 7.0 mm | 20 / 1372 frames, **2.2 mm** (old recording: 26 / 889, 7.0 mm) | **explained**: feet and a shank strike the head shells, body shell and lid while the duck is on the ground (the proxies collide in 25 frames); these are impacts, not fit errors. The parts must survive them. The 7.0 mm on the old recording is the same foot hitting the head XL330 |
+
+The 628 "head over the board bay" frames of the old fall run are gone: the straight USB-C plug envelope above the bay
+no longer exists.
+
+**Effect on the motions** (passes out of 3, servo stiffness × 0.95 / 1.0 / 1.05, 20 ms delay; main = the model before
+this branch, same runs):
+
+| Model | balance | walk | obstacles | fall + get-up | sit/stand | roulade | pick | dance |
+|-|-|-|-|-|-|-|-|-|
+| main | 3 | 0 | 1 | 2 | 3 | 3 | 3 | 3 |
+| this branch | 3 | 0 | 1 | 1 | 3 | 3 | 3 | 3 |
+
+Only the fall recovery changes (fails at × 1.0 now). It was already marginal (1/3 in the 24 November table, 2/3 on main
+since the 100 g battery fix), and the torso is now 21 g heavier with its COM 3 mm lower. Pick touches the chest proxy
+with a hip in 20–32 control steps (main: 0–18), with no mesh clash.
+
+### Mass ledger (`model/mass_ledger.json`): before → after
+
+| | before | after |
+|-|-|-|
+| Printed body (shell + lid + cover) | 71.0 g (shell only) | 98.6 g (85.5 + 9.2 + 3.9) |
+| Removed upstream power support | – | −13.0 g |
+| Fasteners (body), XT60 pair | –, 6 g | 4 g, 8 g |
+| **Torso link** | 257.6 g, COM (−30.9, 0, 5.8) mm | **278.2 g**, COM (−32.5, 0, 2.4) mm |
+| Torso Ixx / Iyy / Izz | 298 / 544 / 451 kg·mm² | 355 / 617 / 488 kg·mm² |
+| Head shells + jaw | 113.0 g (62.3 + 46.3 + 4.4) | 107.1 g (61.1 + 40.1 + 5.9) |
+| **Head link + jaw** | 197.1 g | **191.1 g** |
+| **Robot** | 0.804 kg | **0.819 kg** |
+
+The body is 28 g heavier because it now has a bulkhead, standoffs, bosses, compartment walls, a connector well, a lid
+and a cover (at the default 1.2 mm walls / 30 % infill the 2 mm walls print almost solid); removing the old battery
+holder takes back 13 g. The torso COM moves 1.6 mm back and 3.4 mm down (the bay and well are lower).
+
+**Head against its budget.** Budget 188.8 g (the upstream head link the policies were trained with). V4 head 185.2 g
+link + 5.9 g jaw = **191.1 g, 2.3 g (1.2 %) over** (was 197.1 g, 4.4 % over): shells + jaw 107.1 g (the lower shell is
+6.2 g lighter after the clearance cuts and the jaw split; the jaw gained 1.5 g) plus the 18 g mouth servo. In the pessimistic case (upstream
+parts at 1.08 g/cm³, see above) it is about 207 g, 10 % over. With the mouth servo in the dome the head COM moves 3.8 mm
+(head body frame: +2.9, −1.6, +1.9 mm) and the head inertia drops 2–5 % (620 / 425 / 365 kg·mm², was 652 / 445 / 371). The
+`print._proposed_head` settings (0.8 mm walls, 15 % infill on the shells and jaw) bring shells + jaw to 76.6 g and the
+head to about 161 g (177 g pessimistic), under budget either way; they are still not applied (check the dome's
+stiffness on a print first).
+
+### Still open (not modelled)
+
+- Jaw hinge pin, knuckles and bushing; horn, pushrod and clevis hardware; mouth-servo bosses in the dome.
+- Screws or clips joining the upper and lower head shells.
+- Neck cable pass-through for the head servos' bus, the mouth servo and the head camera (slack for yaw ±170°, pitch and
+  roll).
+- Trunk mounts: the two holes and inserts in the upstream trunk plate (x −15.5, y ±2.5) and the XL330 case holes the
+  side bosses use must be checked on the real parts; the side bosses assume tapped M2 holes in the hip-yaw servos'
+  outer faces.
+- The UNO Q's bottom-connector height (the 6 mm standoffs assume ≤ 5 mm) and the real positions of its USB-C and the
+  HAT headers.
+- Panel-mount XT60 screws; foam pads for the LiPo; strain relief at the lid's USB slot.
+- Collision proxies (`scripts/collision_proxies.json`) for the head and jaw are unchanged; the body's follow the outer
+  blocks (a new box for the connector well).
 
 ## Mechanical validation and dynamics (review fixes, 24 November 2026)
 
@@ -90,7 +258,7 @@ shell and the head XL330: those parts need to survive that impact. The roll pres
 body shell's chest corner needs about 1.5 mm relief or the head stops on it. Proxy contacts and mesh clashes agree
 on where these happen.
 
-### Missing hardware detail (not modelled anywhere yet)
+### Missing hardware detail (24 November; most of it is addressed in "Fit fixes and assembly geometry" above)
 
 Fasteners and bosses
 - The body shell is one closed solid: no split, lid or cover, so it cannot be printed around the boards or opened. It
@@ -542,11 +710,13 @@ Earlier tables in this file come from individual branches and are not measuremen
 
 - `v4_params.json`: all dimensions (mm). Body, boards, A010, battery and XT60 in the torso frame; head parts in the
   lower-head mesh frame. The `head` block also records how the head shells were made from the V3 head.
-- `build_v4.py` (Blender): builds the body shell, placeholders, and splits the jaw from `head_lower_v4_whole.stl`:
-  `E:\blender\blender.exe --background --python design/v4/build_v4.py`. Sources: `head_upper_v4.stl`,
-  `head_lower_v4_whole.stl`.
+- `build_v4.py` (Blender): builds the body shell, lid, keel cover and placeholders, cuts the lens opening and the neck
+  clearances into the head shells and splits the jaw: `E:\blender\blender.exe --background --python
+  design/v4/build_v4.py [-- body|head]`. Sources: `head_upper_v4_whole.stl`, `head_lower_v4_whole.stl`.
+- `head_clearance.py`: measures the clearance cutters around the neck mechanism from the generated model and writes
+  them to `v4_params.json` (`head.clearance`); rerun it, then `build_v4.py`, if the upstream neck/head parts change.
 - Model: `scripts/prep_meshes.py`, then `scripts/make_duck.py` (`--base robot_groundcontact.xml --tag gc`,
-  `--torso-scale 1.1 --tag mplus`, `--torso-scale 0.9 --tag mminus`), `scripts/worldgen.py`,
+  `--torso-scale 1.1 --tag mplus`, `--torso-scale 0.9 --tag mminus`), `scripts/worldgen.py` (and `--layout b`),
   `scripts/sync_ros2_assets.py`, `scripts/mjcf_to_urdf.py`.
 - `check_v4_fit.py`: the fit check (writes `fit_check.json`): static fit, pose envelope and recorded motions.
   `python design/v4/check_v4_fit.py --samples 3000 --traj "DIR/*.npz"` after

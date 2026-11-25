@@ -13,7 +13,7 @@ ROOT = Path(os.environ.get("DUCKLING_ROOT", Path(__file__).resolve().parents[1])
 V4 = ROOT / "design" / "v4"
 OUT = ROOT / "model" / "assets"
 OUT.mkdir(parents=True, exist_ok=True)
-JOBS = ["head_upper_v4", "head_lower_v4", "jaw_v4", "mouth_servo_v4", "body_shell_v4",
+JOBS = ["head_upper_v4", "head_lower_v4", "jaw_v4", "mouth_servo_v4", "body_shell_v4", "body_lid_v4", "keel_cover_v4",
         "pcb_stack_v4", "a010_v4", "battery_v4", "xt60_v4"]
 info = {}
 for name in JOBS:
@@ -29,5 +29,9 @@ for name in JOBS:
     entry["faces_out"] = len(mesh.faces)
     info[name] = entry
     print(f"{name}: {entry['faces_in']} -> {entry['faces_out']} faces, volume {entry['volume_mm3']/1000:.1f} cm3")
+# sources the head placement is measured from (make_duck.py): openings cut into the shells must not move the head
+for name in ["head_upper_v4_whole"]:
+    mesh = trimesh.load(V4 / f"{name}.stl")
+    info[name] = dict(source=f"design/v4/{name}.stl", min_mm=mesh.bounds[0].tolist(), max_mm=mesh.bounds[1].tolist())
 (ROOT / "model").mkdir(exist_ok=True)
 (ROOT / "model" / "v4_meshes.json").write_text(json.dumps(info, indent=1))

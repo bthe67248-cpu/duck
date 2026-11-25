@@ -1,6 +1,7 @@
 {
  "_note": "mm. body/pcb/a010/battery/xt60: torso (trunk_base) frame, +x forward, +y left, +z up, standing pose. head: lower-head mesh frame (x width, -y front, z up).",
  "body": {
+  "_note": "torso frame mm. Main shell = union(outer) - union(inner) + features - cuts; lid and cover are separate prints. Assembly: boards on the bulkhead standoffs through the open rear, then the lid (2 hooks + 2 x M2); LiPo + XT60 from below, then the keel cover (4 x M2); the shell bolts to the trunk plate (2 x M2, rear flange) and to the hip-yaw XL330s (2 x M2 through the side walls).",
   "outer": [
    {
     "name": "front_upper",
@@ -47,48 +48,49 @@
    {
     "name": "board_bay",
     "lo": [
-     -84.5,
+     -85.0,
      -30.0,
-     -35.0
+     -44.0
     ],
     "hi": [
      -58.0,
      30.0,
-     42.5
+     41.0
     ],
     "bevel": 5.0
    },
    {
     "name": "battery_keel",
     "lo": [
-     -47.5,
-     -17.0,
+     -48.5,
+     -17.5,
      -29.0
     ],
     "hi": [
-     -27.5,
-     17.0,
+     -26.5,
+     17.5,
      6.0
     ],
     "bevel": 4.0
    },
    {
-    "name": "xt60_keel",
+    "name": "connector_well",
     "lo": [
-     -46.5,
-     -10.5,
-     -38.0
+     -48.5,
+     -17.5,
+     -43.2
     ],
     "hi": [
-     -28.5,
-     10.5,
-     -20.0
+     -16.0,
+     17.5,
+     -25.0
     ],
     "bevel": 3.0
    }
   ],
   "inner": [
    {
+    "name": "front_upper",
     "lo": [
      -38.0,
      -32.5,
@@ -102,8 +104,9 @@
     "bevel": 3.0
    },
    {
+    "name": "rear_upper",
     "lo": [
-     -60.0,
+     -58.0,
      -32.5,
      1.0
     ],
@@ -115,6 +118,7 @@
     "bevel": 3.0
    },
    {
+    "name": "chest_a010",
     "lo": [
      31.0,
      -22.0,
@@ -128,43 +132,307 @@
     "bevel": 2.0
    },
    {
+    "name": "board_bay",
     "lo": [
-     -82.5,
+     -90.0,
      -28.0,
-     -33.0
+     -42.0
     ],
     "hi": [
-     -56.0,
+     -60.0,
      28.0,
-     40.5
-    ],
-    "bevel": 3.0
-   },
-   {
-    "lo": [
-     -45.5,
-     -15.0,
-     -27.0
-    ],
-    "hi": [
-     -29.5,
-     15.0,
-     8.0
+     39.0
     ],
     "bevel": 2.0
    },
    {
+    "name": "battery_keel",
     "lo": [
-     -44.5,
-     -8.5,
-     -36.0
+     -46.5,
+     -15.5,
+     -27.2
     ],
     "hi": [
-     -30.5,
-     8.5,
-     -18.0
+     -28.5,
+     15.5,
+     8.0
     ],
-    "bevel": 1.5
+    "bevel": 1.0
+   },
+   {
+    "name": "connector_well",
+    "lo": [
+     -46.5,
+     -15.5,
+     -48.0
+    ],
+    "hi": [
+     -18.0,
+     15.5,
+     -27.0
+    ],
+    "bevel": 1.0
+   }
+  ],
+  "features": [
+   {
+    "name": "batt_wall_front",
+    "lo": [
+     -28.5,
+     -17.5,
+     1.0
+    ],
+    "hi": [
+     -26.5,
+     17.5,
+     37.5
+    ]
+   },
+   {
+    "name": "batt_wall_rear",
+    "lo": [
+     -48.5,
+     -17.5,
+     1.0
+    ],
+    "hi": [
+     -46.5,
+     17.5,
+     37.5
+    ]
+   },
+   {
+    "name": "batt_wall_left",
+    "lo": [
+     -48.5,
+     15.5,
+     1.0
+    ],
+    "hi": [
+     -26.5,
+     17.5,
+     37.5
+    ]
+   },
+   {
+    "name": "batt_wall_right",
+    "lo": [
+     -48.5,
+     -17.5,
+     1.0
+    ],
+    "hi": [
+     -26.5,
+     -15.5,
+     37.5
+    ]
+   },
+   {
+    "name": "standoff_0",
+    "cyl": {
+     "axis": "x",
+     "c": [
+      24.13,
+      16.03
+     ],
+     "r": 3.5,
+     "span": [
+      -65.5,
+      -59.5
+     ]
+    }
+   },
+   {
+    "name": "standoff_1",
+    "cyl": {
+     "axis": "x",
+     "c": [
+      -24.13,
+      14.76
+     ],
+     "r": 3.5,
+     "span": [
+      -65.5,
+      -59.5
+     ]
+    }
+   },
+   {
+    "name": "standoff_2",
+    "cyl": {
+     "axis": "x",
+     "c": [
+      19.05,
+      -36.04
+     ],
+     "r": 3.5,
+     "span": [
+      -65.5,
+      -59.5
+     ]
+    }
+   },
+   {
+    "name": "standoff_3",
+    "cyl": {
+     "axis": "x",
+     "c": [
+      -8.89,
+      -36.04
+     ],
+     "r": 3.5,
+     "span": [
+      -65.5,
+      -59.5
+     ]
+    }
+   },
+   {
+    "name": "lid_boss_tl",
+    "lo": [
+     -85.0,
+     22.0,
+     32.5
+    ],
+    "hi": [
+     -79.0,
+     28.5,
+     39.5
+    ]
+   },
+   {
+    "name": "lid_boss_tr",
+    "lo": [
+     -85.0,
+     -28.5,
+     32.5
+    ],
+    "hi": [
+     -79.0,
+     -22.0,
+     39.5
+    ]
+   },
+   {
+    "name": "cover_boss_rl",
+    "lo": [
+     -46.6,
+     10.0,
+     -43.2
+    ],
+    "hi": [
+     -41.5,
+     15.6,
+     -37.2
+    ]
+   },
+   {
+    "name": "cover_boss_rr",
+    "lo": [
+     -46.6,
+     -15.6,
+     -43.2
+    ],
+    "hi": [
+     -41.5,
+     -10.0,
+     -37.2
+    ]
+   },
+   {
+    "name": "cover_boss_fl",
+    "lo": [
+     -23.5,
+     10.0,
+     -43.2
+    ],
+    "hi": [
+     -17.9,
+     15.6,
+     -37.2
+    ]
+   },
+   {
+    "name": "cover_boss_fr",
+    "lo": [
+     -23.5,
+     -15.6,
+     -43.2
+    ],
+    "hi": [
+     -17.9,
+     -10.0,
+     -37.2
+    ]
+   },
+   {
+    "name": "trunk_flange",
+    "lo": [
+     -28.6,
+     -5.5,
+     -4.5
+    ],
+    "hi": [
+     -12.0,
+     5.5,
+     -1.2
+    ]
+   },
+   {
+    "name": "servo_boss_l",
+    "cyl": {
+     "axis": "y",
+     "c": [
+      -1.5,
+      11.5
+     ],
+     "r": 3.0,
+     "span": [
+      27.9,
+      33.0
+     ]
+    }
+   },
+   {
+    "name": "servo_boss_r",
+    "cyl": {
+     "axis": "y",
+     "c": [
+      -1.5,
+      11.5
+     ],
+     "r": 3.0,
+     "span": [
+      -33.0,
+      -27.9
+     ]
+    }
+   },
+   {
+    "name": "a010_post_l",
+    "lo": [
+     31.0,
+     11.0,
+     -8.5
+    ],
+    "hi": [
+     37.0,
+     17.0,
+     11.0
+    ]
+   },
+   {
+    "name": "a010_post_r",
+    "lo": [
+     31.0,
+     -17.0,
+     -8.5
+    ],
+    "hi": [
+     37.0,
+     -11.0,
+     11.0
+    ]
    }
   ],
   "cuts": [
@@ -197,47 +465,698 @@
     "bevel": 1.5
    },
    {
-    "name": "usb_access",
+    "name": "bulkhead_window",
     "lo": [
-     -90.0,
-     -10.0,
-     20.0
+     -61.0,
+     -27.0,
+     22.0
     ],
     "hi": [
-     -80.0,
-     10.0,
-     30.0
-    ],
-    "bevel": 1.5
+     -57.0,
+     27.0,
+     36.5
+    ]
    },
    {
-    "name": "xt60_access",
+    "name": "batt_win_left",
     "lo": [
-     -40.0,
-     -6.0,
+     -44.0,
+     14.5,
+     10.0
+    ],
+    "hi": [
+     -31.0,
+     18.5,
+     32.0
+    ],
+    "bevel": 1.0
+   },
+   {
+    "name": "batt_win_right",
+    "lo": [
+     -44.0,
+     -18.5,
+     10.0
+    ],
+    "hi": [
+     -31.0,
+     -14.5,
+     32.0
+    ],
+    "bevel": 1.0
+   },
+   {
+    "name": "batt_win_front",
+    "lo": [
+     -29.5,
+     -11.0,
+     10.0
+    ],
+    "hi": [
+     -25.5,
+     11.0,
+     32.0
+    ],
+    "bevel": 1.0
+   },
+   {
+    "name": "batt_win_rear",
+    "lo": [
+     -49.5,
+     -11.0,
+     10.0
+    ],
+    "hi": [
+     -45.5,
+     11.0,
+     32.0
+    ],
+    "bevel": 1.0
+   },
+   {
+    "name": "lid_hook_slot_l",
+    "lo": [
+     -83.7,
+     11.8,
      -45.0
     ],
     "hi": [
-     -35.0,
-     6.0,
-     -34.0
+     -81.8,
+     20.2,
+     -41.5
+    ]
+   },
+   {
+    "name": "lid_hook_slot_r",
+    "lo": [
+     -83.7,
+     -20.2,
+     -45.0
     ],
-    "bevel": 1.0
+    "hi": [
+     -81.8,
+     -11.8,
+     -41.5
+    ]
+   },
+   {
+    "name": "xt60_panel",
+    "lo": [
+     -49.5,
+     -8.3,
+     -42.6
+    ],
+    "hi": [
+     -45.5,
+     8.3,
+     -33.6
+    ],
+    "bevel": 0.5
+   },
+   {
+    "name": "standoff_hole_0",
+    "cyl": {
+     "axis": "x",
+     "c": [
+      24.13,
+      16.03
+     ],
+     "r": 1.8,
+     "span": [
+      -66.5,
+      -60.5
+     ]
+    }
+   },
+   {
+    "name": "standoff_hole_1",
+    "cyl": {
+     "axis": "x",
+     "c": [
+      -24.13,
+      14.76
+     ],
+     "r": 1.8,
+     "span": [
+      -66.5,
+      -60.5
+     ]
+    }
+   },
+   {
+    "name": "standoff_hole_2",
+    "cyl": {
+     "axis": "x",
+     "c": [
+      19.05,
+      -36.04
+     ],
+     "r": 1.8,
+     "span": [
+      -66.5,
+      -60.5
+     ]
+    }
+   },
+   {
+    "name": "standoff_hole_3",
+    "cyl": {
+     "axis": "x",
+     "c": [
+      -8.89,
+      -36.04
+     ],
+     "r": 1.8,
+     "span": [
+      -66.5,
+      -60.5
+     ]
+    }
+   },
+   {
+    "name": "lid_hole_tl",
+    "cyl": {
+     "axis": "x",
+     "c": [
+      25.25,
+      36.0
+     ],
+     "r": 1.6,
+     "span": [
+      -85.5,
+      -80.0
+     ]
+    }
+   },
+   {
+    "name": "lid_hole_tr",
+    "cyl": {
+     "axis": "x",
+     "c": [
+      -25.25,
+      36.0
+     ],
+     "r": 1.6,
+     "span": [
+      -85.5,
+      -80.0
+     ]
+    }
+   },
+   {
+    "name": "cover_hole_rl",
+    "cyl": {
+     "axis": "z",
+     "c": [
+      -44.0,
+      12.8
+     ],
+     "r": 1.6,
+     "span": [
+      -43.7,
+      -38.2
+     ]
+    }
+   },
+   {
+    "name": "cover_hole_rr",
+    "cyl": {
+     "axis": "z",
+     "c": [
+      -44.0,
+      -12.8
+     ],
+     "r": 1.6,
+     "span": [
+      -43.7,
+      -38.2
+     ]
+    }
+   },
+   {
+    "name": "cover_hole_fl",
+    "cyl": {
+     "axis": "z",
+     "c": [
+      -20.7,
+      12.8
+     ],
+     "r": 1.6,
+     "span": [
+      -43.7,
+      -38.2
+     ]
+    }
+   },
+   {
+    "name": "cover_hole_fr",
+    "cyl": {
+     "axis": "z",
+     "c": [
+      -20.7,
+      -12.8
+     ],
+     "r": 1.6,
+     "span": [
+      -43.7,
+      -38.2
+     ]
+    }
+   },
+   {
+    "name": "trunk_hole_l",
+    "cyl": {
+     "axis": "z",
+     "c": [
+      -15.5,
+      2.5
+     ],
+     "r": 1.2,
+     "span": [
+      -5.0,
+      -0.5
+     ]
+    }
+   },
+   {
+    "name": "trunk_hole_r",
+    "cyl": {
+     "axis": "z",
+     "c": [
+      -15.5,
+      -2.5
+     ],
+     "r": 1.2,
+     "span": [
+      -5.0,
+      -0.5
+     ]
+    }
+   },
+   {
+    "name": "servo_hole_l",
+    "cyl": {
+     "axis": "y",
+     "c": [
+      -1.5,
+      11.5
+     ],
+     "r": 1.2,
+     "span": [
+      27.0,
+      36.0
+     ]
+    }
+   },
+   {
+    "name": "servo_hole_r",
+    "cyl": {
+     "axis": "y",
+     "c": [
+      -1.5,
+      11.5
+     ],
+     "r": 1.2,
+     "span": [
+      -36.0,
+      -27.0
+     ]
+    }
    }
-  ]
+  ],
+  "lid": {
+   "note": "rear-bay lid (1.6 mm, vented): two hooks at the bottom edge drop into slots in the bay floor, 2 x M2 x 8 at the top into the bay-corner bosses; locating lip inside the opening; U-slot at the top for the right-angle USB-C cable",
+   "parts": [
+    {
+     "name": "plate",
+     "lo": [
+      -86.8,
+      -30.0,
+      -44.0
+     ],
+     "hi": [
+      -85.2,
+      30.0,
+      41.0
+     ],
+     "bevel": 0.6
+    },
+    {
+     "name": "lip",
+     "lo": [
+      -85.6,
+      -27.6,
+      -37.0
+     ],
+     "hi": [
+      -83.5,
+      27.6,
+      31.5
+     ],
+     "bevel": 0.4
+    },
+    {
+     "name": "hook_l",
+     "lo": [
+      -85.6,
+      12.0,
+      -42.0
+     ],
+     "hi": [
+      -82.0,
+      20.0,
+      -40.6
+     ]
+    },
+    {
+     "name": "hook_l_down",
+     "lo": [
+      -83.5,
+      12.0,
+      -43.8
+     ],
+     "hi": [
+      -82.0,
+      20.0,
+      -41.0
+     ]
+    },
+    {
+     "name": "hook_r",
+     "lo": [
+      -85.6,
+      -20.0,
+      -42.0
+     ],
+     "hi": [
+      -82.0,
+      -12.0,
+      -40.6
+     ]
+    },
+    {
+     "name": "hook_r_down",
+     "lo": [
+      -83.5,
+      -20.0,
+      -43.8
+     ],
+     "hi": [
+      -82.0,
+      -12.0,
+      -41.0
+     ]
+    }
+   ],
+   "cuts": [
+    {
+     "name": "hole_tl",
+     "cyl": {
+      "axis": "x",
+      "c": [
+       25.25,
+       36.0
+      ],
+      "r": 1.2,
+      "span": [
+       -88.0,
+       -82.0
+      ]
+     }
+    },
+    {
+     "name": "hole_tr",
+     "cyl": {
+      "axis": "x",
+      "c": [
+       -25.25,
+       36.0
+      ],
+      "r": 1.2,
+      "span": [
+       -88.0,
+       -82.0
+      ]
+     }
+    },
+    {
+     "name": "usb_slot",
+     "lo": [
+      -88.0,
+      -4.5,
+      31.0
+     ],
+     "hi": [
+      -82.0,
+      4.5,
+      42.0
+     ],
+     "bevel": 0.5
+    },
+    {
+     "name": "lip_hollow",
+     "lo": [
+      -85.0,
+      -26.1,
+      -35.5
+     ],
+     "hi": [
+      -83.0,
+      26.1,
+      30.0
+     ]
+    },
+    {
+     "name": "vent_0",
+     "lo": [
+      -88.0,
+      -22.0,
+      -30.0
+     ],
+     "hi": [
+      -84.0,
+      22.0,
+      -26.0
+     ]
+    },
+    {
+     "name": "vent_1",
+     "lo": [
+      -88.0,
+      -22.0,
+      -21.0
+     ],
+     "hi": [
+      -84.0,
+      22.0,
+      -17.0
+     ]
+    },
+    {
+     "name": "vent_2",
+     "lo": [
+      -88.0,
+      -22.0,
+      -12.0
+     ],
+     "hi": [
+      -84.0,
+      22.0,
+      -8.0
+     ]
+    },
+    {
+     "name": "vent_3",
+     "lo": [
+      -88.0,
+      -22.0,
+      -3.0
+     ],
+     "hi": [
+      -84.0,
+      22.0,
+      1.0
+     ]
+    },
+    {
+     "name": "vent_4",
+     "lo": [
+      -88.0,
+      -22.0,
+      6.0
+     ],
+     "hi": [
+      -84.0,
+      22.0,
+      10.0
+     ]
+    },
+    {
+     "name": "vent_5",
+     "lo": [
+      -88.0,
+      -22.0,
+      15.0
+     ],
+     "hi": [
+      -84.0,
+      22.0,
+      19.0
+     ]
+    }
+   ]
+  },
+  "cover": {
+   "note": "keel cover: closes the connector well from below and carries two rails the LiPo stands on (the leads pass between them); 4 x M2 x 6 into the well bosses. 2.5 mm narrower than the well each side: a shank swung inwards (hip roll) passes under the keel. Remove it to unplug the XT60, reach the balance plug and drop the pack out",
+   "parts": [
+    {
+     "name": "plate",
+     "lo": [
+      -48.5,
+      -15.0,
+      -45.4
+     ],
+     "hi": [
+      -16.0,
+      15.0,
+      -43.4
+     ],
+     "bevel": 1.0
+    },
+    {
+     "name": "rail_l",
+     "lo": [
+      -41.0,
+      9.5,
+      -43.6
+     ],
+     "hi": [
+      -32.0,
+      13.5,
+      -25.0
+     ]
+    },
+    {
+     "name": "rail_r",
+     "lo": [
+      -41.0,
+      -13.5,
+      -43.6
+     ],
+     "hi": [
+      -32.0,
+      -9.5,
+      -25.0
+     ]
+    }
+   ],
+   "cuts": [
+    {
+     "name": "hole_rl",
+     "cyl": {
+      "axis": "z",
+      "c": [
+       -44.0,
+       12.8
+      ],
+      "r": 1.2,
+      "span": [
+       -46.0,
+       -42.0
+      ]
+     }
+    },
+    {
+     "name": "hole_rr",
+     "cyl": {
+      "axis": "z",
+      "c": [
+       -44.0,
+       -12.8
+      ],
+      "r": 1.2,
+      "span": [
+       -46.0,
+       -42.0
+      ]
+     }
+    },
+    {
+     "name": "hole_fl",
+     "cyl": {
+      "axis": "z",
+      "c": [
+       -20.7,
+       12.8
+      ],
+      "r": 1.2,
+      "span": [
+       -46.0,
+       -42.0
+      ]
+     }
+    },
+    {
+     "name": "hole_fr",
+     "cyl": {
+      "axis": "z",
+      "c": [
+       -20.7,
+       -12.8
+      ],
+      "r": 1.2,
+      "span": [
+       -46.0,
+       -42.0
+      ]
+     }
+    }
+   ]
+  },
+  "trunk_plate_holes": {
+   "note": "drill/insert in the upstream trunk plate (printed): M2 heat-set inserts, 3.2 mm holes, 3 mm deep from below, under the rear flange's clearance holes",
+   "xy": [
+    [
+     -15.5,
+     2.5
+    ],
+    [
+     -15.5,
+     -2.5
+    ]
+   ]
+  }
  },
  "pcb_stack": {
   "lo": [
-   -80.5,
+   -82.0,
    -26.67,
-   -31.0
+   -40.0
   ],
   "hi": [
-   -64.5,
+   -66.0,
    26.67,
-   39.0
+   30.0
   ],
-  "note": "UNO Q + resized HAT, 70 tall x 53.34 across, 16 mm stack; behind the leg sweep (check_pcb_target.py target region)"
+  "mounting_holes_yz": [
+   [
+    24.13,
+    16.03
+   ],
+   [
+    -24.13,
+    14.76
+   ],
+   [
+    19.05,
+    -36.04
+   ],
+   [
+    -8.89,
+    -36.04
+   ]
+  ],
+  "note": "UNO Q + resized HAT, 70 tall x 53.34 across, 16 mm stack, upright behind the leg sweep; UNO side forward on 6 mm standoffs from the bulkhead, HAT to the rear; USB-C on the top edge (right-angle plug), servo-bus headers right-angled on the HAT's top edge"
  },
  "a010": {
   "lo": [
@@ -250,7 +1169,8 @@
    20.35,
    17.125
   ],
-  "mass_g": 10.0
+  "mass_g": 10.0,
+  "note": "Sipeed A010 in the chest pocket, clamped between the window lip and two rear posts"
  },
  "battery": {
   "lo": [
@@ -263,21 +1183,22 @@
    14.0,
    35.0
   ],
-  "note": "2S LiPo ~800-1000 mAh, 60 x 28 x 15 mm, XT60 lead (XT30 also fits)",
+  "note": "2S LiPo ~800-1000 mAh, 60 x 28 x 15 mm, leads out of the bottom; stands on the keel cover's rails in a compartment with 1.5 mm clearance per side (packs vary +-1 mm and swell: foam pads)",
   "mass_g": 55.0
  },
  "xt60": {
   "lo": [
-   -44.0,
-   -8.0,
-   -35.5
+   -46.5,
+   -7.9,
+   -42.2
   ],
   "hi": [
-   -31.0,
-   8.0,
-   -26.0
+   -28.5,
+   7.9,
+   -34.0
   ],
-  "note": "XT60 pair below the pack; unplug through the keel's bottom opening"
+  "mass_g": 8.0,
+  "note": "XT60 pair: panel-mount female in the connector well's rear wall (mating face inside), pack male on its leads, lying on the keel cover below the pack (inside part of the pair)"
  },
  "head": {
   "cx": -2.0,
@@ -287,97 +1208,457 @@
   "rear_y1": 48.0,
   "upper_zshift": 22.35,
   "jaw": {
-   "lo": [
+   "x": [
     -60.0,
-    -80.0,
-    -5.0
+    60.0
    ],
-   "hi": [
-    60.0,
-    -46.0,
-    19.0
-   ],
-   "gap": 2.0,
+   "front_y": -80.0,
+   "top_z": 19.0,
    "hinge_y": -46.0,
    "hinge_z": 12.0,
-   "open_deg": 30.0
+   "heel_r": 10.5,
+   "gap": 2.0,
+   "sweep_deg": 36.0,
+   "open_deg": 30.0,
+   "_note": "jaw = lower beak in front of the hinge plane (y < hinge_y, hinge_z - heel_r < z < top_z) plus a quarter-disc heel of radius heel_r behind and below the hinge axis (x). The lower shell loses the same region grown by gap, and a sector of radius heel_r + gap swept to sweep_deg above the back of the hinge: the mating faces are arcs about the hinge, so the gap stays constant while the mouth opens (V4 before: planar split, rubbed from 15 deg).",
+   "lever": {
+    "x": [
+     15.5,
+     18.5
+    ],
+    "pin_yz": [
+     -40.0,
+     8.0
+    ],
+    "pin_d": 2.0,
+    "note": "3 mm plate on the jaw heel in the pushrod plane; the pin moves up and back as the jaw opens"
+   }
   },
   "mouth_servo": {
    "lo": [
-    2.0,
-    -33.5,
-    14.5
+    -13.0,
+    -22.0,
+    40.0
    ],
    "hi": [
-    36.0,
-    -14.5,
-    40.5
+    13.0,
+    12.0,
+    60.0
    ],
    "mass_g": 18.0,
-   "note": "XL330-size (34 x 20 x 26) lying sideways above the lower-shell pedestal, under the forehead; drives the jaw through a short link"
+   "horn_yz": [
+    -13.0,
+    50.0
+   ],
+   "horn_face_x": 13.0,
+   "note": "XL330 (26 x 34 x 20; output axis along x, parallel to the jaw hinge) lying flat in the dome above the motor support: the only free volume in the head (design/v4/README.md). Horn on the +x face near the front end; a pushrod in the plane x = 17 runs down to a lever on the jaw heel. Before: under the forehead, through the M12 lens holder (6.1 mm)."
   },
-  "_note": "cx/widen/rear_*/upper_zshift: record of the one-off deformation that made head_upper_v4.stl and head_lower_v4_whole.stl from the V3 head (deleted); jaw and mouth_servo are rebuilt by build_v4.py"
+  "_note": "cx/widen/rear_*/upper_zshift: record of the one-off deformation that made head_upper_v4.stl and head_lower_v4_whole.stl from the V3 head (deleted); jaw and mouth_servo are rebuilt by build_v4.py",
+  "clearance": {
+   "_note": "written by head_clearance.py from the upstream neck/head parts (see its docstring); lower-head mesh frame, mm. clear_mm = radial clearance added",
+   "clear_mm": 1.2,
+   "yaw_xy": [
+    -2.0,
+    10.29
+   ],
+   "roll_xz": [
+    -2.0,
+    16.94
+   ],
+   "roll_range_rad": [
+    -0.436,
+    0.436
+   ],
+   "head_pitch_range_rad": [
+    -0.25,
+    0.95
+   ],
+   "revolve_profile": [
+    [
+     -12,
+     20.9
+    ],
+    [
+     -11,
+     20.9
+    ],
+    [
+     -10,
+     20.9
+    ],
+    [
+     -9,
+     20.9
+    ],
+    [
+     -8,
+     20.9
+    ],
+    [
+     -7,
+     20.9
+    ],
+    [
+     -6,
+     20.9
+    ],
+    [
+     -5,
+     20.9
+    ],
+    [
+     -4,
+     20.9
+    ],
+    [
+     -3,
+     20.9
+    ],
+    [
+     -2,
+     20.3
+    ],
+    [
+     -1,
+     19.5
+    ],
+    [
+     0,
+     18.6
+    ],
+    [
+     1,
+     12.2
+    ],
+    [
+     2,
+     12.2
+    ],
+    [
+     3,
+     12.2
+    ],
+    [
+     4,
+     12.2
+    ],
+    [
+     5,
+     12.2
+    ]
+   ],
+   "boxes": [
+    {
+     "part": "yaw_roll_motion/xl330",
+     "roll_sweep": true,
+     "lo": [
+      -27.7,
+      -0.9,
+      1.2
+     ],
+     "hi": [
+      8.7,
+      21.5,
+      32.6
+     ]
+    },
+    {
+     "part": "yaw_roll_motion/seeed_bearing__configuration__22x16x4",
+     "roll_sweep": true,
+     "lo": [
+      -14.2,
+      25.1,
+      4.7
+     ],
+     "hi": [
+      10.2,
+      31.5,
+      29.1
+     ]
+    },
+    {
+     "part": "yaw_roll_motion/seeed_bearing__configuration__22x16x4",
+     "roll_sweep": true,
+     "lo": [
+      -14.2,
+      -8.9,
+      4.7
+     ],
+     "hi": [
+      10.2,
+      -2.5,
+      29.1
+     ]
+    },
+    {
+     "part": "jaw_soft/xl330",
+     "roll_sweep": false,
+     "lo": [
+      7.8,
+      -15.5,
+      8.7
+     ],
+     "hi": [
+      39.2,
+      20.9,
+      31.1
+     ]
+    },
+    {
+     "part": "jaw_soft/xl330",
+     "roll_sweep": false,
+     "lo": [
+      -27.7,
+      27.0,
+      5.7
+     ],
+     "hi": [
+      8.7,
+      58.4,
+      28.1
+     ]
+    }
+   ]
+  },
+  "lens_opening": {
+   "centre_xz": [
+    -2.1,
+    32.45
+   ],
+   "radius": 9.5,
+   "y": [
+    -62.0,
+    -38.0
+   ],
+   "notch_to_z": 21.0,
+   "note": "M12 lens (17 mm) + 1 mm radial clearance; the hole is open down to the shell seam (no sliver under it)"
+  }
  },
  "envelopes": [
   {
-   "name": "usb_c_top",
+   "name": "usb_c_ra",
    "frame": "torso",
    "lo": [
-    -80.5,
-    -6.2,
-    39.0
+    -79.0,
+    -6.5,
+    30.0
    ],
    "hi": [
-    -74.0,
-    6.2,
-    64.0
+    -67.0,
+    6.5,
+    38.0
    ],
-   "note": "UNO Q USB-C, straight plug: UNO form factor has the USB on a short edge, which is the top (or bottom) edge of the upright stack. 12.4 x 6.5 mm overmold, 25 mm with strain relief and cable bend. ESTIMATE"
+   "note": "UNO Q USB-C on the stack's top edge, right-angle plug (12.4 x 6.5 mm overmould, 8 mm above the edge), cable leaving rearwards. ESTIMATE"
   },
   {
-   "name": "usb_c_rear",
+   "name": "usb_cable",
    "frame": "torso",
    "lo": [
-    -105.0,
-    -6.2,
-    21.75
+    -100.0,
+    -3.5,
+    31.5
    ],
    "hi": [
-    -80.5,
-    6.2,
-    28.25
+    -79.0,
+    3.5,
+    37.5
    ],
-   "note": "the same plug if the receptacle faced rearwards through usb_access (what the cut assumes). ESTIMATE"
+   "note": "the USB-C cable from the right-angle plug out through the lid's U-slot (no strain relief inside). ESTIMATE"
   },
   {
-   "name": "xt60_mating_plug",
+   "name": "servo_bus_l_plug",
    "frame": "torso",
    "lo": [
-    -41.6,
+    -80.0,
+    10.0,
+    30.0
+   ],
+   "hi": [
+    -66.0,
+    21.0,
+    38.0
+   ],
+   "note": "leg bus (left chain): JST-EH right-angle header on the HAT's top edge, plug and bend over the stack top. ESTIMATE"
+  },
+  {
+   "name": "servo_bus_l_drop",
+   "frame": "torso",
+   "lo": [
+    -66.0,
+    10.0,
+    28.5
+   ],
+   "hi": [
+    -60.5,
+    24.0,
+    38.0
+   ],
+   "note": "leg bus (left) down between the stack and the bulkhead to the bulkhead window. ESTIMATE"
+  },
+  {
+   "name": "servo_bus_l_run",
+   "frame": "torso",
+   "lo": [
+    -60.5,
+    18.0,
+    30.0
+   ],
+   "hi": [
+    -26.0,
+    24.0,
+    36.0
+   ],
+   "note": "leg bus (left) along the roof beside the battery compartment. ESTIMATE"
+  },
+  {
+   "name": "servo_bus_l_down",
+   "frame": "torso",
+   "lo": [
+    -26.0,
+    18.0,
+    9.5
+   ],
+   "hi": [
+    -19.3,
+    24.0,
+    36.0
+   ],
+   "note": "leg bus (left) down behind the left hip-yaw XL330 to its connector. ESTIMATE"
+  },
+  {
+   "name": "servo_bus_r_plug",
+   "frame": "torso",
+   "lo": [
+    -80.0,
+    -21.0,
+    30.0
+   ],
+   "hi": [
+    -66.0,
+    -10.0,
+    38.0
+   ],
+   "note": "leg bus (right chain) header and plug. ESTIMATE"
+  },
+  {
+   "name": "servo_bus_r_drop",
+   "frame": "torso",
+   "lo": [
+    -66.0,
+    -24.0,
+    28.5
+   ],
+   "hi": [
+    -60.5,
+    -10.0,
+    38.0
+   ],
+   "note": "leg bus (right) drop to the window. ESTIMATE"
+  },
+  {
+   "name": "servo_bus_r_run",
+   "frame": "torso",
+   "lo": [
+    -60.5,
+    -24.0,
+    30.0
+   ],
+   "hi": [
+    -26.0,
+    -18.0,
+    36.0
+   ],
+   "note": "leg bus (right) along the roof. ESTIMATE"
+  },
+  {
+   "name": "servo_bus_r_down",
+   "frame": "torso",
+   "lo": [
+    -26.0,
+    -24.0,
+    9.5
+   ],
+   "hi": [
+    -19.3,
+    -18.0,
+    36.0
+   ],
+   "note": "leg bus (right) down behind the right hip-yaw XL330. ESTIMATE"
+  },
+  {
+   "name": "xt60_rear",
+   "frame": "torso",
+   "lo": [
+    -56.5,
     -7.9,
-    -62.0
+    -42.2
    ],
    "hi": [
-    -33.4,
+    -48.6,
     7.9,
-    -35.5
+    -34.0
    ],
-   "note": "female XT60 (8.2 x 15.8 mm, 16 mm long) pushed onto the pack's male from below, plus a 10 mm bend of its 14 AWG lead. ESTIMATE"
+   "note": "XT60 panel female's solder cups and heat-shrink behind the well's rear wall (outside, under the rear_upper). ESTIMATE"
+  },
+  {
+   "name": "power_lead",
+   "frame": "torso",
+   "lo": [
+    -57.0,
+    -4.0,
+    -34.0
+   ],
+   "hi": [
+    -50.5,
+    4.0,
+    29.0
+   ],
+   "note": "robot-side power lead (16-14 AWG) from the XT60 female up to the bulkhead window. ESTIMATE"
+  },
+  {
+   "name": "lipo_leads_drop",
+   "frame": "torso",
+   "lo": [
+    -40.0,
+    -6.0,
+    -33.9
+   ],
+   "hi": [
+    -31.0,
+    6.0,
+    -25.3
+   ],
+   "note": "pack leads out of the pack bottom, dropping to the XT60 male's level. ESTIMATE"
+  },
+  {
+   "name": "lipo_leads_loop",
+   "frame": "torso",
+   "lo": [
+    -31.0,
+    -6.0,
+    -33.9
+   ],
+   "hi": [
+    -24.0,
+    6.0,
+    -27.5
+   ],
+   "note": "pack leads looping forward into the XT60 male's cable end, under the keel front wall (7 mm bend). ESTIMATE"
   },
   {
    "name": "balance_plug",
    "frame": "torso",
    "lo": [
-    -44.0,
-    8.6,
-    -37.2
+    -24.0,
+    -6.0,
+    -42.2
    ],
    "hi": [
-    -32.0,
-    14.4,
-    -25.2
+    -18.6,
+    6.0,
+    -36.4
    ],
-   "note": "2S JST-XH balance plug (12 x 5.8 x 12 mm incl. leads) stowed beside the XT60 below the pack; it leaves the same end as the power leads. ESTIMATE"
+   "note": "2S JST-XH balance plug lying on the keel cover in front of the lead loop; reachable for charging when the cover is off. ESTIMATE"
   },
   {
    "name": "a010_usb",
@@ -395,19 +1676,95 @@
    "note": "A010 USB-C cable, straight plug at the sensor's rear face (25 mm with strain relief). ESTIMATE"
   },
   {
+   "name": "a010_cable_1",
+   "frame": "torso",
+   "lo": [
+    -19.0,
+    -3.5,
+    2.5
+   ],
+   "hi": [
+    12.3,
+    3.5,
+    8.5
+   ],
+   "note": "A010 cable back along the centre line over the trunk plate, between the hip-yaw XL330s. ESTIMATE"
+  },
+  {
+   "name": "a010_cable_2",
+   "frame": "torso",
+   "lo": [
+    -26.0,
+    -27.0,
+    2.5
+   ],
+   "hi": [
+    -19.3,
+    3.5,
+    8.5
+   ],
+   "note": "A010 cable across behind the right hip-yaw XL330. ESTIMATE"
+  },
+  {
+   "name": "a010_cable_3",
+   "frame": "torso",
+   "lo": [
+    -57.5,
+    -27.0,
+    2.5
+   ],
+   "hi": [
+    -26.0,
+    -21.0,
+    8.5
+   ],
+   "note": "A010 cable back beside the battery compartment. ESTIMATE"
+  },
+  {
+   "name": "a010_cable_4",
+   "frame": "torso",
+   "lo": [
+    -57.5,
+    -27.0,
+    8.5
+   ],
+   "hi": [
+    -52.5,
+    -21.0,
+    29.0
+   ],
+   "note": "A010 cable up to the bulkhead window. ESTIMATE"
+  },
+  {
    "name": "mouth_servo_cable",
    "frame": "head",
    "lo": [
-    36.0,
-    -30.0,
-    18.0
+    -3.0,
+    12.0,
+    42.0
    ],
    "hi": [
-    48.0,
-    -18.0,
-    37.0
+    15.0,
+    22.0,
+    58.0
    ],
-   "note": "XL330 JST-EH plug (8 mm) and 4 mm cable bend at the mouth servo's +x end, lower-head mesh frame. ESTIMATE"
+   "note": "XL330 JST-EH plugs (8 mm) and 4 mm cable bend at the mouth servo's rear (+y) end, lower-head mesh frame; the cable then runs down the back of the head to the neck. ESTIMATE"
+  },
+  {
+   "name": "mouth_pushrod",
+   "frame": "head",
+   "p0": [
+    17.0,
+    -21.0,
+    50.0
+   ],
+   "p1": [
+    17.0,
+    -35.0,
+    19.0
+   ],
+   "half_width": 2.5,
+   "note": "pushrod (2 mm rod + clevis) from the mouth-servo horn pin towards the jaw-heel lever pin (-40, 8), mouth closed; oriented box along p0-p1, stopping where the rod reaches the lever plate (the clevis on the lever is part of the jaw). ESTIMATE"
   }
  ],
  "print": {

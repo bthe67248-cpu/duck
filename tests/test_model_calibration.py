@@ -102,7 +102,8 @@ def test_lipo_replaces_the_upstream_battery_at_its_v4_location(built):
     params = json.loads((root / "design/v4/v4_params.json").read_text())["battery"]
     assert lipo["mass_g"] == params["mass_g"]
     np.testing.assert_allclose(lipo["com_mm"], (np.array(params["lo"]) + np.array(params["hi"])) / 2, atol=0.6)
-    added = sum(ledger["parts"][n]["mass_g"] for n in ("body_shell_v4", "pcb_stack_v4", "a010_v4", "xt60_v4", "battery_v4"))
+    added = sum(ledger["parts"][n]["mass_g"] for n in ("body_shell_v4", "body_lid_v4", "keel_cover_v4", "fasteners_body_v4",
+                                                     "pcb_stack_v4", "a010_v4", "xt60_v4", "battery_v4"))
     assert torso["new_mass_g"] == pytest.approx(torso["remainder_g"] + added, abs=0.2)
     assert base.body("trunk_base").mass[0] * 1000 == pytest.approx(torso["new_mass_g"], abs=0.1)
     # lighter (55 g pack for a ~100 g upstream battery) and the torso COM moves back towards the pack
@@ -165,7 +166,11 @@ def test_print_settings_come_from_v4_params(built):
     assert thin["head_lower_v4"]["mass_g"] == base["head_lower_v4"]["mass_g"]
 
 
-def test_fit_check_finds_the_deep_head_interferences_the_old_band_missed(built):
+# The one static contact left (design/v4/README.md): the upstream motor support seated on the lower shell's ledge.
+EXPLAINED_STATIC = {"jaw_soft/head_lower_v4 vs jaw_soft/motor_support"}
+
+
+def test_fit_check_static_fit_is_clean_and_the_jaw_clears_over_its_range(built):
     mujoco = pytest.importorskip("mujoco")
     pytest.importorskip("trimesh")
     root, _, _, _ = built
@@ -176,9 +181,23 @@ def test_fit_check_finds_the_deep_head_interferences_the_old_band_missed(built):
     params = json.loads((root / "design/v4/v4_params.json").read_text())
     parts = fit.build_parts(m, params, root / "model/duck_v4.xml")
     static = fit.static_fit(m, d, parts, .8)
-    lens = static["jaw_soft/head_upper_v4 vs jaw_soft/lens"]
-    assert lens["new_mm"] > 4 and lens["old_mm"] < 2.5
-    assert static["jaw_soft/m12_lens_holder vs jaw_soft/mouth_servo_v4"]["new_mm"] > 4
-    assert static["jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330"]["clash"]
-    assert static["envelope/xt60_mating_plug vs trunk_base/body_shell_v4"]["clash"]
-    assert not static.get("envelope/usb_c_rear vs trunk_base/body_shell_v4", {"clash": False})["clash"]
+    # the pairs the review reported (lens 6.7, mouth servo / lens holder 6.1, head-roll servo 5.1, neck bearing 3.7 mm)
+    # are still measured, now clear
+    for pair in ("jaw_soft/head_upper_v4 vs jaw_soft/lens", "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330",
+                 "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4"):
+        assert static.get(pair, {"new_mm": 0})["new_mm"] <= .8, pair
+    assert {k for k, v in static.items() if v["clash"]} <= EXPLAINED_STATIC
+    # every connector / cable envelope and the new body parts are in the check
+    names = {p.name.split("#")[0] for p in parts}
+    for env in params["envelopes"]:
+        assert "envelope/" + env["name"] in names
+    assert {"trunk_base/body_lid_v4", "trunk_base/keel_cover_v4"} <= names
+    # jaw sweep: no jaw / head contact deeper than 0.5 mm anywhere in 0..open_deg
+    jaw = [p for p in parts if p.name.startswith("jaw/")]
+    head = [p for p in parts if p.name.startswith("jaw_soft/head_")]
+    qa = m.jnt_qposadr[m.joint("mouth").id]
+    for deg in np.linspace(0, params["head"]["jaw"]["open_deg"], 7):
+        d.qpos[qa] = np.radians(deg); mujoco.mj_kinematics(m, d)
+        T = fit.transforms(d)
+        worst = max(fit.pair_depth(a, b, T[a.body], T[b.body]) for a in jaw for b in head)
+        assert worst * 1000 < .5, (deg, worst)

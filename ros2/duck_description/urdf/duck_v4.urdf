@@ -44,9 +44,9 @@
   </material>
   <link name="trunk_base">
     <inertial>
-      <origin xyz="-0.0313522 3.11776e-06 0.00265714" rpy="0 0 0" />
-      <mass value="0.302640" />
-      <inertia ixx="0.000231678" iyy="0.000489122" izz="0.000430999" ixy="2.28186e-08" ixz="-2.56409e-05" iyz="-3.17617e-08" />
+      <origin xyz="-0.0325199 1.10445e-05 0.0024247" rpy="0 0 0" />
+      <mass value="0.278234" />
+      <inertia ixx="0.000353875" iyy="0.000615875" izz="0.0004874" ixy="9.39831e-08" ixz="-4.63766e-05" iyz="4.09797e-08" />
     </inertial>
     <visual>
       <origin xyz="0.006 0.0175 -0.005" rpy="-0.000000 0.000000 0.000000" />
@@ -76,15 +76,6 @@
       </material>
     </visual>
     <visual>
-      <origin xyz="0.004 -0 -0.0175215" rpy="-0.000000 0.000000 1.570796" />
-      <geometry>
-        <mesh filename="package://duck_description/meshes/power_support.stl" />
-      </geometry>
-      <material name="black_pla">
-        <color rgba="0.025 0.025 0.025 1" />
-      </material>
-    </visual>
-    <visual>
       <origin xyz="0.006 -0.0175 0.0115" rpy="-0.000000 -1.570796 -0.000000" />
       <geometry>
         <mesh filename="package://duck_description/meshes/xl330.stl" />
@@ -106,6 +97,24 @@
       <origin xyz="0 0 0" rpy="0.000000 0.000000 0.000000" />
       <geometry>
         <mesh filename="package://duck_description/meshes/body_shell_v4.stl" />
+      </geometry>
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0.000000 0.000000 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/body_lid_v4.stl" />
+      </geometry>
+      <material name="black_pla">
+        <color rgba="0.025 0.025 0.025 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0.000000 0.000000 0.000000" />
+      <geometry>
+        <mesh filename="package://duck_description/meshes/keel_cover_v4.stl" />
       </geometry>
       <material name="black_pla">
         <color rgba="0.025 0.025 0.025 1" />
@@ -505,9 +514,9 @@
   </joint>
   <link name="jaw_soft">
     <inertial>
-      <origin xyz="0.0115427 0.00311315 -0.0218227" rpy="0 0 0" />
-      <mass value="0.192659" />
-      <inertia ixx="0.000652229" iyy="0.000445127" izz="0.000370856" ixy="1.72384e-06" ixz="1.50451e-05" iyz="1.92224e-05" />
+      <origin xyz="0.0144457 0.00146732 -0.0199321" rpy="0 0 0" />
+      <mass value="0.185195" />
+      <inertia ixx="0.000620454" iyy="0.000425151" izz="0.000364908" ixy="1.66387e-06" ixz="1.92931e-05" iyz="7.73362e-06" />
     </inertial>
     <visual>
       <origin xyz="0.0155 -9.13778e-05 -0.05548" rpy="-1.570796 0.000000 -1.570796" />
@@ -609,9 +618,9 @@
   </joint>
   <link name="jaw">
     <inertial>
-      <origin xyz="-0.00139577 -0.00199969 -0.0107306" rpy="0 0 0" />
-      <mass value="0.004382" />
-      <inertia ixx="1.62463e-06" iyy="2.19126e-07" izz="1.5646e-06" ixy="-3.15496e-12" ixz="3.04987e-08" iyz="-2.97691e-12" />
+      <origin xyz="-0.00228641 -0.00121773 -0.00690222" rpy="0 0 0" />
+      <mass value="0.005899" />
+      <inertia ixx="2.70044e-06" iyy="5.05925e-07" izz="2.40727e-06" ixy="6.77754e-09" ixz="8.45619e-08" iyz="-5.19828e-08" />
     </inertial>
     <visual>
       <origin xyz="-0.01200 0.00000 0.04600" rpy="1.570796 0.000000 1.570796" />

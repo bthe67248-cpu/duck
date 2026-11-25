@@ -7,12 +7,13 @@ Roots are derived from this file's location. Overrides: $DUCKLING_ROOT (repo roo
 (folder holding robot_walk.xml, scene_walk.xml, assets/ ...; default microduck_rl/.../robot/microduck).
 
 V4 against the upstream Microduck (design/v4/README.md):
-  torso  upstream left/right shells, banana PCB locker and battery -> body_shell_v4 enclosing the UNO Q + 70 mm
-         HAT stack, a 2S LiPo + XT60 and a Sipeed A010 (site `tof_body` on its front face). The upstream battery's
+  torso  upstream left/right shells, banana PCB locker, battery holder (power_support) and battery -> body_shell_v4
+         (+ body_lid_v4, keel_cover_v4 and their fasteners) enclosing the UNO Q + 70 mm HAT stack, a 2S LiPo + XT60
+         and a Sipeed A010 (site `tof_body` on its front face). The upstream battery's
          mass, COM and inertia are subtracted (UPSTREAM_BATTERY_G) and the LiPo is added as its own box at its V4
          location (mass from v4_params.json battery.mass_g)
   head   upstream shells, mouth, face plate/ring (face_part, noenoeil) and Pi Zero + HAT -> head_upper_v4 /
-         head_lower_v4 with an XL330-size mouth servo; the lower half of the beak is a `jaw` body on the `mouth`
+         head_lower_v4 with an XL330 mouth servo in the dome; the lower half of the beak is a `jaw` body on the `mouth`
          hinge with a position actuator (placed after the push motors)
   limits neck pitch capped at NECK_PITCH_MAX (head/body clearance, design/v4/check_v4_fit.py)
   servos command delay SERVO_DELAY_S (or the calibration's servo.delay_s), stored in the model as
@@ -48,9 +49,11 @@ MEASURED_MASS = {
 # Printed V4 parts (grams). None -> PROVISIONAL wall-proxy formula with the print settings in design/v4/v4_params.json
 # ("print": wall_mm and infill, a per-part entry over "default"):
 #   V_wall = min(V, A*wall); V_print = V_wall + infill (V - V_wall); m = V_print * 0.00124 g/mm3.
-PART_MASS_G = {"head_upper_v4": None, "head_lower_v4": None, "jaw_v4": None, "body_shell_v4": None}
+PART_MASS_G = {"head_upper_v4": None, "head_lower_v4": None, "jaw_v4": None, "body_shell_v4": None,
+               "body_lid_v4": None, "keel_cover_v4": None}
 # Bought parts (grams). ESTIMATES until weighed.
-BOUGHT_G = {"pcb_stack_v4": 45.0, "a010_v4": 10.0, "xt60_v4": 6.0, "mouth_servo_v4": 18.0}
+BOUGHT_G = {"pcb_stack_v4": 45.0, "a010_v4": 10.0, "xt60_v4": 8.0, "mouth_servo_v4": 18.0,
+            "fasteners_body_v4": 4.0}   # 12 x M2 screws + heat-set inserts (lid, cover, trunk and servo mounts)
 PLA_DENSITY_G_MM3 = 0.00124
 # The upstream torso's battery (np_f970 part) is inside its inertial; V4 replaces it with the 2S LiPo. The part is a
 # Sony NP-F550/F570-size 2S Li-ion camcorder pack (mesh 38.6 x 20.6 x 70.8 mm; the F970 is 51 mm thick); retail
@@ -80,15 +83,16 @@ PRINTED_RIGID_MESHES = {
     "neck", "neck_pitch", "yaw2roll", "yaw_roll_motion", "bearing_roll", "hip_l",
     "upper_leg_left", "upper_leg_right", "upper_leg_rigidity_plate", "leg",
     "ankle_left", "ankle_right", "foot_left", "foot_right",
-    "head_upper_v4", "head_lower_v4", "jaw_v4", "body_shell_v4"}
+    "head_upper_v4", "head_lower_v4", "jaw_v4", "body_shell_v4", "body_lid_v4", "keel_cover_v4"}
 LENS_MESHES = {"lens"}
 # upstream head visuals replaced by the V4 head (shells, mouth, face plate/ring, old head electronics)
 REMOVED_HEAD_VISUAL = {"top_head_shell", "bottom_head_shell", "jaw", "jaw_soft", "soft_mouth_top",
                        "face_part", "noenoeil", "elec_rpi_robot_hat_pcb", "pcb__raspberry_pi_zero_2_w"}
 REMOVED_HEAD_COLLISION = {"top_head_shell", "bottom_head_shell", "jaw"}
-# upstream torso parts replaced by the V4 body and the 2S LiPo (np_f970: the battery, UPSTREAM_BATTERY_G)
-REMOVED_TORSO = {"left_shell", "right_shell", "banana_pcb_locker", "np_f970"}
-V4_PARTS = ["head_upper_v4", "head_lower_v4", "jaw_v4", "mouth_servo_v4", "body_shell_v4",
+# upstream torso parts replaced by the V4 body and the 2S LiPo (np_f970: the battery, UPSTREAM_BATTERY_G; power_support:
+# the old battery holder, replaced by the body's battery compartment)
+REMOVED_TORSO = {"left_shell", "right_shell", "banana_pcb_locker", "np_f970", "power_support"}
+V4_PARTS = ["head_upper_v4", "head_lower_v4", "jaw_v4", "mouth_servo_v4", "body_shell_v4", "body_lid_v4", "keel_cover_v4",
             "pcb_stack_v4", "a010_v4", "battery_v4", "xt60_v4"]
 
 _ap = argparse.ArgumentParser()
@@ -309,7 +313,8 @@ def main():
     bot_lo, _ = world_bounds("bottom_head_shell")
     # head mesh frame (mm): x = width, -y = front, z = up.  world = Rz(+90 deg) * mesh + t; fronts flush with upstream
     Rw = np.array([[0.0, -1.0, 0.0], [1.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
-    up, lo = meshes["head_upper_v4"], meshes["head_lower_v4"]
+    up = meshes.get("head_upper_v4_whole", meshes["head_upper_v4"])   # uncut source: the lens opening is not the front
+    lo = meshes["head_lower_v4"]
     mid_wid = (up["min_mm"][0] + up["max_mm"][0]) / 2000.0
     front = -up["min_mm"][1] / 1000.0
     seam = params["head"]["upper_zshift"] / 1000.0                 # upper part's own frame starts at the seam
@@ -393,8 +398,8 @@ def main():
     # ---- torso: V4 body shell with boards, LiPo, XT60 and A010 inside
     trunk = bodies["trunk_base"]
     removed_torso = remove_parts(trunk, REMOVED_TORSO)
-    for n_, mat_ in (("body_shell_v4", "black_pla"), ("pcb_stack_v4", "v4_pcb"), ("a010_v4", "v4_sensor"),
-                     ("battery_v4", "v4_lipo"), ("xt60_v4", "v4_xt60")):
+    for n_, mat_ in (("body_shell_v4", "black_pla"), ("body_lid_v4", "black_pla"), ("keel_cover_v4", "black_pla"),
+                     ("pcb_stack_v4", "v4_pcb"), ("a010_v4", "v4_sensor"), ("battery_v4", "v4_lipo"), ("xt60_v4", "v4_xt60")):
         ET.SubElement(trunk, "geom", type="mesh", mesh=n_, **{"class": "visual"}, material=mat_)
     if MEASURED_MASS["trunk_base"] is None:
         Mt, Ct, It = body_inertial(trunk)
@@ -407,8 +412,12 @@ def main():
             parts.append((-mm, cc, ii)); removed_g[mname] = round(mm * 1000, 1)
         Mr, Cr, Ir = combine(parts)
         check_physical("torso without replaced upstream parts", Mr, Ir)
-        parts.append(part_props(DST / "assets" / "body_shell_v4.stl", np.eye(3), np.zeros(3),
-                                mass=printed_kg("body_shell_v4", meshes, ledger, params)))
+        for n_ in ("body_shell_v4", "body_lid_v4", "keel_cover_v4"):
+            parts.append(part_props(DST / "assets" / f"{n_}.stl", np.eye(3), np.zeros(3),
+                                    mass=printed_kg(n_, meshes, ledger, params)))
+        # fasteners: a point mass at the body shell's centroid (spread over the lid, cover and mounts)
+        fc = np.array(meshes["body_shell_v4"]["centroid_mm"]) / 1000.0
+        parts.append((bought_kg("fasteners_body_v4", ledger), fc, np.zeros((3, 3))))
         for n_ in ("pcb_stack_v4", "a010_v4", "xt60_v4", "battery_v4"):
             parts.append(part_props(DST / "assets" / f"{n_}.stl", np.eye(3), np.zeros(3), mass=bought_kg(n_, ledger)))
         lipo = parts[-1]
@@ -421,14 +430,17 @@ def main():
         ledger["_torso_link"] = dict(upstream_mass_g=round(Mt * 1000, 1), removed_upstream_parts_g_ESTIMATE=removed_g,
                                      remainder_g=round(Mr * 1000, 1), new_mass_g=round(M2 * 1000, 1),
                                      upstream_com_mm=[round(v * 1000, 1) for v in Ct], com_mm=[round(v * 1000, 1) for v in C2],
-                                     note="replaced, not added: upstream shells, PCB locker and battery (np_f970, "
-                                          "UPSTREAM_BATTERY_G ESTIMATE) subtracted; V4 body, boards, A010, XT60 and "
-                                          "the 2S LiPo added at their V4 locations")
+                                     note="replaced, not added: upstream shells, PCB locker, battery holder (power_support) "
+                                          "and battery (np_f970, UPSTREAM_BATTERY_G ESTIMATE) subtracted; V4 body shell, "
+                                          "lid, keel cover, fasteners, boards, A010, XT60 and the 2S LiPo added at their V4 "
+                                          "locations")
         print(f"  torso link: {Mt*1000:.1f} g upstream -> {M2*1000:.1f} g with the V4 body and its contents")
     else:
         print("  torso link mass is the WEIGHED value (body shell, boards, battery, XT60 and A010 included)")
         ledger["_torso_link"] = dict(new_mass_g=MEASURED_MASS["trunk_base"] * 1000, note="weighed complete link")
-        printed_kg("body_shell_v4", meshes, ledger, params); ledger["body_shell_v4"]["included_in_measured_torso"] = True
+        for n_ in ("body_shell_v4", "body_lid_v4", "keel_cover_v4"):
+            printed_kg(n_, meshes, ledger, params); ledger[n_]["included_in_measured_torso"] = True
+        bought_kg("fasteners_body_v4", ledger); ledger["fasteners_body_v4"]["included_in_measured_torso"] = True
         for n_ in ("pcb_stack_v4", "a010_v4", "xt60_v4", "battery_v4"):
             bought_kg(n_, ledger); ledger[n_]["included_in_measured_torso"] = True
     a = params["a010"]; alo, ahi = np.array(a["lo"]) / 1000, np.array(a["hi"]) / 1000

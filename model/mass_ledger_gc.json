@@ -1,21 +1,21 @@
 {
  "status": "PROVISIONAL: unmeasured components and upstream COM/inertia remain estimates",
- "model_robot_sha256": "6d484810fbc9cc67558ca2cf6db9694c89111b50b8162e83a290e43bd81374ce",
+ "model_robot_sha256": "ce36317a0443f7b5f0c71763e12ae5df13c3029c219097f10455dc4be17ee072",
  "pla_density_g_mm3": 0.00124,
  "parts": {
   "head_upper_v4": {
-   "mass_g": 62.32,
+   "mass_g": 61.11,
    "status": "PROVISIONAL 30% infill, 1.2 mm wall-proxy formula (not a slicer value)",
-   "volume_mm3": 57614.8,
-   "area_mm2": 39255.0,
+   "volume_mm3": 56724.1,
+   "area_mm2": 38407.4,
    "wall_mm": 1.2,
    "infill": 0.3
   },
   "head_lower_v4": {
-   "mass_g": 46.32,
+   "mass_g": 40.07,
    "status": "PROVISIONAL 30% infill, 1.2 mm wall-proxy formula (not a slicer value)",
-   "volume_mm3": 48078.9,
-   "area_mm2": 27302.0,
+   "volume_mm3": 38201.1,
+   "area_mm2": 24829.0,
    "wall_mm": 1.2,
    "infill": 0.3
   },
@@ -37,24 +37,44 @@
     "pcb__raspberry_pi_zero_2_w": 3.7
    },
    "remainder_g": 66.0,
-   "new_mass_g": 192.7,
+   "new_mass_g": 185.2,
    "note": "replaced, not added: upstream shells/mouth/face plate/head boards subtracted, V4 shells + mouth servo added; the jaw is a separate body"
   },
   "jaw_v4": {
-   "mass_g": 4.38,
+   "mass_g": 5.9,
    "status": "PROVISIONAL 30% infill, 1.2 mm wall-proxy formula (not a slicer value)",
-   "volume_mm3": 3534.0,
-   "area_mm2": 4184.2,
+   "volume_mm3": 4757.4,
+   "area_mm2": 5622.1,
    "wall_mm": 1.2,
    "infill": 0.3
   },
   "body_shell_v4": {
-   "mass_g": 71.02,
+   "mass_g": 85.45,
    "status": "PROVISIONAL 30% infill, 1.2 mm wall-proxy formula (not a slicer value)",
-   "volume_mm3": 57271.3,
-   "area_mm2": 60575.7,
+   "volume_mm3": 68911.1,
+   "area_mm2": 72735.8,
    "wall_mm": 1.2,
    "infill": 0.3
+  },
+  "body_lid_v4": {
+   "mass_g": 9.23,
+   "status": "PROVISIONAL 30% infill, 1.2 mm wall-proxy formula (not a slicer value)",
+   "volume_mm3": 7447.3,
+   "area_mm2": 10212.5,
+   "wall_mm": 1.2,
+   "infill": 0.3
+  },
+  "keel_cover_v4": {
+   "mass_g": 3.94,
+   "status": "PROVISIONAL 30% infill, 1.2 mm wall-proxy formula (not a slicer value)",
+   "volume_mm3": 3176.0,
+   "area_mm2": 3064.3,
+   "wall_mm": 1.2,
+   "infill": 0.3
+  },
+  "fasteners_body_v4": {
+   "mass_g": 4.0,
+   "status": "ESTIMATE (bought part, not weighed)"
   },
   "pcb_stack_v4": {
    "mass_g": 45.0,
@@ -65,7 +85,7 @@
    "status": "ESTIMATE (bought part, not weighed)"
   },
   "xt60_v4": {
-   "mass_g": 6.0,
+   "mass_g": 8.0,
    "status": "ESTIMATE (bought part, not weighed)"
   },
   "battery_v4": {
@@ -88,22 +108,23 @@
    "removed_upstream_parts_g_ESTIMATE": {
     "right_shell": 13.9,
     "banana_pcb_locker": 0.6,
+    "power_support": 13.0,
     "np_f970": 100.0,
     "left_shell": 14.1
    },
-   "remainder_g": 70.6,
-   "new_mass_g": 257.6,
+   "remainder_g": 57.6,
+   "new_mass_g": 278.2,
    "upstream_com_mm": [
     -22.6,
     -0.0,
     2.8
    ],
    "com_mm": [
-    -30.9,
+    -32.5,
     0.0,
-    5.8
+    2.4
    ],
-   "note": "replaced, not added: upstream shells, PCB locker and battery (np_f970, UPSTREAM_BATTERY_G ESTIMATE) subtracted; V4 body, boards, A010, XT60 and the 2S LiPo added at their V4 locations"
+   "note": "replaced, not added: upstream shells, PCB locker, battery holder (power_support) and battery (np_f970, UPSTREAM_BATTERY_G ESTIMATE) subtracted; V4 body shell, lid, keel cover, fasteners, boards, A010, XT60 and the 2S LiPo added at their V4 locations"
   }
  },
  "measured_link_mass_kg": {},
@@ -122,6 +143,6 @@
  "servo_delay_sim_s": 0.02,
  "servo_delay_source": "ESTIMATE: upstream training lag 15-30 ms",
  "upstream_battery_removed_g_ESTIMATE": 100.0,
- "robot_mass_kg": 0.8039,
+ "robot_mass_kg": 0.8186,
  "note": "Link masses rescale existing inertia at unchanged COM; weights alone do not calibrate COM/inertia."
 }

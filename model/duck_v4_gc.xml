@@ -56,12 +56,10 @@
   <worldbody>
     <body name="trunk_base" pos="0 0 0.12" quat="1 0 0 0" childclass="microduck">
       <freejoint name="trunk_base_freejoint" />
-      <inertial pos="-0.0309337 5.88498e-06 0.00579817" mass="0.257640" fullinertia="0.000298045 0.000544437 0.000450563 3.14744e-08 -2.20724e-05 -3.69942e-09" />
+      <inertial pos="-0.0325199 1.10445e-05 0.0024247" mass="0.278234" fullinertia="0.000353875 0.000615875 0.0004874 9.39831e-08 -4.63766e-05 4.09797e-08" />
       <geom type="mesh" class="visual" pos="0.006 0.0175 -0.005" quat="1 -0 -0 0" mesh="seeed_bearing__configuration__22x16x4" material="seeed_bearing__configuration__22x16x4_material" />
       <geom type="mesh" class="visual" pos="0.004 -0 -0.0175" quat="0.707107 -0 -0 0.707107" mesh="trunk_base" material="black_pla" />
       <geom type="mesh" class="visual" pos="0.006 0.0175 0.0115" quat="0 -0.707107 0 -0.707107" mesh="xl330" material="xl330_material" />
-      <geom type="mesh" class="visual" pos="0.004 -0 -0.0175215" quat="0.707107 -0 -0 0.707107" mesh="power_support" material="black_pla" />
-      <geom type="mesh" class="self_collision_only" pos="0.004 -0 -0.0175215" quat="0.707107 -0 -0 0.707107" mesh="power_support" material="power_support_material" />
       <geom type="mesh" class="visual" pos="0.006 -0.0175 0.0115" quat="0 -0.707107 0 -0.707107" mesh="xl330" material="xl330_material" />
       <geom type="mesh" class="visual" pos="0.006 -0.0175 -0.005" quat="1 -0 -0 0" mesh="seeed_bearing__configuration__22x16x4" material="seeed_bearing__configuration__22x16x4_material" />
       <site group="3" name="imu" pos="-0.021 6.64098e-05 -0.0146984" quat="1 -0 -0 -0" />
@@ -127,7 +125,7 @@
             <geom type="mesh" class="visual" pos="0.018 0 0.0145" quat="0.707107 0 -0.707107 -0" mesh="seeed_bearing__configuration__22x16x4" material="seeed_bearing__configuration__22x16x4_material" />
             <body name="jaw_soft" pos="-0.0179 0 0.0145" quat="0.707107 0 -0.707107 -0">
               <joint axis="0 0 1" name="head_roll" type="hinge" range="-0.43633231299858327 0.4363323129985815" class="chosen_actuator" />
-              <inertial pos="0.0115427 0.00311315 -0.0218227" mass="0.192659" fullinertia="0.000652229 0.000445127 0.000370856 1.72384e-06 1.50451e-05 1.92224e-05" />
+              <inertial pos="0.0144457 0.00146732 -0.0199321" mass="0.185195" fullinertia="0.000620454 0.000425151 0.000364908 1.66387e-06 1.92931e-05 7.73362e-06" />
               <geom type="mesh" class="visual" pos="0.0155 -9.13778e-05 -0.05548" quat="0.5 -0.5 0.5 -0.5" mesh="lens" material="lens_glass" />
               <geom type="mesh" class="visual" pos="0.003 0.0255 -0.018" quat="0.707107 0 -0 -0.707107" mesh="xl330" material="xl330_material" />
               <geom type="mesh" class="visual" pos="-0.0045 -0 -0.018" quat="0.5 0.5 0.5 0.5" mesh="motor_support" material="black_pla" />
@@ -143,10 +141,10 @@
               <geom type="mesh" mesh="head_lower_v4" class="visual" material="black_pla" pos="-0.01694 0.00200 -0.02819" quat="0.500000 0.500000 0.500000 0.500000" />
               <geom type="mesh" mesh="mouth_servo_v4" class="visual" material="v4_servo" pos="-0.01694 0.00200 -0.02819" quat="0.500000 0.500000 0.500000 0.500000" />
               <body name="jaw" pos="-0.004936 0.002000 -0.074190">
-                <inertial pos="-0.00139577 -0.00199969 -0.0107306" mass="0.004382" fullinertia="1.62463e-06 2.19126e-07 1.5646e-06 -3.15496e-12 3.04987e-08 -2.97691e-12" />
+                <inertial pos="-0.00228641 -0.00121773 -0.00690222" mass="0.005899" fullinertia="2.70044e-06 5.05925e-07 2.40727e-06 6.77754e-09 8.45619e-08 -5.19828e-08" />
                 <joint name="mouth" type="hinge" axis="0.000000 1.000000 0.000000" range="0 0.523599" damping="0.01" armature="0.0005" />
                 <geom type="mesh" mesh="jaw_v4" class="visual" material="black_pla" pos="-0.01200 0.00000 0.04600" quat="0.500000 0.500000 0.500000 0.500000" />
-                <site group="3" name="mouth_tip" pos="-0.005629 -0.002404 -0.016183" />
+                <site group="3" name="mouth_tip" pos="-0.005629 -0.001746 -0.016184" />
                 <geom name="jaw_collision" type="box" class="collision" size="0.03155 0.00985 0.00749" pos="-0.00088 -0.00200 -0.01037" quat="0.500000 0.500000 0.500000 0.500000" />
               </body>
               <camera name="head_cam" fovy="60" pos="0.01550 -0.00009 -0.08530" quat="0.707107 0.000000 0.000000 -0.707107" />
@@ -200,6 +198,8 @@
         </body>
       </body>
       <geom type="mesh" mesh="body_shell_v4" class="visual" material="black_pla" />
+      <geom type="mesh" mesh="body_lid_v4" class="visual" material="black_pla" />
+      <geom type="mesh" mesh="keel_cover_v4" class="visual" material="black_pla" />
       <geom type="mesh" mesh="pcb_stack_v4" class="visual" material="v4_pcb" />
       <geom type="mesh" mesh="a010_v4" class="visual" material="v4_sensor" />
       <geom type="mesh" mesh="battery_v4" class="visual" material="v4_lipo" />
@@ -208,9 +208,9 @@
       <geom name="body_front_upper_collision" type="box" class="collision" size="0.03875 0.03450 0.02250" pos="-0.00125 0.00000 0.02250" quat="1.000000 0.000000 0.000000 0.000000" />
       <geom name="body_rear_upper_collision" type="box" class="collision" size="0.01300 0.03450 0.01750" pos="-0.04900 0.00000 0.02150" quat="1.000000 0.000000 0.000000 0.000000" />
       <geom name="body_chest_a010_collision" type="box" class="collision" size="0.00900 0.02400 0.01475" pos="0.04200 0.00000 0.00475" quat="1.000000 0.000000 0.000000 0.000000" />
-      <geom name="body_board_bay_collision" type="box" class="collision" size="0.01325 0.03000 0.03875" pos="-0.07125 0.00000 0.00375" quat="1.000000 0.000000 0.000000 0.000000" />
-      <geom name="body_battery_keel_collision" type="box" class="collision" size="0.01000 0.01700 0.01750" pos="-0.03750 0.00000 -0.01150" quat="1.000000 0.000000 0.000000 0.000000" />
-      <geom name="body_xt60_keel_collision" type="box" class="collision" size="0.00900 0.01050 0.00900" pos="-0.03750 0.00000 -0.02900" quat="1.000000 0.000000 0.000000 0.000000" />
+      <geom name="body_board_bay_collision" type="box" class="collision" size="0.01350 0.03000 0.04250" pos="-0.07150 0.00000 -0.00150" quat="1.000000 0.000000 0.000000 0.000000" />
+      <geom name="body_battery_keel_collision" type="box" class="collision" size="0.01100 0.01750 0.01750" pos="-0.03750 0.00000 -0.01150" quat="1.000000 0.000000 0.000000 0.000000" />
+      <geom name="body_connector_well_collision" type="box" class="collision" size="0.01625 0.01750 0.00910" pos="-0.03225 0.00000 -0.03410" quat="1.000000 0.000000 0.000000 0.000000" />
       <site name="push_point" pos="0 0 0" />
     </body>
   </worldbody>
@@ -238,11 +238,9 @@
     <mesh file="foot_left.stl" />
     <mesh file="sole_left.stl" />
     <mesh file="sole_right.stl" />
-    <mesh file="power_support.stl" />
     <mesh file="motor_support.stl" />
     <material name="seeed_bearing__configuration__22x16x4_material" rgba="0.811765 0.858824 0.898039 1" />
     <material name="xl330_material" rgba="0.286275 0.286275 0.286275 1" />
-    <material name="power_support_material" rgba="0.67451 0.639216 0.603922 1" />
     <material name="hip_l_material" rgba="0.67451 0.639216 0.603922 1" />
     <material name="leg_material" rgba="0.67451 0.639216 0.603922 1" />
     <material name="sole_left_material" rgba="0.956863 0.686275 0.137255 1" />
@@ -255,6 +253,8 @@
     <mesh name="jaw_v4" file="jaw_v4.stl" />
     <mesh name="mouth_servo_v4" file="mouth_servo_v4.stl" />
     <mesh name="body_shell_v4" file="body_shell_v4.stl" />
+    <mesh name="body_lid_v4" file="body_lid_v4.stl" />
+    <mesh name="keel_cover_v4" file="keel_cover_v4.stl" />
     <mesh name="pcb_stack_v4" file="pcb_stack_v4.stl" />
     <mesh name="a010_v4" file="a010_v4.stl" />
     <mesh name="battery_v4" file="battery_v4.stl" />
