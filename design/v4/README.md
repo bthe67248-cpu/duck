@@ -159,6 +159,8 @@ Accuracy was not better at 100×100 in these runs. Binning to 25×25 (or 50×50)
   `--torso-scale 1.1 --tag mplus`, `--torso-scale 0.9 --tag mminus`), `scripts/worldgen.py`,
   `scripts/sync_ros2_assets.py`, `scripts/mjcf_to_urdf.py`.
 - `check_v4_fit.py`: the fit check (writes `fit_check.json`).
+- `SERVO_HD1910M.md`: Feetech HD1910M servo data (torque/speed, backlash, encoder) for the actuator model and
+  policy retraining; not yet verified on the bench.
 - `preview.py`: `preview/duck_v4.glb`, `.blend` and renders (`preview/` is git-ignored: upstream meshes).
 - `sim_runs/`: `summary.txt`, `result.json`, `map.png`, `launch.log` per run (`v4sbase_*`, `v4snew_*`, `v4syaw_*`: the
   paired trials above).
