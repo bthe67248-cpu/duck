@@ -223,7 +223,12 @@ compare):
 | Run | sensor errors | sim / wall | SLAM mean / max error | walked | falls |
 |-|-|-|-|-|-|
 | `mech_noerr_s0` | off | 300 / 300 s | 0.16 / 0.36 m | 6.5 m | 0 |
-| `mech_err2_s0` | on (defaults) | 300 / 357 s (**not real time**: CPU shared with fit-check jobs) | 0.32 / 0.64 m | 9.3 m | 0 |
+| `mech_err2_s0` | on (defaults, stamps not yet capped) | 300 / 357 s (**not real time**: CPU shared with fit-check jobs) | 0.32 / 0.64 m | 9.3 m | 0 |
+| `mech_clamp_s0` | on (defaults, stamps capped at publication) | 300 / 300 s | 0.26 / 0.29 m | 6.3 m | 0 |
+
+Uncapped stamp jitter put about half of the `/imu` stamps (and so the SLAM poses) after `/clock`, and nav_node stopped
+with "stale pose" (23 and 36 times in the two uncapped runs, 2 without errors, 0 on main). With stamps capped at
+the publication time, `mech_clamp_s0` logged 0.
 
 Both start, survey, explore and stay localised, with no falls; neither reaches the beacon in 300 s (the earlier
 600 s trials needed 153–495 s). The run with errors fell behind real time, and one seed is within run-to-run noise, so
