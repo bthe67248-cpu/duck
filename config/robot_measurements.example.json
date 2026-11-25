@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "notes": "Replace nulls only with measurements. Link kg includes installed components and screws. trunk_base INCLUDES the V4 body shell, boards, battery, XT60 and A010; jaw_soft INCLUDES the V4 head shells and mouth servo, NOT the jaw. Print g is recorded separately, never added twice. Servo kp in Nm/rad, kv in Nm s/rad, stall in Nm; delay_s is reported but NOT automatically simulated. Weights rescale existing inertia; COM/inertia still need CAD or measurement. No actuation is enabled by this file.",
+  "notes": "Replace nulls only with measurements. Link kg includes installed components and screws. trunk_base INCLUDES the V4 body shell, boards, battery, XT60 and A010; jaw_soft INCLUDES the V4 head shells and mouth servo, NOT the jaw. Print g is recorded separately, never added twice. Servo kp in Nm/rad, kv in Nm s/rad, stall in Nm; delay_s replaces the simulated servo command delay (default 20 ms estimate) and is reported to the MATLAB delay check. Weights rescale existing inertia; COM/inertia still need CAD or measurement. No actuation is enabled by this file.",
   "measured_mass_kg": {
     "trunk_base": null,
     "yaw2roll": null,

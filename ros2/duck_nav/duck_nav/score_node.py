@@ -6,7 +6,9 @@ Writes      <out_dir>/summary.txt, <out_dir>/result.json and <out_dir>/map.png w
             It never feeds anything back to the robot.
 
 Scoring notes / limits
-- SLAM error pairs each estimate with the ground-truth pose of the SAME stamp (bounded history), not the latest one.
+- SLAM error pairs each estimate with the ground-truth pose of the same stamp (bounded history), not the latest one;
+  with timing jitter on the sensor stamps (realistic profile) the nearest ground-truth sample within `gt_match_tol`
+  (half the 50 Hz ground-truth period) is used.
 - A fall = trunk tilt > 45 deg or trunk height < `fall_height` (from the true pose); counted on the transition,
   except while /duck/mode is a deliberate posture (sit, rise, roll, pick).
 - Exploration outcome and beacon outcome are reported separately; "beacon reached" uses the TRUE distance.
@@ -31,6 +33,14 @@ def stamp_ns(h):
     return h.stamp.sec * 1_000_000_000 + h.stamp.nanosec
 
 
+def nearest_sample(hist, ns, tol_ns):
+    """Value of `hist` (stamp ns -> value) at the stamp nearest to `ns`, if it is within `tol_ns`; else None."""
+    if ns in hist:
+        return hist[ns]
+    best = min(hist, key=lambda k: abs(k - ns), default=None)
+    return hist[best] if best is not None and abs(best - ns) <= tol_ns else None
+
+
 class ScoreNode(Node):
     def __init__(self):
         super().__init__("duck_score")
@@ -41,6 +51,7 @@ class ScoreNode(Node):
         self.declare_parameter("fall_height", 0.085)
         self.declare_parameter("room", [-0.67, 4.47, -1.97, 1.97])   # x0 x1 y0 y1 of the room interior (world.json walls)
         self.declare_parameter("profile", "")
+        self.declare_parameter("gt_match_tol", 0.01)          # s: estimate stamps may carry sensor timing jitter
         self.revision_ns = -1; self.map_revision = 0
         self.gt_hist = {}; self.gt = None; self.goal = None; self.grid = None; self.info = None
         self.true_xy, self.est_xy, self.errs = [], [], []
@@ -95,9 +106,9 @@ class ScoreNode(Node):
             self.t_beacon = self.now(); self.events.append(f"{self.t_beacon:6.1f} s  beacon reached (true distance {d:.2f} m)")
 
     def on_est(self, m):
-        gt = self.gt_hist.get(stamp_ns(m.header))
+        gt = nearest_sample(self.gt_hist, stamp_ns(m.header), int(self.get_parameter("gt_match_tol").value * 1e9))
         if gt is None:
-            return                                              # no ground truth with this stamp: not scored
+            return                                              # no ground truth near this stamp: not scored
         self.true_xy.append(gt); self.est_xy.append((m.pose.position.x, m.pose.position.y))
         self.errs.append(math.hypot(gt[0] - m.pose.position.x, gt[1] - m.pose.position.y))
 

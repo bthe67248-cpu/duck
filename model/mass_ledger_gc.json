@@ -1,19 +1,23 @@
 {
  "status": "PROVISIONAL: unmeasured components and upstream COM/inertia remain estimates",
- "model_robot_sha256": "e0a3a6dfeb0a785c2ccd7aef7d6da5ff630f5cde7cd4235e684c2750c3a97430",
+ "model_robot_sha256": "6d484810fbc9cc67558ca2cf6db9694c89111b50b8162e83a290e43bd81374ce",
  "pla_density_g_mm3": 0.00124,
  "parts": {
   "head_upper_v4": {
    "mass_g": 62.32,
-   "status": "PROVISIONAL 30% infill wall-proxy formula (not a slicer value)",
+   "status": "PROVISIONAL 30% infill, 1.2 mm wall-proxy formula (not a slicer value)",
    "volume_mm3": 57614.8,
-   "area_mm2": 39255.0
+   "area_mm2": 39255.0,
+   "wall_mm": 1.2,
+   "infill": 0.3
   },
   "head_lower_v4": {
    "mass_g": 46.32,
-   "status": "PROVISIONAL 30% infill wall-proxy formula (not a slicer value)",
+   "status": "PROVISIONAL 30% infill, 1.2 mm wall-proxy formula (not a slicer value)",
    "volume_mm3": 48078.9,
-   "area_mm2": 27302.0
+   "area_mm2": 27302.0,
+   "wall_mm": 1.2,
+   "infill": 0.3
   },
   "mouth_servo_v4": {
    "mass_g": 18.0,
@@ -38,15 +42,19 @@
   },
   "jaw_v4": {
    "mass_g": 4.38,
-   "status": "PROVISIONAL 30% infill wall-proxy formula (not a slicer value)",
+   "status": "PROVISIONAL 30% infill, 1.2 mm wall-proxy formula (not a slicer value)",
    "volume_mm3": 3534.0,
-   "area_mm2": 4184.2
+   "area_mm2": 4184.2,
+   "wall_mm": 1.2,
+   "infill": 0.3
   },
   "body_shell_v4": {
    "mass_g": 71.02,
-   "status": "PROVISIONAL 30% infill wall-proxy formula (not a slicer value)",
+   "status": "PROVISIONAL 30% infill, 1.2 mm wall-proxy formula (not a slicer value)",
    "volume_mm3": 57271.3,
-   "area_mm2": 60575.7
+   "area_mm2": 60575.7,
+   "wall_mm": 1.2,
+   "infill": 0.3
   },
   "pcb_stack_v4": {
    "mass_g": 45.0,
@@ -60,15 +68,42 @@
    "mass_g": 6.0,
    "status": "ESTIMATE (bought part, not weighed)"
   },
+  "battery_v4": {
+   "mass_g": 55.0,
+   "status": "ESTIMATE (bought part, not weighed)",
+   "com_mm": [
+    -37.5,
+    0.0,
+    5.0
+   ],
+   "principal_inertia_kg_m2": [
+    4.618e-06,
+    1.752e-05,
+    2.007e-05
+   ],
+   "note": "uniform box at its V4 location (design/v4/v4_params.json battery)"
+  },
   "_torso_link": {
    "upstream_mass_g": 199.2,
    "removed_upstream_parts_g_ESTIMATE": {
     "right_shell": 13.9,
     "banana_pcb_locker": 0.6,
+    "np_f970": 100.0,
     "left_shell": 14.1
    },
-   "new_mass_g": 302.6,
-   "note": "upstream battery mass kept for the 2S LiPo (assumed equal)"
+   "remainder_g": 70.6,
+   "new_mass_g": 257.6,
+   "upstream_com_mm": [
+    -22.6,
+    -0.0,
+    2.8
+   ],
+   "com_mm": [
+    -30.9,
+    0.0,
+    5.8
+   ],
+   "note": "replaced, not added: upstream shells, PCB locker and battery (np_f970, UPSTREAM_BATTERY_G ESTIMATE) subtracted; V4 body, boards, A010, XT60 and the 2S LiPo added at their V4 locations"
   }
  },
  "measured_link_mass_kg": {},
@@ -83,6 +118,10 @@
   "kv": null,
   "stall": null
  },
- "robot_mass_kg": 0.8489,
+ "servo_delay_s": null,
+ "servo_delay_sim_s": 0.02,
+ "servo_delay_source": "ESTIMATE: upstream training lag 15-30 ms",
+ "upstream_battery_removed_g_ESTIMATE": 100.0,
+ "robot_mass_kg": 0.8039,
  "note": "Link masses rescale existing inertia at unchanged COM; weights alone do not calibrate COM/inertia."
 }

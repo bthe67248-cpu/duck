@@ -1,30 +1,454 @@
 {
  "samples": 3000,
  "clear_mm": 0.8,
- "v4": {
-  "static_max_penetration_mm": {
-   "trunk_base/seeed_bearing__configuration__22x16x4_16": 0.0,
-   "trunk_base/trunk_base_17": 0.0,
-   "trunk_base/xl330_18": 0.0,
-   "trunk_base/power_support_19": 0.0,
-   "trunk_base/xl330_21": 0.0,
-   "trunk_base/seeed_bearing__configuration__22x16x4_22": 0.0,
-   "trunk_base/pcb_stack_v4_24": 0.0,
-   "trunk_base/a010_v4_25": 0.3,
-   "trunk_base/battery_v4_26": 0.2,
-   "trunk_base/xt60_v4_27": 0.5,
-   "jaw_soft/lens_64": 1.3,
-   "jaw_soft/xl330_65": 2.1,
-   "jaw_soft/motor_support_66": 0.3,
-   "jaw_soft/xl330_67": 1.4,
-   "jaw_soft/seeed_bearing__configuration_default_68": 0.4,
-   "jaw_soft/m12_lens_holder_69": 0.0,
-   "jaw_soft/speaker_70": 0.0,
-   "jaw_soft/mouth_servo_v4_73": 1.0
+ "method": "mesh-mesh containment (signed ray crossings) + surface distance, both directions; old = previous 2.5 mm surface band, one direction",
+ "static": {
+  "jaw_soft/head_upper_v4 vs jaw_soft/lens": {
+   "new_mm": 6.7,
+   "old_mm": 1.4,
+   "clash": true
   },
-  "poses_with_contact": 0,
-  "poses_per_torso_part": {},
-  "poses_per_pair": {}
+  "jaw_soft/m12_lens_holder vs jaw_soft/mouth_servo_v4": {
+   "new_mm": 6.1,
+   "old_mm": 2.5,
+   "clash": true
+  },
+  "envelope/mouth_servo_cable vs jaw_soft/head_upper_v4": {
+   "new_mm": 5.8,
+   "old_mm": 2.5,
+   "clash": true
+  },
+  "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": {
+   "new_mm": 5.1,
+   "old_mm": 2.5,
+   "clash": true
+  },
+  "envelope/mouth_servo_cable vs jaw_soft/head_lower_v4": {
+   "new_mm": 4.4,
+   "old_mm": 2.5,
+   "clash": true
+  },
+  "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": {
+   "new_mm": 3.7,
+   "old_mm": 2.5,
+   "clash": true
+  },
+  "envelope/usb_c_top vs trunk_base/body_shell_v4": {
+   "new_mm": 3.2,
+   "old_mm": 2.5,
+   "clash": true
+  },
+  "envelope/balance_plug vs trunk_base/body_shell_v4": {
+   "new_mm": 2.9,
+   "old_mm": 2.5,
+   "clash": true
+  },
+  "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": {
+   "new_mm": 2.5,
+   "old_mm": 2.5,
+   "clash": true
+  },
+  "jaw_soft/head_lower_v4 vs jaw_soft/xl330": {
+   "new_mm": 2.3,
+   "old_mm": 2.3,
+   "clash": true
+  },
+  "jaw_soft/head_upper_v4 vs jaw_soft/mouth_servo_v4": {
+   "new_mm": 2.2,
+   "old_mm": 2.2,
+   "clash": true
+  },
+  "envelope/xt60_mating_plug vs trunk_base/body_shell_v4": {
+   "new_mm": 2.0,
+   "old_mm": 2.0,
+   "clash": true
+  },
+  "jaw_soft/motor_support vs jaw_soft/mouth_servo_v4": {
+   "new_mm": 1.6,
+   "old_mm": 1.5,
+   "clash": true
+  },
+  "trunk_base/battery_v4 vs trunk_base/power_support": {
+   "new_mm": 1.1,
+   "old_mm": 1.0,
+   "clash": true
+  },
+  "jaw_soft/head_lower_v4 vs yaw_roll_motion/seeed_bearing__configuration__22x16x4": {
+   "new_mm": 1.1,
+   "old_mm": 1.1,
+   "clash": true
+  },
+  "jaw_soft/head_lower_v4 vs jaw_soft/mouth_servo_v4": {
+   "new_mm": 1.1,
+   "old_mm": 1.0,
+   "clash": true
+  },
+  "jaw_soft/head_lower_v4 vs jaw_soft/motor_support": {
+   "new_mm": 0.9,
+   "old_mm": 0.9,
+   "clash": true
+  },
+  "jaw_soft/head_lower_v4 vs jaw_soft/seeed_bearing__configuration_default": {
+   "new_mm": 0.7,
+   "old_mm": 0.5,
+   "clash": false
+  },
+  "trunk_base/body_shell_v4 vs trunk_base/xt60_v4": {
+   "new_mm": 0.5,
+   "old_mm": 0,
+   "clash": false
+  },
+  "envelope/usb_c_top vs trunk_base/pcb_stack_v4": {
+   "new_mm": 0.5,
+   "old_mm": 0.4,
+   "clash": false
+  },
+  "envelope/a010_usb vs trunk_base/a010_v4": {
+   "new_mm": 0.5,
+   "old_mm": 0.3,
+   "clash": false
+  },
+  "envelope/xt60_mating_plug vs trunk_base/xt60_v4": {
+   "new_mm": 0.4,
+   "old_mm": 0.3,
+   "clash": false
+  },
+  "envelope/a010_usb vs trunk_base/trunk_base": {
+   "new_mm": 0,
+   "old_mm": 0,
+   "clash": false
+  },
+  "envelope/a010_usb vs trunk_base/xl330": {
+   "new_mm": 0,
+   "old_mm": 0.2,
+   "clash": false
+  },
+  "envelope/usb_c_rear vs trunk_base/pcb_stack_v4": {
+   "new_mm": 0,
+   "old_mm": 0.2,
+   "clash": false
+  },
+  "envelope/balance_plug vs trunk_base/battery_v4": {
+   "new_mm": 0,
+   "old_mm": 0.2,
+   "clash": false
+  },
+  "envelope/balance_plug vs trunk_base/xt60_v4": {
+   "new_mm": 0,
+   "old_mm": 0.1,
+   "clash": false
+  },
+  "jaw/jaw_v4 vs jaw_soft/head_lower_v4": {
+   "new_mm": 0,
+   "old_mm": 1.4,
+   "clash": false
+  },
+  "envelope/mouth_servo_cable vs jaw_soft/mouth_servo_v4": {
+   "new_mm": 0,
+   "old_mm": 0.3,
+   "clash": false
+  }
  },
- "v3_reference": "V3 (deleted): 129/600 poses, all head-into-rear-shield (same sampling, 24 Nov 2026)"
+ "clash_at_rest": [
+  "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch",
+  "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4",
+  "jaw_soft/head_lower_v4 vs yaw_roll_motion/seeed_bearing__configuration__22x16x4",
+  "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330"
+ ],
+ "pose_envelope": {
+  "pairs_checked": 1697,
+  "poses_with_clash": 3000,
+  "poses_with_clash_old_method": 3000,
+  "poses_with_clash_not_at_rest": 800,
+  "poses_per_pair": {
+   "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": 3000,
+   "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": 3000,
+   "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": 3000,
+   "jaw_soft/head_lower_v4 vs yaw_roll_motion/seeed_bearing__configuration__22x16x4": 3000,
+   "jaw/jaw_v4 vs jaw_soft/head_lower_v4": 619,
+   "jaw_soft/head_lower_v4 vs neck/xl330": 106,
+   "ankle_left/sole_left vs ankle_right/sole_right": 76,
+   "ankle_left/foot_left vs ankle_right/sole_right": 65,
+   "ankle_left/sole_left vs ankle_right/foot_right": 64,
+   "envelope/usb_c_top vs jaw_soft/head_upper_v4": 52,
+   "ankle_left/foot_left vs ankle_right/foot_right": 49,
+   "ankle_left/sole_left vs ankle_right/ankle_right": 24,
+   "ankle_left/foot_left vs ankle_right/ankle_right": 22,
+   "ankle_left/ankle_left vs ankle_right/sole_right": 21,
+   "ankle_left/ankle_left vs ankle_right/foot_right": 19,
+   "ankle_left/ankle_left vs ankle_right/ankle_right": 11,
+   "envelope/usb_c_top vs jaw_soft/head_lower_v4": 8,
+   "ankle_left/ankle_left vs ankle_right/seeed_bearing__configuration_default": 3,
+   "ankle_right/ankle_right vs leg/xl330": 2,
+   "ankle_right/sole_right vs leg/xl330": 2,
+   "ankle_right/foot_right vs leg/xl330": 2,
+   "ankle_left/foot_left vs leg_2/xl330": 2,
+   "ankle_left/seeed_bearing__configuration_default vs ankle_right/ankle_right": 2,
+   "ankle_left/seeed_bearing__configuration_default vs ankle_right/foot_right": 2,
+   "ankle_right/ankle_right vs leg/leg": 1
+  },
+  "poses_per_pair_old_method": {
+   "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": 3000,
+   "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": 3000,
+   "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": 3000,
+   "jaw_soft/head_lower_v4 vs yaw_roll_motion/seeed_bearing__configuration__22x16x4": 3000,
+   "jaw/jaw_v4 vs jaw_soft/head_lower_v4": 377,
+   "jaw_soft/head_lower_v4 vs neck/xl330": 100,
+   "ankle_left/sole_left vs ankle_right/sole_right": 74,
+   "ankle_left/sole_left vs ankle_right/foot_right": 62,
+   "ankle_left/foot_left vs ankle_right/sole_right": 60,
+   "ankle_left/foot_left vs ankle_right/foot_right": 49,
+   "envelope/usb_c_top vs jaw_soft/head_upper_v4": 40,
+   "ankle_left/sole_left vs ankle_right/ankle_right": 23,
+   "ankle_left/ankle_left vs ankle_right/sole_right": 21,
+   "ankle_left/foot_left vs ankle_right/ankle_right": 18,
+   "ankle_left/ankle_left vs ankle_right/foot_right": 18,
+   "envelope/usb_c_top vs jaw_soft/head_lower_v4": 8,
+   "ankle_left/ankle_left vs ankle_right/ankle_right": 8,
+   "ankle_right/sole_right vs leg/xl330": 2,
+   "ankle_right/foot_right vs leg/xl330": 2,
+   "ankle_left/foot_left vs leg_2/xl330": 2,
+   "ankle_left/seeed_bearing__configuration_default vs ankle_right/ankle_right": 2,
+   "ankle_left/seeed_bearing__configuration_default vs ankle_right/foot_right": 2,
+   "ankle_right/ankle_right vs leg/leg": 1,
+   "ankle_left/ankle_left vs leg_2/xl330": 1,
+   "ankle_left/ankle_left vs leg_2/leg": 1
+  },
+  "worst_mm": {
+   "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": 5.1,
+   "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": 3.8,
+   "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": 3.8,
+   "ankle_left/ankle_left vs ankle_right/foot_right": 3.3,
+   "ankle_left/ankle_left vs ankle_right/ankle_right": 3.3,
+   "ankle_left/ankle_left vs ankle_right/sole_right": 3.3,
+   "ankle_left/sole_left vs ankle_right/ankle_right": 3.2,
+   "envelope/usb_c_top vs jaw_soft/head_lower_v4": 3.2,
+   "ankle_left/foot_left vs ankle_right/ankle_right": 3.2,
+   "envelope/usb_c_top vs jaw_soft/head_upper_v4": 3.2,
+   "jaw_soft/head_lower_v4 vs neck/xl330": 2.7,
+   "ankle_left/ankle_left vs ankle_right/seeed_bearing__configuration_default": 2.2,
+   "ankle_left/sole_left vs ankle_right/foot_right": 2.2,
+   "ankle_left/seeed_bearing__configuration_default vs ankle_right/ankle_right": 2.2,
+   "ankle_left/ankle_left vs leg_2/xl330": 2.2
+  }
+ },
+ "motions": {
+  "balance": {
+   "frames": 550,
+   "seconds": 11.0,
+   "frames_with_clash": 550,
+   "frames_with_clash_not_at_rest": 0,
+   "frames_with_clash_old_method": 550,
+   "frames_per_pair": {
+    "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": 550,
+    "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": 550,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": 550,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/seeed_bearing__configuration__22x16x4": 550
+   },
+   "worst_mm": {
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": 5.1,
+    "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": 3.7,
+    "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": 2.6,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/seeed_bearing__configuration__22x16x4": 1.2
+   },
+   "proxy_contact_frames": 0,
+   "proxy_contacts": {}
+  },
+  "dance": {
+   "frames": 1100,
+   "seconds": 22.0,
+   "frames_with_clash": 1100,
+   "frames_with_clash_not_at_rest": 0,
+   "frames_with_clash_old_method": 1100,
+   "frames_per_pair": {
+    "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": 1100,
+    "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": 1100,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": 1100,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/seeed_bearing__configuration__22x16x4": 1100
+   },
+   "worst_mm": {
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": 5.1,
+    "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": 3.7,
+    "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": 3.7,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/seeed_bearing__configuration__22x16x4": 1.2
+   },
+   "proxy_contact_frames": 0,
+   "proxy_contacts": {}
+  },
+  "fall_getup": {
+   "frames": 889,
+   "seconds": 17.8,
+   "frames_with_clash": 889,
+   "frames_with_clash_not_at_rest": 668,
+   "frames_with_clash_old_method": 889,
+   "frames_per_pair": {
+    "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": 889,
+    "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": 889,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": 889,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/seeed_bearing__configuration__22x16x4": 889,
+    "envelope/usb_c_top vs jaw_soft/head_upper_v4": 628,
+    "jaw_soft/head_lower_v4 vs neck/xl330": 17,
+    "envelope/usb_c_top vs jaw_soft/head_lower_v4": 15,
+    "ankle_right/sole_right vs jaw_soft/head_upper_v4": 12,
+    "ankle_right/foot_right vs jaw_soft/head_upper_v4": 12,
+    "ankle_right/sole_right vs jaw_soft/head_lower_v4": 12,
+    "ankle_right/foot_right vs jaw_soft/head_lower_v4": 12,
+    "ankle_right/sole_right vs jaw_soft/xl330": 11,
+    "ankle_right/foot_right vs jaw_soft/xl330": 10,
+    "ankle_left/foot_left vs trunk_base/body_shell_v4": 5,
+    "ankle_left/sole_left vs trunk_base/body_shell_v4": 4
+   },
+   "worst_mm": {
+    "ankle_right/foot_right vs jaw_soft/xl330": 7.0,
+    "ankle_right/sole_right vs jaw_soft/xl330": 6.7,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": 5.1,
+    "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": 3.8,
+    "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": 3.7,
+    "envelope/usb_c_top vs jaw_soft/head_upper_v4": 3.3,
+    "jaw_soft/head_lower_v4 vs neck/xl330": 2.8,
+    "ankle_left/foot_left vs trunk_base/body_shell_v4": 2.2
+   },
+   "proxy_contact_frames": 22,
+   "proxy_contacts": {
+    "head_upper_skirt_collision vs right_foot_collision": 35,
+    "head_lower_collision vs right_foot_collision": 33,
+    "body_board_bay_collision vs leg/geom": 18,
+    "head_dome_collision vs right_foot_collision": 10,
+    "body_board_bay_collision vs left_foot_collision": 8,
+    "body_chest_a010_collision vs head_lower_collision": 5,
+    "body_board_bay_collision vs leg_2/geom": 1
+   }
+  },
+  "obstacles": {
+   "frames": 1601,
+   "seconds": 32.0,
+   "frames_with_clash": 1601,
+   "frames_with_clash_not_at_rest": 7,
+   "frames_with_clash_old_method": 1601,
+   "frames_per_pair": {
+    "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": 1601,
+    "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": 1601,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": 1601,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/seeed_bearing__configuration__22x16x4": 1601,
+    "envelope/xt60_mating_plug vs leg_2/leg": 7,
+    "envelope/xt60_mating_plug vs upper_leg_right/seeed_bearing__configuration__22x16x4": 4,
+    "envelope/xt60_mating_plug vs leg_2/xl330": 3
+   },
+   "worst_mm": {
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": 5.1,
+    "envelope/xt60_mating_plug vs leg_2/leg": 4.1,
+    "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": 3.7,
+    "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": 3.4,
+    "envelope/xt60_mating_plug vs upper_leg_right/seeed_bearing__configuration__22x16x4": 2.4,
+    "envelope/xt60_mating_plug vs leg_2/xl330": 1.4,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/seeed_bearing__configuration__22x16x4": 1.2,
+    "envelope/xt60_mating_plug vs upper_leg_right/upper_leg_rigidity_plate": 0.7
+   },
+   "proxy_contact_frames": 0,
+   "proxy_contacts": {}
+  },
+  "pick": {
+   "frames": 315,
+   "seconds": 6.3,
+   "frames_with_clash": 315,
+   "frames_with_clash_not_at_rest": 0,
+   "frames_with_clash_old_method": 315,
+   "frames_per_pair": {
+    "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": 315,
+    "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": 315,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": 315,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/seeed_bearing__configuration__22x16x4": 315
+   },
+   "worst_mm": {
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": 5.1,
+    "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": 3.7,
+    "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": 2.6,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/seeed_bearing__configuration__22x16x4": 1.2
+   },
+   "proxy_contact_frames": 0,
+   "proxy_contacts": {}
+  },
+  "roulade": {
+   "frames": 375,
+   "seconds": 7.5,
+   "frames_with_clash": 375,
+   "frames_with_clash_not_at_rest": 11,
+   "frames_with_clash_old_method": 375,
+   "frames_per_pair": {
+    "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": 375,
+    "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": 375,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": 375,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/seeed_bearing__configuration__22x16x4": 375,
+    "envelope/usb_c_top vs jaw_soft/head_upper_v4": 7,
+    "jaw_soft/head_lower_v4 vs trunk_base/body_shell_v4": 6,
+    "jaw/jaw_v4 vs trunk_base/body_shell_v4": 3,
+    "envelope/usb_c_top vs jaw_soft/speaker": 2,
+    "jaw_soft/head_lower_v4 vs trunk_base/a010_v4": 1
+   },
+   "worst_mm": {
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": 5.1,
+    "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": 3.7,
+    "envelope/usb_c_top vs jaw_soft/head_upper_v4": 3.2,
+    "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": 2.9,
+    "envelope/usb_c_top vs jaw_soft/speaker": 2.0,
+    "jaw_soft/head_lower_v4 vs trunk_base/body_shell_v4": 1.2,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/seeed_bearing__configuration__22x16x4": 1.2,
+    "jaw/jaw_v4 vs trunk_base/body_shell_v4": 1.1
+   },
+   "proxy_contact_frames": 17,
+   "proxy_contacts": {
+    "body_chest_a010_collision vs head_lower_collision": 11,
+    "body_rear_upper_collision vs head_lower_collision": 7,
+    "body_board_bay_collision vs head_lower_collision": 6,
+    "body_front_upper_collision vs head_lower_collision": 6,
+    "body_chest_a010_collision vs jaw_collision": 2,
+    "jaw_collision vs right_foot_collision": 1
+   }
+  },
+  "sitstand": {
+   "frames": 475,
+   "seconds": 9.5,
+   "frames_with_clash": 475,
+   "frames_with_clash_not_at_rest": 0,
+   "frames_with_clash_old_method": 475,
+   "frames_per_pair": {
+    "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": 475,
+    "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": 475,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": 475,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/seeed_bearing__configuration__22x16x4": 475
+   },
+   "worst_mm": {
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": 5.1,
+    "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": 3.7,
+    "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": 2.6,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/seeed_bearing__configuration__22x16x4": 1.2
+   },
+   "proxy_contact_frames": 2,
+   "proxy_contacts": {
+    "body_front_upper_collision vs right_foot_collision": 4
+   }
+  },
+  "walk": {
+   "frames": 500,
+   "seconds": 10.0,
+   "frames_with_clash": 500,
+   "frames_with_clash_not_at_rest": 0,
+   "frames_with_clash_old_method": 500,
+   "frames_per_pair": {
+    "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": 500,
+    "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": 500,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": 500,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/seeed_bearing__configuration__22x16x4": 500
+   },
+   "worst_mm": {
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": 5.1,
+    "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": 3.7,
+    "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": 2.7,
+    "jaw_soft/head_lower_v4 vs yaw_roll_motion/seeed_bearing__configuration__22x16x4": 1.2
+   },
+   "proxy_contact_frames": 0,
+   "proxy_contacts": {}
+  }
+ },
+ "motions_source": "scripts/motions.py all --record (LiPo model, 20 ms servo delay, kp 1.0); one check_v4_fit.py --samples 0 --traj run per motion, merged"
 }

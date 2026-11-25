@@ -16,20 +16,281 @@ STLs and the V3 generator have been deleted (they are in git history).
 | Mouth | fixed bill | lower half of the beak is a `jaw` on a `mouth` hinge (0–30°), position actuator `mouth` (actuator 16, after the push motors), XL330-size servo under the forehead |
 | Limits | upstream | neck pitch capped at 0.70 rad (was 1.047): beyond that, with the head tipped back, the back of the head reaches the board bay |
 
-Mass (`model/mass_ledger.json`, estimates): robot 0.760 → 0.849 kg. Torso 302 g (body shell about 79 g, boards 45 g).
-The 2S pack is assumed to weigh the same as the upstream battery. Thinner body walls (1.6 mm) would save about 15 g.
+Mass (`model/mass_ledger.json`, estimates): robot 0.760 (upstream) → 0.804 kg. Torso 258 g (body shell about 71 g,
+boards 45 g, 2S LiPo 55 g). See "Mechanical validation and dynamics" below for the battery, head budget and servo delay.
 
-## Fit check (`check_v4_fit.py`, penetration > 0.8 mm)
+## Mechanical validation and dynamics (review fixes, 24 November 2026)
 
-| | V3 (600 poses) | V4 (3000 poses) |
+A review found that the fit check missed deep penetration, the LiPo kept the upstream battery's mass, the servo delay
+was recorded but not simulated, and the realistic profile published exact IMU readings and sensor poses. All four are
+fixed; the fit check now reports real interferences that the old check could not see.
+
+### Fit check (`check_v4_fit.py`, penetration > 0.8 mm)
+
+**Method.** The old check looked for a surface sample of the other part within 2.5 mm and projected onto its normal,
+one direction only, so a point 3 mm inside a part reported 0 mm, and a thin wall pushed through a part was invisible.
+Now every visual mesh is a closed solid (`solid.py`): containment from signed vertical ray crossings (a generalised
+winding number, robust to small gaps), depth = distance to the surface with no cut-off, and every pair is checked in
+both directions (A's samples in B and B's in A). Tested against analytic solids (`tests/test_fit_solid.py`: sphere
+boundary within 0.3 mm, depth within 0.25 mm, a 3 mm-deep point reports 3.0 mm where the old method gave 0, a 2 mm
+wall through a block reports its 19 mm reach where the old one-way check saw 1 mm). The deepest results were confirmed
+on the full-resolution STLs (the simulation meshes are decimated to 20k faces): same or deeper. The same pairs run
+over the random pose envelope and over recorded motions (`scripts/motions.py --record DIR`, then `--traj DIR/*.npz`),
+next to the MuJoCo collision proxies' self-contacts. The upstream Microduck head, checked the same way, has no pair
+deeper than 1.1 mm (CAD contact faces), so 0.8 mm is close to the noise floor for upstream parts.
+
+**Static fit (standing, mouth closed): pairs deeper than 0.8 mm.** Before = the old method's number for the same
+pair, where the old check covered it at all (it only checked parts inside their own body's shells).
+
+| Pair | new (mm) | old method (mm) | Cause |
+|-|-|-|-|
+| upper head shell / camera lens | **6.7** | 1.4 | the lens opening is smaller than the lens after the 10 % widening |
+| mouth servo / M12 lens holder | **6.1** | 2.5 (band limit) | the mouth servo placeholder sits on the camera holder |
+| lower head shell / head-roll servo (`yaw_roll_motion` XL330) | **5.1** | not checked | V4 reshaping (upstream shell: < 0.3 mm) |
+| lower head shell / neck-pitch bearing | **3.7** | not checked | V4 reshaping (upstream: none) |
+| lower head shell / neck-pitch bracket | **2.5** | not checked | V4 reshaping (upstream: none) |
+| lower head shell / head XL330 (in the head) | 2.3 | 2.3 | mounting face, as upstream (≤ 1.1 mm there) |
+| upper head shell / mouth servo | 2.2 | 2.2 | mouth servo placeholder |
+| motor support / mouth servo | 1.6 | 1.5 | mouth servo placeholder |
+| 2S LiPo / upstream power support (old battery holder) | 1.1 | 1.0 | the holder is still in the model; trim or delete it |
+| lower head shell / roll bearing, mouth servo, motor support | 0.9–1.1 | 0.9–1.1 | contact faces |
+| keep-out envelopes | 2.0–5.8 | – | see "Connector envelopes" below |
+
+The old method also reported 1.4 mm for the closed jaw against the lower shell; the new one finds no overlap there.
+The table in the earlier V4 write-up ("lens 1.3 mm, servos 1.4/2.1, mouth servo 1.0 mm") under-reported every pair.
+
+**Pose envelope (3000 random poses, 1697 part pairs, seed 1).** Every pose clashes, because the four head/neck
+overlaps above already exist at rest. Clashes in pairs that are clear at rest (caused by motion): **800 / 3000 poses**.
+
+| Pair | poses (new) | poses (old method) | worst (mm) |
+|-|-|-|-|
+| jaw / lower head shell | 619 | 377 | 1.0 |
+| lower head shell / neck servo (`neck` XL330) | 106 | 100 | 2.7 |
+| left foot / right foot (random hip yaw/roll ±0.3 rad crossing the feet) | 76 | 74 | 3.3 |
+| `usb_c_top` envelope / head shells (head tipped back over the board bay) | 60 | 48 | 3.2 |
+| any moving part / body shell, boards, LiPo, XT60, A010, power support | 0 | 0 | – |
+
+The jaw rubs the lower shell from about 15° opening: 0.48 mm at 15°, 0.72 at 20°, 1.0 mm at 30° (confirmed on the
+full-resolution meshes). Move the hinge axis back/down or chamfer the jaw's rear edge, or limit the mouth to ~12°.
+
+**Recorded motions** (`motions.py all --record`, final model with the LiPo and 20 ms servo delay, every 50 Hz frame).
+"Frames" counts clashes in pairs that are clear at rest; proxy = MuJoCo collision-proxy self-contacts > 0.8 mm.
+
+| Motion | frames | clashes caused by motion | proxy contacts |
+|-|-|-|-|
+| balance, walk, pick, dance | 550, 500, 315, 1100 | none | none |
+| sit/stand | 475 | none | 2 frames, right foot / body front |
+| roulade | 375 | 11: lower head shell 1.2 mm and jaw 1.1 mm into the body shell (head tucked); head over the `usb_c_top` space | 17: head/jaw proxies on the body proxies |
+| fall + get-up | 889 | 668: right foot up to **7.0 mm** into the head XL330 and the head shells (the foot swings into the head on the ground), left foot 2.2 mm into the body shell, lower head shell 2.8 mm into the neck servo; the head lying back over the `usb_c_top` space (628 frames) | 22: feet on the head and board-bay proxies |
+| obstacles | 1601 | 7: the right shank sweeps through the `xt60_mating_plug` envelope (4.1 mm), so a plug hanging below the keel would be kicked | none |
+
+The walking gaits stay clear. Contact only happens in falls and rolls, where parts really do strike each other. The
+simulator lets meshes pass through because only coarse proxies collide, so in a fall the real foot hits the head
+shell and the head XL330: those parts need to survive that impact. The roll presses the head into the chest, so the
+body shell's chest corner needs about 1.5 mm relief or the head stops on it. Proxy contacts and mesh clashes agree
+on where these happen.
+
+### Missing hardware detail (not modelled anywhere yet)
+
+Fasteners and bosses
+- The body shell is one closed solid: no split, lid or cover, so it cannot be printed around the boards or opened. It
+  needs a parting line (e.g. a removable rear-bay lid and keel cover) with M2 heat-set insert bosses (about 3.5 mm
+  diameter, 4–5 mm deep), and a mounting interface to the trunk frame (the upstream shells' screw points are gone).
+- UNO Q + HAT: no standoffs. The stack has 2.0 mm behind it (rear wall), 1.3 mm at the sides, 2.0 / 1.5 mm below /
+  above. That is less than the through-hole solder tails of a HAT, and there is no room for side bosses; the UNO
+  mounting holes (3.2 mm) need standoffs from the bay wall, i.e. at least 4–5 mm more bay depth.
+- 2S LiPo: no strap, cradle or clip, and 0.5 mm clearance per side in x (1.0 mm in y) in the keel; real packs vary by
+  ±1 mm and swell. Give it 1.5–2 mm per side and a strap slot.
+- A010: no bosses or clips in the chest pocket (6.3 mm free behind it, 1.65 mm at the sides).
+- Mouth servo: no bosses for the XL330's M2 case holes; it also intersects the M12 lens holder (6.1 mm), the upper
+  shell (2.2 mm) and the motor support (1.6 mm), see the static table.
+- Jaw: no hinge pin, bushing or bosses, and the servo-to-jaw link is not modelled.
+- Head shells: no screws or bosses joining the upper and lower shells.
+- XT60: no retention; the pack-side connector floats in the keel.
+
+Connector envelopes (keep-out boxes in `v4_params.json` `envelopes`, checked like parts; ESTIMATES)
+- `usb_c_top` (straight USB-C on the UNO Q's short edge, which is the top of the upright stack): 3.2 mm into the shell
+  roof. With the board upright there is no room for a plug above it.
+- `usb_c_rear` (a rear-facing plug through `usb_access`): clear. The cut only works with a right-angle receptacle or a
+  short right-angle adapter; the UNO form factor's connector points up.
+- `xt60_mating_plug` (female XT60 + lead pushed on from below): 2.0 mm into the keel floor. The `xt60_access` opening is
+  5 × 12 mm; an XT60 housing is 8.2 × 15.8 mm, so the pack cannot be unplugged through it.
+- `balance_plug` (2S JST-XH beside the XT60): 2.9 mm into the keel walls; there is nowhere to stow it, and it must be
+  reachable for charging.
+- `a010_usb` (straight USB-C at the A010's rear face): clear at rest (touches the A010, 0.5 mm).
+- `mouth_servo_cable` (JST-EH plug + bend at the servo's end): 5.8 mm into the upper shell, 4.4 mm into the lower.
+
+Cable bends and routes (no envelope yet)
+- LiPo leads: 1.0 mm between the pack's bottom and the XT60 placeholder, which is also only 9.5 mm long (a real XT60
+  half is about 16 mm). 14 AWG silicone leads need roughly a 10 mm bend radius, so the keel needs 15–20 mm more depth
+  or the leads leave the pack sideways.
+- Neck pass-through: the head servos' bus, the mouth servo and the head camera's cable must run from the torso through
+  the neck with slack for head yaw ±1.2 rad, pitch and roll; not modelled.
+- Leg servo bus from the HAT to both hips past the battery keel; A010 USB from the chest pocket to the rear bay
+  (about 120 mm past the pack); neither routed.
+
+### Mass: battery and head budget
+
+**2S LiPo (`make_duck.py`).** The upstream torso inertial includes its battery (`np_f970`); before, V4 kept that mass
+and only assumed the 2S pack weighed the same. Its mass is not published, but the part is a real 2S battery: the mesh
+is 38.6 × 20.6 × 70.8 mm, the size of a Sony NP-F550/F570 Li-ion camcorder pack (the NP-F970 in its name is 51 mm
+thick), and retail listings for that size give about 100 g. A mass fit agrees (the upstream neck, shank and hip links
+imply an XL330 of 17.9 g and printed parts at 1.08 g/cm³, which leaves 123 g of the 199 g torso; fits to the torso
+COM give 103–125 g). `UPSTREAM_BATTERY_G = 100` (until the pack is weighed; it was a 115 g estimate) is now subtracted at the
+battery's pose (uniform density over its mesh) and the LiPo is added as a 55 g uniform box at its V4 location
+(`v4_params.json` `battery`, COM (−37.5, 0, 5.0) mm in the torso frame; principal inertia 4.6, 17.5, 20.1 kg·mm²).
+
+| | before | after |
 |-|-|-|
-| Poses where a moving part enters a torso part | 129 (head into the rear shield) | **0** (1 without the neck limit: head into the board-bay top) |
-| Jaw against the head over 0–30° | – | none |
-| Head parts inside the shell walls at rest | lens 1.2, servos 1.4/1.9, eye plate 2.4 mm | lens 1.3 (sits in the opening), servos 1.4/2.1 (same mounting faces as V3), mouth servo 1.0 mm |
+| Torso link | 302.6 g, COM (−31.4, 0, 2.7) mm | 257.6 g, COM (−30.9, 0, 5.8) mm |
+| Torso inertia Ixx / Iyy / Izz | 232 / 489 / 431 kg·mm² | 298 / 544 / 451 kg·mm² |
+| Robot | 0.849 kg, COM height 139.0 mm | 0.804 kg, COM height 141.1 mm |
 
-Coarse kinematic sample (head joints neck_pitch ±0.4, head_pitch ±0.6, head_yaw ±1.2, head_roll ±0.44 rad; legs ±0.3 rad
-around standing), not the gait. An earlier "2 shank clashes" result came from a keyframe bug (the jaw joint shifted the
-right leg's start pose by one joint); with the bug fixed no leg reaches the body, so no hip limit is needed.
+The inertia rises although the torso is lighter: the 60 mm-tall pack sits higher and further from the torso COM than the
+flat upstream battery it replaces. Weigh the real pack and the torso link (`config/robot_measurements.example.json`).
+
+**Head (`head_mass.py`).** Budget: the upstream head link the policies were trained with and the neck servos carry,
+188.8 g. The V4 head is 192.7 g (shells 108.6 g + mouth servo 18 g on the upstream remainder) plus the 4.4 g jaw =
+**197.1 g, 8.3 g (4.4 %) over**. That figure subtracts the replaced upstream parts at solid PLA density (122.6 g); if the
+upstream CAD used the 1.08 g/cm³ its other links imply, 16 g too much was subtracted and the head is about 213 g (13 %
+over). The shells are solid meshes about 3 mm thick on average (upper 2.9, lower 3.5 mm), so at 1.2 mm perimeters per
+face they are almost all wall: infill barely matters.
+
+| Shells + jaw (g), wall per face × infill | 10 % | 15 % | 20 % | 30 % |
+|-|-|-|-|-|
+| 0.8 mm | 76.7 | 80.0 | 83.2 | 89.8 |
+| 1.0 mm | 91.8 | 94.2 | 96.6 | 101.5 |
+| 1.2 mm (model default) | 106.6 | 108.2 | 109.8 | **113.0** |
+
+Proposal (recorded as `print._proposed_head` in `v4_params.json`, not applied): 0.8 mm walls (two 0.4 mm perimeters) and
+15 % infill on both head shells and the jaw, −33 g, head about 164 g (180 g in the pessimistic case), under budget with
+margin. 1.0 mm / 15 % (−19 g, 178 g) if the dome proves too soft in a drop. Thinning the shell geometry itself to 2.0 mm
+(a CAD offset) would save 26 g at the current print settings. A 9 g-class micro servo for the jaw instead of the 18 g
+XL330 saves about 9 g more. `print` settings per part are now read from `v4_params.json` by `make_duck.py`.
+
+### Servo delay
+
+`make_duck.py` now writes the servo command delay into every model as `<custom><numeric name="servo_delay_s">`: the
+calibration's measured `servo.delay_s`, else an ESTIMATE of 20 ms (the upstream policies are trained with 3–6 physics
+steps, 15–30 ms, of actuator lag). `scripts/motions.py` and `world_sim` apply it with `duck_nav/actuation.py`, a pure
+transport delay at physics-step resolution (the servos act on the target issued 4 physics steps earlier). It is not
+MuJoCo's actuator `delay` attribute because that needs MuJoCo ≥ 3.4 and CI pins 3.3.6; where it exists the response is
+identical (`test_actuation.py`). Overrides: `motions.py --servo-delay S`, launch `servo_delay:=S`. The ledger keeps
+`servo_delay_s` as the measured value (null until measured; MATLAB reads it) and adds `servo_delay_sim_s`.
+
+**Effect on the motions** (`scripts/motions.py all`, ground-contact model; passes out of 3 runs per row, servo stiffness
+×0.95 / 1.0 / 1.05, because single deterministic runs of the marginal motions flip with tiny changes):
+
+| Model, servo delay | balance | walk | obstacles | fall + get-up | sit/stand | roulade | pick | dance | walk speed (m/s) |
+|-|-|-|-|-|-|-|-|-|-|
+| before: old mass, no delay | 3 | 0 | 0 | 0 | 0 | 3 | 3 | 3 | 0.077–0.095 |
+| new mass (LiPo), 0 ms | 3 | 2 | 0 | 2 | 2 | 3 | 3 | 3 | 0.085–0.103 |
+| new mass, 10 ms | 3 | 0 | 0 | 2 | 3 | 3 | 3 | 3 | 0.045–0.082 |
+| **new mass, 20 ms (default)** | 3 | 0 | 2 | 1 | 3 | 3 | 3 | 3 | 0.063–0.090 |
+| new mass, 30 ms | 3 | 0 | 2 | 2 | 3 | 2 | 3 | 3 | 0.036–0.098 |
+| new mass, 40 ms | 3 | 1 | 2 | 1 | 3 | 3 | 3 | 3 | 0.100–0.109 |
+
+No delay up to 40 ms breaks standing, sit/stand, pick or dance. The lighter LiPo makes sit/stand and the fall recovery
+work where the old mass failed (0/3 → 2–3/3). Walk (0.8 m in 8 s at a 0.3 m/s command), the plank course and the
+fall recovery are marginal in every configuration and change between neighbouring stiffness values as much as between
+delays, so these rows show robustness, not a ranking. The walk criterion failed before this change too.
+
+### Realistic sensor profile (`world_sim`, `duck_nav/sensor_errors.py`)
+
+New parameters (defaults are ESTIMATES for a BMI088/ICM-42688-class IMU and XL330 servos). They are **off by default**
+(`sensor_errors:=false`) until paired trials have measured their effect; `sensor_errors:=true` switches them on and
+`sensors:=ideal` never has them:
+
+| Error | Parameters (default) | Where it shows |
+|-|-|-|
+| IMU noise | `imu_gyro_noise` 0.002 rad/s, `imu_accel_noise` 0.02 m/s² per 50 Hz sample | `/imu` |
+| IMU bias | `imu_gyro_bias` 0.005 rad/s and `imu_accel_bias` 0.1 m/s² (turn-on, σ per axis), random walks `imu_gyro_bias_walk` 1e-5 rad/s/√s, `imu_accel_bias_walk` 1e-4 m/s²/√s | `/imu`; the accelerometer bias tilts the attitude estimate by bias / g (0.1 m/s² ≈ 0.6°) |
+| IMU misalignment | `imu_misalign_deg` 0.5 (σ per axis) | `/imu` axes; roll/pitch part tilts the attitude estimate |
+| Attitude noise | `attitude_noise_deg` 0.1 | the tilt used for the sensor poses and the `base_level` TF |
+| Encoders | `enc_offset_deg` 0.5 (zero offset σ), `enc_noise_deg` 0.05, `enc_counts_per_rev` 4096, `enc_vel_noise` 0.05 rad/s | `/joint_states`; the head camera pose (forward kinematics with the measured angles) |
+| Extrinsics | `tof_extrinsic_deg` 1.0 / `tof_extrinsic_mm` 2.0, `cam_extrinsic_deg` 1.0 / `cam_extrinsic_mm` 2.0 (σ per axis) | the simulated A010 and camera look from a mount perturbed once per run; `/tof/pose_level` and `/camera/pose_level` report the CAD mount |
+| Timing | `imu_stamp_jitter` 0.5 ms, `cam_stamp_jitter` 3 ms, `tof_stamp_jitter` 2 ms (σ, clamped so a stamp is never later than its publication time, kept increasing), `tof_latency_jitter` 10 ms (uniform extra delay, frames stay in order) | message stamps |
+
+Published sensor poses are now computed the way the robot would: nominal mounts, measured joint angles, true heading
+and the IMU-derived tilt (`level_pose`, which reproduces the old world-frame formula exactly when the errors are zero,
+`test_sensor_errors.py`). The walking policy still sees exact gyro, gravity and joints unless
+`policy_sensor_errors:=true`. Start-up log line: the drawn biases, offsets and extrinsic errors.
+
+`score_node` now pairs each SLAM estimate with the nearest ground-truth sample within `gt_match_tol` (10 ms) instead
+of an identical stamp: with jittered ToF stamps the first smoke run scored 0 samples.
+
+**Closed-loop smoke runs** (300 s, seed 0, realistic profile, 20 ms servo delay; these check that it runs, they do not
+compare):
+
+| Run | sensor errors | sim / wall | SLAM mean / max error | walked | falls |
+|-|-|-|-|-|-|
+| `mech_noerr_s0` | off | 300 / 300 s | 0.16 / 0.36 m | 6.5 m | 0 |
+| `mech_err2_s0` | on (defaults, stamps not yet capped) | 300 / 357 s (**not real time**: CPU shared with fit-check jobs) | 0.32 / 0.64 m | 9.3 m | 0 |
+| `mech_clamp_s0` | on (defaults, stamps capped at publication) | 300 / 300 s | 0.26 / 0.29 m | 6.3 m | 0 |
+
+Uncapped stamp jitter put about half of the `/imu` stamps (and so the SLAM poses) after `/clock`, and nav_node stopped
+with "stale pose" (23 and 36 times in the two uncapped runs, 2 without errors, 0 on main). With stamps capped at
+the publication time, `mech_clamp_s0` logged 0.
+
+These smoke runs predate the camera-pose fix below (they ran with `/camera/pose_level` at the origin); they show
+that the stack runs, not how well. `gyro_calib_s` (off by default in the launch file) would remove most of the
+0.005 rad/s gyro turn-on bias.
+
+**Paired 600 s closed-loop trials** (seeds 0–5, realistic profile, launch defaults, three runs at a time on separate ROS
+domains, every run sim = wall throughout):
+
+| Version | beacon | SLAM mean / max error | walked (mean, median) | coverage | falls | "slam weak" / "exploring" events |
+|-|-|-|-|-|-|-|
+| (a) main `c1cf128` | 4/6 | 0.35 / 1.21 m | 27.5 m, 32.1 m | 82 % | 1 | 187 / 85 |
+| (b) this branch before the camera fix, errors off | 0/6 | 0.26 / 0.54 m | 14.2 m, 14.6 m | 61 % | 0 | 402 / 22 |
+| (c) same, `sensor_errors:=true` | 0/6 | 0.34 / 1.01 m | 15.4 m, 15.0 m | 63 % | 1 | 344 / 29 |
+| (f) camera fixed, 115 g upstream-battery estimate, errors off | 2/6 | 0.25 / 0.44 m | 10.4 m, 8.8 m | 51 % | 0 | 442 / 21 |
+| (g) same, `sensor_errors:=true` | 1/6 | 0.55 / 1.13 m | 14.8 m, 14.2 m | 64 % | 0 | 368 / 28 |
+| **(h) this branch: camera fixed, 100 g NP-F570 battery, errors off (default)** | **4/6** | 0.29 / 1.07 m | 27.9 m, 26.4 m | 87 % | 1 | 220 / 32 |
+
+Isolation runs on seeds 0, 2, 3 (before the camera fix):
+
+| Version | beacon | SLAM mean / max | walked | "slam weak" / "exploring" |
+|-|-|-|-|-|
+| (a) main, same seeds | 3/3 | 0.26 / 1.09 m | 34.3 m | 198 / 30 |
+| (d) this branch, `servo_delay:=0` | 0/3 | 0.28 / 0.47 m | 8.3 m | 445 / 16 |
+| (e) this branch's code with main's robot model (`mjcf:=`), no delay | 0/3 | 0.34 / 1.09 m | 20.6 m | 174 / 52 |
+
+Per seed (beacon time or "no" / SLAM mean error / walked):
+
+| seed | (a) main | (f) 115 g, errors off | (g) 115 g, errors on | (h) 100 g, errors off |
+|-|-|-|-|-|
+| 0 | 184 s / 0.22 m / 38.0 m | no / 0.31 m / 10.3 m | no / 0.34 m / 15.3 m | no / 0.62 m / 22.2 m |
+| 1 | no / 0.24 m / 17.6 m (1 fall) | no / 0.15 m / 6.0 m | 77 s / 0.08 m / 13.2 m | 147 s / 0.16 m / 41.6 m (stopped at 570 s, 97 % mapped) |
+| 2 | 308 s / 0.26 m / 30.2 m | no / 0.17 m / 7.3 m | no / 0.99 m / 14.1 m | no / 0.24 m / 18.1 m (1 fall) |
+| 3 | 194 s / 0.29 m / 34.8 m | 130 s / 0.25 m / 15.3 m | no / 1.26 m / 14.4 m | 96 s / 0.36 m / 26.6 m |
+| 4 | 216 s / 0.84 m / 33.9 m | no / 0.28 m / 6.4 m | no / 0.47 m / 24.4 m | 228 s / 0.20 m / 33.0 m (stopped at 450 s, 96 % mapped) |
+| 5 | no / 0.28 m / 10.7 m | 209 s / 0.34 m / 17.0 m | no / 0.13 m / 7.6 m | 95 s / 0.17 m / 26.1 m |
+
+What the trials found:
+
+1. **Bug, fixed (4c99e77):** world_sim computed the published sensor poses from its own kinematics copy with
+   `mj_kinematics`, which does not compute camera poses, so `/camera/pose_level` sat at the floor origin with sensor
+   errors on or off: the beacon was never reached in (b), (c), (d), (e). `robot_kinematics()` adds `mj_camlight`
+   (`test_robot_kinematics_includes_cameras`). The sensor-error models also drew from world_sim's main generator,
+   shifting the ToF and camera noise against main for the same seed; they now have their own.
+2. **The servo delay is not the cause:** (d) with no delay is no better than (b).
+3. **The trunk mass is:** with main's robot model (e) the "slam weak" rate is main's (174 vs 198) and the duck walks
+   twice as far as (b)/(d). The model's only change is the trunk inertial. With the upstream battery taken as a 115 g
+   estimate the trunk was 60 g lighter than main's (0.303 → 0.243 kg) and (f) navigated far worse than main. The
+   upstream battery part is a real 2S pack (NP-F550/F570 size, about 100 g in retail listings; "Mass: battery and head
+   budget" above); with 100 g the trunk is 45 g lighter (0.258 kg) and (h) matches main: beacon 4/6, 27.9 m walked,
+   87 % coverage. Two (h) runs ended early because the explorer ran out of frontiers with 96–97 % of the room mapped.
+   An earlier open-loop check (`motions.py walk` at one speed) suggested the lighter trunk walks less straight; a sweep
+   over 0.25–0.5 m/s does not separate main, 115 g and 100 g (mean heading change 49°, 55°, 68° in 8 s, single runs
+   ranging 19–122°), so that check is too noisy to rank them.
+4. **Sensor errors** (g vs f, 115 g model): SLAM mean error 0.25 → 0.55 m (two seeds near or above 1 m mean); distance
+   and coverage are no worse. They stay off by default; (g) has not been repeated with the 100 g model.
+
+So with the camera fix and the 100 g battery this branch navigates as well as main. The closed loop is sensitive to
+the trunk mass (15 g separates (f) from (h)), so weigh the upstream battery or the assembled V4 and set
+`UPSTREAM_BATTERY_G` / `battery.mass_g` from the scale before trusting either; if the real trunk is much lighter than
+main's, the walking policy should be fine-tuned on the measured mass.
 
 ## SLAM for a body-fixed depth sensor (`ros2/duck_nav`)
 
@@ -273,7 +534,11 @@ relocalisation (loop closure stays off). None of them is in this branch.
 - Model: `scripts/prep_meshes.py`, then `scripts/make_duck.py` (`--base robot_groundcontact.xml --tag gc`,
   `--torso-scale 1.1 --tag mplus`, `--torso-scale 0.9 --tag mminus`), `scripts/worldgen.py`,
   `scripts/sync_ros2_assets.py`, `scripts/mjcf_to_urdf.py`.
-- `check_v4_fit.py`: the fit check (writes `fit_check.json`).
+- `check_v4_fit.py`: the fit check (writes `fit_check.json`): static fit, pose envelope and recorded motions.
+  `python design/v4/check_v4_fit.py --samples 3000 --traj "DIR/*.npz"` after
+  `python scripts/motions.py all --record DIR`. `solid.py`: the containment / depth geometry it uses.
+- `head_mass.py`: head mass against its budget and the print-setting options.
+- `v4_params.json` also holds the keep-out `envelopes` (connectors, cable bends) and the `print` settings.
 - `preview.py`: `preview/duck_v4.glb`, `.blend` and renders (`preview/` is git-ignored: upstream meshes).
 - `sim_runs/`: `summary.txt`, `result.json`, `map.png`, `launch.log` per run (`v4sbase_*`, `v4snew_*`, `v4syaw_*`: the
   paired trials above).
