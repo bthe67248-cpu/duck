@@ -1,4 +1,4 @@
-"""world_sim -- MuJoCo world + Duckling V3 + walking policy as a ROS 2 node (the "robot and its sensors").
+"""world_sim -- MuJoCo world + Duckling V4 + walking policy as a ROS 2 node (the "robot and its sensors").
 
 Subscribes  /cmd_vel (geometry_msgs/Twist)  linear.x = walk command (0.5 = walk, below 0.25 = stand; negative = back),
                                             linear.y = side-step command, angular.z = turn.
@@ -8,8 +8,13 @@ Subscribes  /cmd_vel (geometry_msgs/Twist)  linear.x = walk command (0.5 = walk,
             /duck/pose_cmd (std_msgs/Float32MultiArray, 10 values) head [neck pitch, head pitch, yaw, roll] +
                                             body [x, y, z, roll, pitch, yaw] commands for the walking policy
             /duck/behavior (std_msgs/String) "sit", "stand", "roll", "pick": switches to the matching policy
+            /duck/mouth_cmd (std_msgs/Float64) jaw opening, rad (0 = closed; clipped to the `mouth` actuator range).
+                                            Not part of the policy's 14-joint contract; delayed like the other servos;
+                                            expires to closed after `cmd_timeout` like the head commands. Only on models
+                                            with a `mouth` actuator (V4).
 Publishes   /clock                      simulation time (all other nodes run with use_sim_time)
-            /joint_states, /imu         50 Hz
+            /joint_states, /imu         50 Hz (joint_states: the 14 policy joints, then `mouth` when the model has it;
+                                          the mouth position is the simulated joint angle, without encoder errors)
             /camera/image_raw           rgb8, `cam_width` x `cam_height`, 5 Hz (head camera)
             /camera/camera_info         intrinsics of that image (same stamp)
             /camera/pose_level          camera pose in the level body frame: what leg/neck encoders + IMU tilt give
@@ -61,7 +66,7 @@ from std_msgs.msg import Float32MultiArray, Float64, Header, String
 from tf2_ros import TransformBroadcaster
 from visualization_msgs.msg import Marker, MarkerArray
 
-from .actuation import ServoDelay, model_servo_delay
+from .actuation import MouthCommand, ServoDelay, find_mouth, model_servo_delay
 from .duckslam import tof_zone_rays
 from .sensor_errors import EncoderErrors, ImuErrors, Jitter, level_pose, perturb, robot_kinematics
 
@@ -172,6 +177,13 @@ class WorldSim(Node):
         self.setup_errors()
         delay = float(self.get_parameter("servo_delay").value)
         self.servo = ServoDelay(model_servo_delay(self.m) if delay < 0 else delay, self.m.opt.timestep, self.default)
+        # jaw servo: its own command and delay line, outside the walking policy's 14 joints
+        self.mouth = find_mouth(self.m)
+        if self.mouth is not None:
+            a = self.mouth[0]
+            self.mouth_cmd = MouthCommand(*self.m.actuator_ctrlrange[a], timeout=float(self.get_parameter("cmd_timeout").value),
+                                          closed=float(self.m.key_ctrl[key][a]))
+            self.mouth_servo = ServoDelay(self.servo.delay_s, self.m.opt.timestep, [self.mouth_cmd.closed])
         pdir = os.path.dirname(self.get_parameter("policy").value)
         self.sessions = {}
         for mode, fname in (("walk", os.path.basename(self.get_parameter("policy").value)), ("sit", "alpha_sitstand.onnx"),
@@ -222,6 +234,8 @@ class WorldSim(Node):
         self.create_subscription(Float64, "head_yaw_cmd", self.on_head, 10)
         self.create_subscription(Float32MultiArray, "duck/pose_cmd", self.on_pose_cmd, 10)
         self.create_subscription(String, "duck/behavior", self.on_behavior, 10)
+        if self.mouth is not None:
+            self.create_subscription(Float64, "duck/mouth_cmd", self.on_mouth, 10)
         self.pub_mode = self.create_publisher(String, "duck/mode", 10)
         self.create_timer(0.002, self.step, clock=Clock(clock_type=ClockType.STEADY_TIME))
         extra = (f"ToF {n}x{n} at {1 / (self.tof_every * POLICY_DT):.0f} Hz, latency {self.get_parameter('tof_latency').value:.2f} s, "
@@ -311,6 +325,10 @@ class WorldSim(Node):
 
     def on_head(self, msg):
         self.head_yaw = msg.data; self.head_t = self.sim_t()
+
+    def on_mouth(self, msg):
+        if not self.mouth_cmd.set(msg.data, self.sim_t()):
+            self.get_logger().warn("ignored a non-finite mouth command", throttle_duration_sec=5.0)
 
     def on_pose_cmd(self, msg):
         if len(msg.data) == 10:
@@ -452,8 +470,11 @@ class WorldSim(Node):
         obs = np.concatenate([gyro, grav, q_obs - self.default, v_obs, self.last, self.cmd]).astype(np.float32)[None]
         self.last = session.run(None, {self.inp: obs})[0][0].astype(np.float32)
         target = self.default + self.last
+        mouth_target = self.mouth_cmd.target(self.sim_t()) if self.mouth is not None else None
         for _ in range(self.n_sub):
             d.ctrl[:14] = self.servo.step(target)      # the servos act on the target issued servo_delay ago
+            if self.mouth is not None:
+                d.ctrl[self.mouth[0]] = self.mouth_servo.step([mouth_target])[0]
             mujoco.mj_step(m, d)
         mujoco.mj_forward(m, d)              # refresh transforms/sensors for the state just integrated
         self.k += 1
@@ -463,8 +484,11 @@ class WorldSim(Node):
         self.sense()
         gy, ac, q_meas, v_meas = self.meas
 
-        js = JointState(); js.header.stamp = ros_stamp(self.jit["joints"].stamp(sim_t)); js.name = self.jnames
+        js = JointState(); js.header.stamp = ros_stamp(self.jit["joints"].stamp(sim_t)); js.name = list(self.jnames)
         js.position = q_meas.tolist(); js.velocity = v_meas.tolist()
+        if self.mouth is not None:
+            js.name.append("mouth")
+            js.position.append(float(d.qpos[self.mouth[1]])); js.velocity.append(float(d.qvel[self.mouth[2]]))
         self.pub_js.publish(js)
         imu = Imu(); imu.header.stamp = ros_stamp(self.jit["imu"].stamp(sim_t)); imu.header.frame_id = "trunk_base"
         imu.angular_velocity.x, imu.angular_velocity.y, imu.angular_velocity.z = (float(v) for v in gy)

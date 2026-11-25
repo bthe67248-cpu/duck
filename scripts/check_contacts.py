@@ -10,7 +10,7 @@ envelope. --report-only restores the old stand-only exit status. Random sampling
 does not prove full-range clearance or get-up feasibility. Historical reports are
 preserved: the default output is results/hardware_readiness/contact_check.txt.
 """
-import argparse, hashlib, os, sys, tempfile
+import argparse, hashlib, json, os, sys, tempfile
 from collections import Counter
 from pathlib import Path
 import mujoco, numpy as np
@@ -43,9 +43,13 @@ def gname(g):
 
 PROXY = {m.geom(i).name for i in range(m.ngeom) if m.geom(i).name.endswith("_collision") and
          m.geom(i).name.split("_")[0] in ("head", "bill", "jaw", "body")}
-required = {"head_dome_collision", "head_lower_collision", "head_upper_skirt_collision", "bill_upper_collision",
-            "jaw_collision", "body_front_upper_collision", "body_rear_upper_collision", "body_chest_a010_collision",
-            "body_board_bay_collision", "body_battery_keel_collision", "body_xt60_keel_collision"}
+# torso proxies are the body shell's outer blocks (make_duck.body_proxies); derive the required
+# names from the files the model is built from, so the list cannot go stale when the shell changes
+# (head and jaw ones come from scripts/collision_proxies.json, the same file make_duck.py reads)
+params = json.loads((ROOT / "design" / "v4" / "v4_params.json").read_text())
+proxy_spec = json.loads((ROOT / "scripts" / "collision_proxies.json").read_text())
+required = ({p["name"] for p in proxy_spec["head"] + proxy_spec["jaw"]} |
+            {f"body_{b['name']}_collision" for b in params["body"]["outer"]})
 if not required <= PROXY:
     ap.error("contact gate needs the ground-contact model with all head/jaw/body collision proxies; missing " +
              ", ".join(sorted(required - PROXY)))

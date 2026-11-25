@@ -37,3 +37,35 @@ class ServoDelay:
         """Push this physics step's commanded target; return the target the servos act on now."""
         self.buf.append(np.array(target, dtype=float))
         return self.buf[0]
+
+
+def find_mouth(m):
+    """(actuator id, qpos address, dof address) of the V4 jaw servo `mouth`, or None for a model without it."""
+    import mujoco
+    a = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_ACTUATOR, "mouth")
+    if a < 0:
+        return None
+    j = m.actuator_trnid[a, 0]
+    return a, int(m.jnt_qposadr[j]), int(m.jnt_dofadr[j])
+
+
+class MouthCommand:
+    """Jaw opening target, kept apart from the walking policy's 14-joint observation/action contract.
+
+    `set` clips to the actuator's range and ignores non-finite values; `target` falls back to `closed` once the last
+    command is older than `timeout` seconds, the way the head and posture commands expire (nothing stays latched).
+    """
+
+    def __init__(self, lo, hi, timeout, closed=None):
+        self.lo, self.hi, self.timeout = float(lo), float(hi), float(timeout)
+        self.closed = self.lo if closed is None else float(np.clip(closed, self.lo, self.hi))
+        self.value, self.t = self.closed, -np.inf
+
+    def set(self, angle, t):
+        if not np.isfinite(angle):
+            return False
+        self.value, self.t = float(np.clip(angle, self.lo, self.hi)), float(t)
+        return True
+
+    def target(self, t):
+        return self.value if t - self.t <= self.timeout else self.closed

@@ -57,8 +57,12 @@ def boolean(target, tool, op, keep=False):
 def drop_slivers(ob, min_vol=1.0):
     """Remove zero-volume islands that exact booleans leave where cut faces meet (they break watertightness)."""
     bm = bmesh.new(); bm.from_mesh(ob.data)
+    # triangulate first: the STL writer triangulates n-gons anyway, and a degenerate n-gon can fold into a back-to-back
+    # triangle pair that is only visible (and removable) as its own island once it is triangles
+    bmesh.ops.triangulate(bm, faces=bm.faces)
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-3)
     bmesh.ops.dissolve_degenerate(bm, edges=bm.edges, dist=1e-3)
+    bmesh.ops.triangulate(bm, faces=bm.faces)              # dissolving can merge faces back into n-gons
     bm.faces.ensure_lookup_table()
     seen, kill = set(), []
     for f in bm.faces:
@@ -83,8 +87,18 @@ def drop_slivers(ob, min_vol=1.0):
     bm.free()
 
 
+def check_closed(ob, fname):
+    """Every edge must join exactly two faces (closed, manifold): the masses and the simulation rely on it."""
+    bm = bmesh.new(); bm.from_mesh(ob.data)
+    bad = sum(1 for e in bm.edges if len(e.link_faces) != 2)
+    bm.free()
+    if bad:
+        raise RuntimeError(f"{fname}: {bad} edge(s) not shared by exactly two faces; the part is not a closed solid")
+
+
 def export(ob, fname):
     drop_slivers(ob)
+    check_closed(ob, fname)
     bpy.ops.object.select_all(action="DESELECT"); ob.select_set(True); bpy.context.view_layer.objects.active = ob
     bpy.ops.wm.stl_export(filepath=os.path.join(HERE, fname), export_selected_objects=True, ascii_format=False)
     bm = bmesh.new(); bm.from_mesh(ob.data); vol = bm.calc_volume(signed=False); bm.free()

@@ -161,6 +161,9 @@ def part_props(mesh_path, R, p, mass=None, density=None):
     m.apply_transform(T)
     vol = float(m.volume)
     if not m.is_watertight or vol <= 0:
+        if Path(mesh_path).stem.endswith("_v4"):            # our parts: prep_meshes.py guarantees closed assets
+            raise SystemExit(f"{Path(mesh_path).name}: not a closed mesh; rebuild it (design/v4/build_v4.py) and "
+                             "re-run scripts/prep_meshes.py")
         print(f"  WARNING {Path(mesh_path).name}: not a closed mesh, mass properties approximate")
     mass = vol * density if mass is None else mass
     return mass, np.asarray(m.center_mass), np.asarray(m.moment_inertia) * (mass / vol)
@@ -374,7 +377,10 @@ def main():
     ET.SubElement(jaw, "inertial", pos=" ".join(f"{v:.6g}" for v in Cj), mass=f"{Mj:.6f}",
                   fullinertia=" ".join(f"{v:.6g}" for v in (Ij[0, 0], Ij[1, 1], Ij[2, 2], Ij[0, 1], Ij[0, 2], Ij[1, 2])))
     ET.SubElement(jaw, "joint", name="mouth", type="hinge", axis=fmt(R_mb @ np.array([1.0, 0, 0]), 6),
-                  range=f"0 {np.radians(J['open_deg']):.6f}", damping="0.01", armature="0.0005")
+                  range=f"0 {np.radians(J['open_deg']):.6f}", damping="0.01", armature="0.0005",
+                  # explicit: the joint has no class, so it would inherit the upstream global default (0.1 N m), a
+                  # +-0.2 rad dead band at the mouth servo's kp; this is the head XL330 joints' value (ESTIMATE)
+                  frictionloss="0.0048")
     ET.SubElement(jaw, "geom", type="mesh", mesh="jaw_v4", **{"class": "visual"}, material="black_pla",
                   pos=fmt(jaw_rel), quat=fmt(quat_mb, 6))
     # mouth_tip: lowest-front point of the jaw (bill tip), now on the moving jaw

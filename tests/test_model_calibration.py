@@ -94,6 +94,44 @@ def test_contact_gate_rejects_feet_only_model(built):
     assert "needs the ground-contact model" in result.stderr
 
 
+def test_mesh_records_separate_assets_from_placement_references(built):
+    root, _, _, _ = built
+    meshes = json.loads((root / "model/v4_meshes.json").read_text())
+    assert {r["role"] for r in meshes.values()} == {"asset", "reference"}
+    for name, r in meshes.items():
+        assert (root / "model/assets" / f"{name}.stl").exists() == (r["role"] == "asset")
+        if r["role"] == "asset":
+            assert r["watertight"] and r["asset_watertight"], name
+
+
+def test_prep_meshes_rejects_an_open_print_mesh(built, tmp_path):
+    trimesh = pytest.importorskip("trimesh")
+    root, _, _, _ = built
+    shutil.copytree(root / "design", tmp_path / "design")
+    mesh = trimesh.load(tmp_path / "design/v4/xt60_v4.stl")
+    trimesh.Trimesh(mesh.vertices, mesh.faces[1:]).export(tmp_path / "design/v4/xt60_v4.stl")   # one face missing
+    result = subprocess.run([sys.executable, str(ROOT / "scripts/prep_meshes.py")], text=True, capture_output=True,
+                            env={**os.environ, "DUCKLING_ROOT": str(tmp_path)})
+    assert result.returncode != 0
+    assert "design/v4/xt60_v4.stl" in result.stderr
+
+
+def test_contact_gate_accepts_the_ground_contact_model(built):
+    """The gate's required proxy list must follow the generated model (it once demanded a removed torso block)."""
+    root, run, _, _ = built
+    run("make_duck.py", "--base", "robot_groundcontact.xml", "--tag", "gc")
+    result = run("check_contacts.py", "--scene", root / "model/duck_v4_gc_scene.xml", "--samples", 20,
+                 "--output", root / "contact_check.txt", check=False)
+    assert "needs the ground-contact model" not in result.stderr, result.stderr
+    # exit 2 = refused before checking; 0/1 = the gate ran (its verdict is the geometry's, reported separately)
+    assert result.returncode in (0, 1), result.stderr
+    report = (root / "contact_check.txt").read_text()
+    params = json.loads((root / "design/v4/v4_params.json").read_text())
+    for block in params["body"]["outer"]:
+        assert f"body_{block['name']}_collision(" in report
+    assert "GATE: " in report
+
+
 def test_lipo_replaces_the_upstream_battery_at_its_v4_location(built):
     root, _, base, _ = built
     ledger = json.loads((root / "model/mass_ledger.json").read_text())
