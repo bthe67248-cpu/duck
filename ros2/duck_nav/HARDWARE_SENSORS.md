@@ -1,10 +1,12 @@
 # Hardware sensor acquisition boundary
 
 These nodes are untested on ROS 2 or hardware. They provide an acquisition
-interface and timestamped pose publication, **not a completed VL53L5CX I²C
-driver**. No servo, Bridge protocol or motion control is implemented here.
+interface and timestamped pose publication. A Sipeed A010 serial backend is
+bundled (below) but has not been run against a physical sensor; there is no
+VL53L5CX I²C driver. No servo, Bridge protocol or motion control is implemented here.
 
-`duck_tof` publishes the same 8×8 `PointCloud2` schema as `world_sim`:
+`duck_tof` publishes the same `PointCloud2` schema as `world_sim`, for an
+n×n zone grid (`zones`, default 8; 25 for the A010 binned 4×4, 50 or 100 unbinned):
 `x/y/z/range` float32, `status` uint8 at byte 16, `zone` uint16 at byte 18.
 Coordinates are metres, +x forward, +y left, +z up. Zone order is row-major,
 top-left first as viewed from behind the sensor. Status is normalized to 0
@@ -21,8 +23,8 @@ Install a Python module implementing `factory(config_dict) -> backend`, then set
   loading and I²C/Bridge reads in an adapter-owned worker with a bounded queue.
 - `close()`: release the device and terminate any worker.
 
-`TofFrame(stamp_ns, ranges, status)` contains exactly 64 metre ranges and 64
-normalized statuses. `stamp_ns` is a positive integer **acquisition timestamp
+`TofFrame(stamp_ns, ranges, status)` contains exactly `zones`² metre ranges and
+`zones`² normalized statuses. `stamp_ns` is a positive integer **acquisition timestamp
 in the ROS clock**, not publication time or an unmapped MCU uptime. Account for
 integration/transport latency and synchronize an MCU clock before publishing.
 An adapter must reorder zones, convert units and map raw vendor status codes
@@ -33,7 +35,10 @@ are not this interface's normalized status codes.
 (along the boresight). `zone_order_verified` must explicitly be true. These are
 operator assertions after left/right/up/down target and range tests, not a
 substitute for those tests. Minimum/maximum accepted ranges are in the selected
-convention. Tune `fov_deg` and the SLAM node's `tof_fov_deg` together. The
+convention. `fov_deg` / `fov_v_deg` (0 = square) give the pinhole zone rays; a
+`rays_file` (JSON, `zones`² × 3 unit vectors in the sensor frame, row-major) replaces
+them with calibrated directions. Keep `zones`, `fov_deg`, `fov_v_deg` in step with the
+SLAM node's `tof_zones`, `tof_fov_deg`, `tof_fov_v_deg`. The
 acquisition wrapper rejects malformed, duplicate, reversed, future and stale
 timestamps; default `max_age` is 0.5 seconds. `/tof/status` reports stale when
 validly formed acquisitions stop. It does not assess whether a scene has enough
@@ -47,6 +52,35 @@ recorded ROS bags with a matching clock for timed integration tests. Do not
 represent replay as a live sensor. A nonzero explicit timestamp offset can align
 a short recording with a test clock. Device read errors and rejected frames are
 logged; an adapter must recover its own connection or be restarted.
+
+## Sipeed A010 backend (`duck_nav.a010_backend:create_backend`)
+
+Reads the A010's USB serial stream in a background thread (needs `pyserial`) and
+returns `TofFrame`s in metres. Config (JSON): `port` (`/dev/ttyUSB0`), `baud`
+(115200), `binning` (4 = 25×25, 2 = 50×50, 1 = 100×100), `unit` (0: depth
+(p/5.1)² mm, n: p·n mm), `fps` (15), `latency_s` (0.06, subtracted from the host
+receive time), `flip_lr` / `flip_ud` (fix the zone order once measured), `init`
+(the AT commands sent at start; default `AT+DISP=3`, `AT+BINN`, `AT+UNIT`, `AT+FPS`).
+Pixels 0 and 255 become status 1 (no target). Frames with a bad checksum or tail,
+or of a different size than `binning` selects, are dropped. The frame layout and
+depth formula follow the vendor's description and must be confirmed on the bench,
+along with the zone order, range convention (the depth image is expected to be
+axial), the 0.2 m minimum range and the latency.
+
+```
+ros2 run duck_nav duck_tof --ros-args -p backend:=duck_nav.a010_backend:create_backend   -p backend_config:='{"port": "/dev/ttyUSB0", "binning": 4}' -p zones:=25 -p fov_deg:=70.0   -p fov_v_deg:=60.0 -p range_convention:=axial -p min_range:=0.2 -p max_range:=2.5 -p zone_order_verified:=true
+```
+
+## Camera geometry
+
+`slam_node` reads the plumb_bob distortion coefficients from `/camera/camera_info`
+and works in the raw (unrectified) image that YOLO sees: ToF points are projected
+with distortion, box centres are undistorted before they are turned into rays, and
+images used for floor flow are undistorted (with the same camera matrix) before the
+pinhole flow geometry runs. Other distortion models are treated as pinhole, with a
+warning. Floor flow pairs images at least `flow_interval` (0.15 s) and at most
+`flow_max_gap` (0.3 s) apart, keeping the older image until the interval has passed,
+so a 30 fps camera gives a pair about every 5th frame.
 
 ## Exact acquisition-time poses
 

@@ -94,3 +94,82 @@ def test_timeouts_must_be_finite_and_positive(value):
     from duck_nav.sensor_contract import positive_seconds
     with pytest.raises(ValueError):
         positive_seconds(value, "timeout")
+
+
+def test_a010_grid_sizes_and_rectangular_fov_are_accepted():
+    for n in (25, 100):
+        f = TofFrame(1_000_000_000, np.ones(n * n), np.zeros(n * n, int))
+        rec = np.array(tof_records(f, "axial", 70.0, 0.2, 2.5, zones=n, fov_v_deg=60.0))
+        assert rec.shape == (n * n, 6)
+        np.testing.assert_allclose(rec[:, 0], 1.0)                       # axial: x equals the range
+        top_left, bottom_right = rec[0, :3], rec[-1, :3]
+        assert top_left[1] > 0 and top_left[2] > 0 and bottom_right[1] < 0 and bottom_right[2] < 0
+        assert abs(np.degrees(np.arctan2(top_left[1], 1.0))) < 35 and abs(np.degrees(np.arctan2(top_left[2], 1.0))) < 30
+    with pytest.raises(ValueError):                                      # 64 values for a 25 x 25 grid
+        tof_records(frame(), "axial", zones=25)
+
+
+def test_calibrated_rays_replace_the_pinhole_model():
+    from duck_nav.sensor_contract import zone_rays
+    rays = np.tile([2.0, 0.0, 0.0], (4, 1)); rays[1] = [1.0, 1.0, 0.0]
+    out = zone_rays(2, 45.0, rays=rays)
+    np.testing.assert_allclose(np.linalg.norm(out, axis=1), 1.0)
+    rec = np.array(tof_records(TofFrame(1, np.ones(4), np.zeros(4, int)), "radial", zones=2, rays=rays))
+    np.testing.assert_allclose(rec[1, :3], [2 ** -0.5, 2 ** -0.5, 0.0])
+    for bad in (np.ones((3, 3)), -rays):
+        with pytest.raises(ValueError):
+            zone_rays(2, 45.0, rays=bad)
+
+
+def a010_bytes(img, frame_id=7):
+    rows, cols = img.shape
+    info = bytes([0, 0, 30, 30, 0, 0, 0, 0, 0, 0, rows, cols, frame_id & 0xFF, frame_id >> 8, 1, 0])
+    body = info + img.astype(np.uint8).tobytes()
+    head = b"\x00\xff" + len(body).to_bytes(2, "little")
+    return head + body + bytes([sum(head + body) & 0xFF, 0xDD])
+
+
+def test_a010_parser_recovers_frames_from_a_noisy_stream():
+    from duck_nav.a010_backend import parse_frames
+    img = np.arange(625, dtype=np.uint32).reshape(25, 25) % 250 + 1
+    good = a010_bytes(img)
+    bad = bytearray(a010_bytes(img, 8)); bad[30] ^= 0xFF                 # checksum mismatch
+    stream = b"\x12\x00junk" + bytes(bad) + good + good[:40]
+    frames, rest = parse_frames(bytearray(stream))
+    assert len(frames) == 1 and frames[0][:3] == (25, 25, 7)
+    np.testing.assert_array_equal(frames[0][3], img)
+    frames, rest = parse_frames(bytearray(rest) + good[40:])             # the split frame completes
+    assert len(frames) == 1 and not rest
+
+
+def test_a010_backend_converts_depth_and_marks_no_target():
+    from duck_nav.a010_backend import A010Backend, depth_mm
+    assert depth_mm([51], 0)[0] == pytest.approx(100.0) and depth_mm([20], 5)[0] == 100.0
+    assert np.isnan(depth_mm([0, 255])).all()
+    img = np.full((25, 25), 51); img[0, 0] = 0; img[0, 1] = 255
+    data = [a010_bytes(img)]
+
+    class FakeSerial:
+        def __init__(self):
+            self.written = []
+        def write(self, b):
+            self.written.append(b)
+        def read(self, n):
+            return data.pop() if data else b""
+        def close(self):
+            pass
+    dev = FakeSerial()
+    b = A010Backend({"binning": 4, "latency_s": 0.05}, serial_factory=lambda: dev, clock_ns=lambda: 2_000_000_000)
+    import time as _t
+    for _ in range(100):
+        f = b.read()
+        if f is not None:
+            break
+        _t.sleep(0.01)
+    b.close()
+    assert f.stamp_ns == 1_950_000_000
+    assert f.ranges.shape == (625,) and f.ranges[2] == pytest.approx(0.1)
+    assert list(f.status[:3]) == [1, 1, 0]
+    assert b"AT+BINN=4\r" in dev.written
+    rec = tof_records(f, "axial", 70.0, 0.05, 2.5, zones=25, fov_v_deg=60.0)
+    assert len(rec) == 625 and rec[0][4] == 1 and np.isnan(rec[0][0])

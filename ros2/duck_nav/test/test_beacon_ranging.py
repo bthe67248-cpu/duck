@@ -99,3 +99,42 @@ def test_graph_revision_discards_map_frame_beacon_caches(node, monkeypatch):
     assert node.goal is None and node.goal_n == 0
     assert events[0].data == '2:100'
     assert maps == [True]
+
+
+def test_distorted_camera_projection_roundtrips_and_matches_opencv_convention():
+    K = ds.Intrinsics(320, 240, 300.0, 300.0, 160.0, 120.0, (-0.3, 0.1, 0.001, -0.002, 0.0))
+    R, t = camera()
+    for u, v in ((10.0, 15.0), (160.0, 120.0), (300.0, 220.0)):
+        p = ds.pixel_to_level(u, v, 1.2, R, t, K)
+        uu, vv, z = ds.level_to_pixel(p, R, t, K)
+        assert (uu[0], vv[0], z[0]) == pytest.approx((u, v, 1.2), abs=1e-3)
+    pin = ds.Intrinsics(320, 240, 300.0, 300.0, 160.0, 120.0)
+    p = np.array([[1.0, 0.5, 0.15 + 0.3]])                       # off-axis point: barrel distortion pulls it inward
+    ud, vd, _ = ds.level_to_pixel(p, R, t, K); up, vp, _ = ds.level_to_pixel(p, R, t, pin)
+    assert abs(ud[0] - 160) < abs(up[0] - 160) and abs(vd[0] - 120) < abs(vp[0] - 120)
+    cv2 = pytest.importorskip("cv2")
+    Km = np.array([[300.0, 0, 160.0], [0, 300.0, 120.0], [0, 0, 1]])
+    xn, yn = (up[0] - 160) / 300, (vp[0] - 120) / 300
+    img, _ = cv2.projectPoints(np.array([[xn, yn, 1.0]]), np.zeros(3), np.zeros(3), Km, np.array(K.dist))
+    assert img.ravel() == pytest.approx([ud[0], vd[0]], abs=1e-6)
+
+
+def test_flow_pairs_images_at_the_configured_interval_at_any_camera_rate(node):
+    pairs = []
+    node.flow_interval, node.flow_max_gap, node.flow_prev = 0.15, 0.3, None
+    node.cam_poses = SimpleNamespace(get=lambda ns: (np.eye(3), np.zeros(3)))
+    node.flowodom = SimpleNamespace(estimate=lambda a, b, *rest: pairs.append((a, b)))
+    node.K = None                                                 # stop after the pairing decision
+    for fps in (5, 15, 30):
+        pairs.clear(); node.flow_prev = None
+        seen = []
+        orig = node.flow_step
+        for i in range(int(fps * 2) + 1):
+            ns = int(round(i * 1e9 / fps))
+            before = node.flow_prev
+            orig(ns, f"img{i}")
+            if before is not None and node.flow_prev is not before:
+                seen.append((ns - before[0]) * 1e-9)
+        assert seen, fps
+        assert all(0.15 - 1e-9 <= d <= 0.3 for d in seen)
+        assert len(seen) >= int(2 / 0.2) - 1                       # about one pair per 0.15-0.2 s, not zero
