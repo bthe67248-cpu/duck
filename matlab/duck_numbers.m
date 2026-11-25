@@ -1,6 +1,6 @@
 %% duck_numbers.m -- hand calculations (PDF Part 4) + balance gains (Part 7)
 % Geometry/mass come from model/stand_numbers.json, which
-%   .venv\Scripts\python.exe scripts\stand_numbers.py model\duck_v3_scene.xml
+%   .venv\Scripts\python.exe scripts\stand_numbers.py model\duck_v4_scene.xml
 % writes from the MuJoCo model. Only td is typed in by hand.
 if ~exist('DUCK_PROJ','var'), startup_duck; end
 S  = jsondecode(fileread(fullfile(DUCK_PROJ,'model','stand_numbers.json')));
@@ -13,8 +13,8 @@ end
 if isfield(S,'mass_status'), MASS_STATUS = S.mass_status; else, MASS_STATUS = 'unknown'; end
 disp(['model ' MODEL_REV ' | ' MASS_STATUS]);
 if isfield(S,'printed_part_mass_g')
-    fprintf(['printed parts (g): upper head %.1f, lower head %.1f, rear shield %.1f  [replace with slicer/scale values]' newline], ...
-            S.printed_part_mass_g.duck_head_upper_v3, S.printed_part_mass_g.duck_head_lower_v3, S.printed_part_mass_g.hat_rear_shield_v3);
+    fprintf(['printed parts (g): upper head %.1f, lower head %.1f, jaw %.1f, body shell %.1f  [replace with slicer/scale values]' newline], ...
+            S.printed_part_mass_g.head_upper_v4, S.printed_part_mass_g.head_lower_v4, S.printed_part_mass_g.jaw_v4, S.printed_part_mass_g.body_shell_v4);
 end
 m  = S.mass;        % kg   whole robot
 h  = S.h;           % m    centre of mass above the ankle pivot, standing

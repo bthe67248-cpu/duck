@@ -8,7 +8,7 @@ Subscribes  /imu (gyro + accel -> attitude filter), /cmd_vel (gait command, expi
                                                 /camera/pose_level + /camera/camera_info for detection association
             /yolo/detections (vision_msgs/Detection2DArray)
 Publishes   /map (OccupancyGrid, 1 Hz), TF map -> base_level, /slam/pose (PoseStamped),
-            /slam/state (String: "ok" | "initializing" | "weak" | "stale" | "recovering"),
+            /slam/state (String: "ok" | "initializing" | "weak" | "stale" | "blind" | "recovering"),
             /slam/match (String: local constraint acceptance reason and map overlap; not an accuracy bound),
             /goal (PointStamped): the beacon's map position, only when a detection has a trustworthy range,
             /slam/beacon (String): "ranged ..." / "unranged: ..." for every beacon detection (diagnostics)
@@ -92,6 +92,10 @@ class SlamNode(Node):
         self.declare_parameter("fresh_check", False)          # also require the newest frame alone to agree
         self.declare_parameter("slip_estimation", True)       # scale gait odometry by observed/modelled motion
         self.declare_parameter("relocalize_after", 3.0)       # s without healthy localisation -> widen the search
+        self.declare_parameter("reloc_window", 0.8)           # m; +- translation searched when relocalising
+        self.declare_parameter("reloc_ang", math.radians(25))  # rad; +- heading searched when relocalising
+        self.declare_parameter("reloc_confirm", False)         # apply a relocalisation jump only when a later one agrees
+        self.declare_parameter("bootstrap_turn", 0.0)          # rad: map every frame until the body has turned this much
         # translation for dead reckoning: command (gait command x gain x slip) | flow | flow_or_command (camera floor
         # optical flow, command where flow finds no fit; offline replay: lower error on 9/12 bags, results/floor_flow)
         self.declare_parameter("translation", "command")
@@ -103,8 +107,10 @@ class SlamNode(Node):
         self.declare_parameter("upright_hold", 1.0)
         self.declare_parameter("target_radius", 0.0)          # m; 0.04 only for the known sim beacon cylinder
         self.declare_parameter("tof_range_convention", "radial")
-        self.declare_parameter("tof_fov_deg", 45.0)
-        self.declare_parameter("tof_max_range", 2.0)
+        self.declare_parameter("tof_fov_deg", 70.0)
+        self.declare_parameter("tof_fov_v_deg", 60.0)         # vertical FOV; 0 = same as tof_fov_deg (square)
+        self.declare_parameter("tof_zones", 25)               # zones per side (25 = A010 binned 4x4; 100 = full; 8 = VL53L5CX)
+        self.declare_parameter("tof_max_range", 2.5)
         self.declare_parameter("det_wait", 1.0)
         self.declare_parameter("target_height", 0.0)          # m; known target height -> box-size depth (0 = off)
         self.declare_parameter("size_agreement", 0.3)         # ToF depth must be within 30% of the box-size depth
@@ -119,7 +125,9 @@ class SlamNode(Node):
         if self.mode == "tof":
             self.slam = ds.DuckSLAM(gains, max_r=float(self.get_parameter("tof_max_range").value), min_hits=int(self.get_parameter("tof_min_hits").value))
             fov = float(self.get_parameter("tof_fov_deg").value)
-            self.tof_rays = ds.tof_zone_rays(8, fov, fov)
+            fov_v = float(self.get_parameter("tof_fov_v_deg").value) or fov
+            self.tof_n = int(self.get_parameter("tof_zones").value)
+            self.tof_rays = ds.tof_zone_rays(self.tof_n, fov, fov_v)
         else:
             self.slam = ds.DuckSLAM(gains)
         self.tilt = ds.make_attitude_filter(self.get_parameter("attitude_filter").value)
@@ -133,11 +141,19 @@ class SlamNode(Node):
             use_sweep=self.mode == "tof" or bool(self.get_parameter("depth_sweep").value),
             gain=float(self.get_parameter("match_gain").value), fresh=bool(self.get_parameter("fresh_check").value),
             slip=bool(self.get_parameter("slip_estimation").value),
-            relocalize_after=float(self.get_parameter("relocalize_after").value), map_move=0.0, map_turn=0.0,
+            relocalize_after=float(self.get_parameter("relocalize_after").value),
+            reloc_window=float(self.get_parameter("reloc_window").value),
+            reloc_ang=float(self.get_parameter("reloc_ang").value),
+            reloc_confirm=bool(self.get_parameter("reloc_confirm").value),
+            bootstrap_turn=float(self.get_parameter("bootstrap_turn").value), map_move=0.0, map_turn=0.0,
             scan_timeout=float(self.get_parameter("scan_timeout").value),
             match_timeout=float(self.get_parameter("match_timeout").value))
         self.health = self.loc.health
+        self.get_logger().info(f"relocalisation window +-{self.loc.reloc_window:.2f} m / "
+                               f"+-{math.degrees(self.loc.reloc_ang):.1f} deg after {self.loc.relocalize_after:.1f} s unhealthy, "
+                               f"confirm {self.loc.reloc_confirm}, bootstrap until turned {self.loc.bootstrap_turn:.1f} rad")
         self.last_frame_ns = -1
+        self.last_empty_t = None
         self.cmd = (0.0, 0.0); self.cmd_t = -1e9; self.last_imu_t = None
         self.state = "ok"; self.upright_since = None
         self.recovery_started = None; self.recovery_warned = False
@@ -190,7 +206,12 @@ class SlamNode(Node):
         return self.get_clock().now().nanoseconds
 
     def publish_state(self):
-        state = self.state if self.state != "ok" else self.health.state(self.now_ns() * 1e-9)
+        now = self.now_ns() * 1e-9
+        state = self.state if self.state != "ok" else self.health.state(now)
+        # frames keep arriving but none has a return in range (too close to a wall for the A010's 0.2 m minimum, or
+        # facing open space): "blind", not "stale" -- the navigator may turn in place to find something to see
+        if state in ("stale", "weak") and self.last_empty_t is not None and 0 <= now - self.last_empty_t <= self.health.scan_timeout                 and (self.health.last_scan is None or self.last_empty_t > self.health.last_scan):
+            state = "blind"
         self.pub_state.publish(String(data=state))
 
     # 1. predict (50 Hz) ------------------------------------------------------------------
@@ -304,6 +325,7 @@ class SlamNode(Node):
         if pose_acq is None:
             return
         self.last_frame_ns = ns
+        t_proc = time.perf_counter()
         R, t = sp
         if self.mode == "depth":
             if self.K is None:
@@ -312,10 +334,10 @@ class SlamNode(Node):
             ang, r, hit = self.slam.scan_from_depth(depth, R, t, self.K)
             data = depth
         else:
-            ranges, valid = self.read_tof(msg)
+            ranges, valid = self.read_tof(msg, self.tof_n * self.tof_n)
             ang, r, hit = self.slam.scan_from_tof(ranges, valid, self.tof_rays, R, t,
                                                   self.get_parameter("tof_range_convention").value,
-                                                  fov_h_deg=float(self.get_parameter("tof_fov_deg").value))
+                                                  fov_h_deg=float(self.get_parameter("tof_fov_deg").value), n=self.tof_n)
             pts = ds.tof_points(ranges, valid, self.tof_rays, self.get_parameter("tof_range_convention").value)
             data = (pts @ R.T + t, ranges[valid] if len(pts) else np.zeros(0))   # level-frame points + ranges
         accepted = False
@@ -335,6 +357,8 @@ class SlamNode(Node):
         # an empty frame (no return within range) says nothing about localisation quality: not counted as a
         # failed match (counting it reset the health streak, stopped map updates and diverged in replay)
         reason = self.slam.match_reason if len(ang) else "empty_scan"
+        if not len(ang):
+            self.last_empty_t = ns * 1e-9
         if not self.get_parameter("scan_matching").value:
             reason = "matching_disabled; navigation gated"
         self.pub_match.publish(String(data=f"{reason}; overlap={self.slam.match_overlap:.2f}"
@@ -342,6 +366,12 @@ class SlamNode(Node):
                                               if self.loc.graph is not None else "")))
         self.publish_state()
         self.frames.put(ns, (data, pose_acq.copy()))
+        # processing cost per depth frame (this PC; the UNO Q is slower), logged every 300 frames
+        self.proc_ms = getattr(self, "proc_ms", []) + [(time.perf_counter() - t_proc) * 1000]
+        if len(self.proc_ms) >= 300:
+            a = np.array(self.proc_ms); self.proc_ms = []
+            self.get_logger().info(f"frame processing: mean {a.mean():.1f} ms, p95 {np.percentile(a, 95):.1f} ms, "
+                                   f"max {a.max():.1f} ms over 300 frames ({len(self.tof_rays) if self.mode == 'tof' else 'depth'} zones)")
 
     def invalidate_map_caches(self):
         """Old observations/goals cannot be carried by a single nonrigid graph correction."""
@@ -393,15 +423,13 @@ class SlamNode(Node):
                                    f"{self.flow_ms:.0f} ms per pair")
 
     @staticmethod
-    def read_tof(msg):
+    def read_tof(msg, n=64):
         from sensor_msgs_py import point_cloud2
         rec = point_cloud2.read_points(msg, field_names=("range", "status", "zone"), skip_nans=False)
-        n = 64
         ranges = np.full(n, np.nan); valid = np.zeros(n, bool)
-        for r, s, z in zip(rec["range"], rec["status"], rec["zone"]):
-            z = int(z)
-            if 0 <= z < n:
-                ranges[z] = r; valid[z] = int(s) == 0 and np.isfinite(r)
+        z = np.asarray(rec["zone"]).astype(int); r = np.asarray(rec["range"], float); s = np.asarray(rec["status"])
+        k = (z >= 0) & (z < n)
+        ranges[z[k]] = r[k]; valid[z[k]] = (s[k] == 0) & np.isfinite(r[k])
         return ranges, valid
 
     # 3. beacon position from YOLO boxes + range --------------------------------------------

@@ -1,15 +1,83 @@
 {
- "_comment": "S1 collision proxies, millimetres, in the V3 print-mesh axes (x width, -y front, z up for the head; x width, y vertical, z depth with the solid face at z=16..18.5 for the shield). 'frame' is the mesh whose origin the centre is relative to. Not a convex hull: shield = separate back + two side boxes, open top/bottom/inside. Verify with scripts/check_collision_proxies.py.",
+ "_comment": "S1 collision proxies, millimetres. head/jaw: head-mesh axes (x width, -y front, z up), centre relative to the named mesh's origin (jaw: the jaw geom origin = lower-head frame). The torso proxies are the outer blocks of design/v4/v4_params.json (bevels ignored, so slightly conservative), named body_<block>_collision; scripts/make_duck.py derives them from there. Verify with scripts/check_collision_proxies.py.",
  "head": [
-  {"name": "head_dome_collision", "type": "ellipsoid", "frame": "duck_head_upper_v3", "size_mm": [43.0, 52.0, 32.0], "centre_mm": [-2.0, -3.0, 18.0]},
-  {"name": "head_upper_skirt_collision", "type": "box", "frame": "duck_head_upper_v3", "size_mm": [40.0, 44.0, 9.0], "centre_mm": [-2.0, 0.0, 9.0]},
-  {"name": "head_lower_collision", "type": "box", "frame": "duck_head_lower_v3", "size_mm": [41.5, 45.0, 11.17], "centre_mm": [-2.0, 3.0, 11.17]},
-  {"name": "bill_collision", "type": "ellipsoid", "frame": "duck_head_lower_v3", "size_mm": [23.0, 13.0, 8.0], "centre_mm": [-2.0, -53.0, 13.0]}
+  {
+   "name": "head_dome_collision",
+   "type": "ellipsoid",
+   "frame": "head_upper_v4",
+   "size_mm": [
+    47.3,
+    60.0,
+    32.0
+   ],
+   "centre_mm": [
+    -2.0,
+    5.0,
+    18.0
+   ]
+  },
+  {
+   "name": "head_upper_skirt_collision",
+   "type": "box",
+   "frame": "head_upper_v4",
+   "size_mm": [
+    44.0,
+    52.0,
+    9.0
+   ],
+   "centre_mm": [
+    -2.0,
+    8.0,
+    9.0
+   ]
+  },
+  {
+   "name": "head_lower_collision",
+   "type": "box",
+   "frame": "head_lower_v4",
+   "size_mm": [
+    45.6,
+    53.0,
+    11.17
+   ],
+   "centre_mm": [
+    -2.0,
+    11.0,
+    11.17
+   ]
+  },
+  {
+   "name": "bill_upper_collision",
+   "type": "ellipsoid",
+   "frame": "head_lower_v4",
+   "size_mm": [
+    23.0,
+    11.0,
+    3.5
+   ],
+   "centre_mm": [
+    -2.0,
+    -55.0,
+    22.0
+   ]
+  }
  ],
- "shield": [
-  {"name": "shield_back_collision", "type": "box", "frame": "hat_rear_shield_v3", "size_mm": [29.97, 58.3, 1.25], "centre_mm": [0.0, 0.0, 17.25]},
-  {"name": "shield_side_l_collision", "type": "box", "frame": "hat_rear_shield_v3", "size_mm": [1.25, 58.3, 9.25], "centre_mm": [-28.72, 0.0, 9.25]},
-  {"name": "shield_side_r_collision", "type": "box", "frame": "hat_rear_shield_v3", "size_mm": [1.25, 58.3, 9.25], "centre_mm": [28.72, 0.0, 9.25]}
+ "jaw": [
+  {
+   "name": "jaw_collision",
+   "type": "box",
+   "frame": "jaw_v4",
+   "size_mm": [
+    31.55,
+    9.85,
+    7.49
+   ],
+   "centre_mm": [
+    -2.0,
+    -56.37,
+    11.12
+   ]
+  }
  ],
  "exclude": []
 }

@@ -1,7 +1,7 @@
-r"""mjcf_to_urdf.py -- convert model/duck_v3.xml (MJCF) to a URDF for ROS 2 / RViz.
+r"""mjcf_to_urdf.py -- convert model/duck_v4.xml (MJCF) to a URDF for ROS 2 / RViz.
 
 Usage:  .venv\Scripts\python.exe scripts\mjcf_to_urdf.py [mjcf file] [output package dir]
-Writes ros2/duck_description/urdf/duck_v3.urdf and copies the STL meshes next to it.
+Writes ros2/duck_description/urdf/duck_v4.urdf and copies the STL meshes next to it.
 Only what RViz and robot_state_publisher need: links, inertias, visual meshes, hinge joints.
 Collision / self-collision geoms (S1 proxies) are not exported; they are not visuals.
 
@@ -14,7 +14,7 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 
 ROOT = Path(os.environ.get("DUCKLING_ROOT", Path(__file__).resolve().parents[1]))
-SRC = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "model" / "duck_v3.xml"
+SRC = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "model" / "duck_v4.xml"
 PKG = Path(sys.argv[2]) if len(sys.argv) > 2 else ROOT / "ros2" / "duck_description"
 SKIP_CLASSES = {"collision", "self_collision_only"}
 
@@ -42,7 +42,7 @@ def main():
     (PKG / "urdf").mkdir(parents=True, exist_ok=True)
     (PKG / "meshes").mkdir(parents=True, exist_ok=True)
 
-    robot = ET.Element("robot", name="duck_v3")
+    robot = ET.Element("robot", name="duck_v4")
     mats = {}                                   # material name -> rgba, written once at the top
     used = set()
 
@@ -104,13 +104,13 @@ def main():
         ref = vis.find("material")
         ET.SubElement(ref, "color", rgba=mats[ref.get("name")])
     ET.indent(robot, "  ")
-    ET.ElementTree(robot).write(PKG / "urdf" / "duck_v3.urdf", xml_declaration=True, encoding="utf-8")
+    ET.ElementTree(robot).write(PKG / "urdf" / "duck_v4.urdf", xml_declaration=True, encoding="utf-8")
     for f in used:
         shutil.copy2(ROOT / "model" / "assets" / f, PKG / "meshes" / f)
     for stale in sorted(set(f.name for f in (PKG / "meshes").glob("*.stl")) - used):   # meshes only the old model used
         (PKG / "meshes" / stale).unlink(); print("removed stale mesh", stale)
     n_rev = sum(1 for j in robot.findall("joint") if j.get("type") == "revolute")
-    print(f"wrote {PKG / 'urdf' / 'duck_v3.urdf'}: {len(robot.findall('link'))} links, "
+    print(f"wrote {PKG / 'urdf' / 'duck_v4.urdf'}: {len(robot.findall('link'))} links, "
           f"{n_rev} revolute joints, {len(used)} meshes, {len(mats)} materials")
 
 

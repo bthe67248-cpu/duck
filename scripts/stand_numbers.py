@@ -1,6 +1,6 @@
 """stand_numbers.py -- settle the duck in its STAND pose and print the numbers MATLAB needs.
 
-Usage:  .venv\\Scripts\\python.exe scripts\\stand_numbers.py model\\duck_v3_scene.xml
+Usage:  .venv\\Scripts\\python.exe scripts\\stand_numbers.py model\\duck_v4_scene.xml
 Writes model/stand_numbers.json (read by matlab/duck_numbers.m).
 """
 import argparse, hashlib, json, sys
@@ -58,7 +58,7 @@ out = dict(
     actuators=[m.actuator(i).name for i in range(m.nu)],
 )
 # provenance (S9): which model revision these numbers describe and how provisional the printed masses are
-tag = path.stem.removeprefix("duck_v3").removesuffix("_scene")
+tag = path.stem.removeprefix("duck_v4").removesuffix("_scene")
 ledger_file = path.parent / f"mass_ledger{tag}.json"
 out["model_scene"] = path.name
 out["model_scene_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()[:16]

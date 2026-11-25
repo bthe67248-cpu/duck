@@ -55,7 +55,7 @@ def make_room():
             f'material="beacon_mat"/>\n')
     txt = txt.replace("</worldbody>", out + "</worldbody>", 1)
     txt = txt.replace("</asset>", '<material name="beacon_mat" rgba="1 0 1 1" emission="0.8"/>\n</asset>', 1)
-    path = motions.SCENE.parent / "duck_v3_gc_room.xml"
+    path = motions.SCENE.parent / "duck_v4_gc_room.xml"
     path.write_text(txt)
     return path
 

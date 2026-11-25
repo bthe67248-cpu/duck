@@ -65,13 +65,13 @@ Keep the Bridge traffic bounded. The illustrative 14 targets down and 34 values 
 
 Nothing below is new; it is the part of the two PDFs that is still open.
 
-1. Print the visible rigid parts in black PLA, 30% infill (start: 0.4 mm nozzle, 0.2 mm layers, 3 walls, 5 top and 5 bottom layers, gyroid). Save the slicer project, and record the slicer version, filament density, orientation and support mass. Weigh every part after removing supports, and every link. Type the numbers into `V3_PART_MASS_G` and `MEASURED_MASS` at the top of `scripts\make_duck_v3.py`. Do not scale masses by the infill percentage, and do not reduce servo, electronics or battery masses.
+1. Print the visible rigid parts in black PLA, 30% infill (start: 0.4 mm nozzle, 0.2 mm layers, 3 walls, 5 top and 5 bottom layers, gyroid). Save the slicer project, and record the slicer version, filament density, orientation and support mass. Weigh every part after removing supports, and every link. Type the numbers into `V3_PART_MASS_G` and `MEASURED_MASS` at the top of `scripts\make_duck.py`. Do not scale masses by the infill percentage, and do not reduce servo, electronics or battery masses.
 2. Bench-test one servo (10° steps, logged from the bus). Get stiffness `kp`, damping `kv`, delay `td`, stall torque. Put them in the `SERVO` line of the same file.
-3. Measure the real V3 head and shield positions with a ruler; set `HEAD_SHIFT` and `SHIELD_POS`. **The shield matters most:** at its guessed position it hits the legs while walking and stops get-up in simulation. Move each leg and the head through their full range by hand against the mounted shield before you finalise it.
+3. Measure the real head position with a ruler; set `HEAD_SHIFT`. (V4 has no separate rear shield: the boards sit in the body shell, `design/v4`.) Old V3 note: **The shield matters most:** at its guessed position it hits the legs while walking and stops get-up in simulation. Move each leg and the head through their full range by hand against the mounted shield before you finalise it.
 4. Regenerate and rerun everything:
 
 ```powershell
-cd C:\dev\duckling_sim; .\.venv\Scripts\python.exe scripts\make_duck_v3.py; .\.venv\Scripts\python.exe scripts\stand_numbers.py model\duck_v3_scene.xml
+cd C:\dev\duckling_sim; .\.venv\Scripts\python.exe scripts\make_duck.py; .\.venv\Scripts\python.exe scripts\stand_numbers.py model\duck_v4_scene.xml
 ```
 
 Then in MATLAB: `startup_duck`, `build_duck_sim`, `run_tests`. Then `scripts\tune_gains.py` again, because the safe gain band depends on servo stiffness and delay.

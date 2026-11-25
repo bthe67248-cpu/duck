@@ -1,0 +1,321 @@
+{
+ "_note": "mm. body/pcb/a010/battery/xt60: torso (trunk_base) frame, +x forward, +y left, +z up, standing pose. head: lower-head mesh frame (x width, -y front, z up).",
+ "body": {
+  "outer": [
+   {
+    "name": "front_upper",
+    "lo": [
+     -40.0,
+     -34.5,
+     0.0
+    ],
+    "hi": [
+     37.5,
+     34.5,
+     45.0
+    ],
+    "bevel": 5.0
+   },
+   {
+    "name": "rear_upper",
+    "lo": [
+     -62.0,
+     -34.5,
+     4.0
+    ],
+    "hi": [
+     -36.0,
+     34.5,
+     39.0
+    ],
+    "bevel": 5.0
+   },
+   {
+    "name": "chest_a010",
+    "lo": [
+     33.0,
+     -24.0,
+     -10.0
+    ],
+    "hi": [
+     51.0,
+     24.0,
+     19.5
+    ],
+    "bevel": 4.0
+   },
+   {
+    "name": "board_bay",
+    "lo": [
+     -84.5,
+     -30.0,
+     -35.0
+    ],
+    "hi": [
+     -58.0,
+     30.0,
+     42.5
+    ],
+    "bevel": 5.0
+   },
+   {
+    "name": "battery_keel",
+    "lo": [
+     -47.5,
+     -17.0,
+     -29.0
+    ],
+    "hi": [
+     -27.5,
+     17.0,
+     6.0
+    ],
+    "bevel": 4.0
+   },
+   {
+    "name": "xt60_keel",
+    "lo": [
+     -46.5,
+     -10.5,
+     -38.0
+    ],
+    "hi": [
+     -28.5,
+     10.5,
+     -20.0
+    ],
+    "bevel": 3.0
+   }
+  ],
+  "inner": [
+   {
+    "lo": [
+     -38.0,
+     -32.5,
+     -3.0
+    ],
+    "hi": [
+     35.5,
+     32.5,
+     43.0
+    ],
+    "bevel": 3.0
+   },
+   {
+    "lo": [
+     -60.0,
+     -32.5,
+     1.0
+    ],
+    "hi": [
+     -34.0,
+     32.5,
+     37.0
+    ],
+    "bevel": 3.0
+   },
+   {
+    "lo": [
+     31.0,
+     -22.0,
+     -8.0
+    ],
+    "hi": [
+     49.0,
+     22.0,
+     17.5
+    ],
+    "bevel": 2.0
+   },
+   {
+    "lo": [
+     -82.5,
+     -28.0,
+     -33.0
+    ],
+    "hi": [
+     -56.0,
+     28.0,
+     40.5
+    ],
+    "bevel": 3.0
+   },
+   {
+    "lo": [
+     -45.5,
+     -15.0,
+     -27.0
+    ],
+    "hi": [
+     -29.5,
+     15.0,
+     8.0
+    ],
+    "bevel": 2.0
+   },
+   {
+    "lo": [
+     -44.5,
+     -8.5,
+     -36.0
+    ],
+    "hi": [
+     -30.5,
+     8.5,
+     -18.0
+    ],
+    "bevel": 1.5
+   }
+  ],
+  "cuts": [
+   {
+    "name": "neck_notch",
+    "lo": [
+     -2.0,
+     -19.5,
+     19.5
+    ],
+    "hi": [
+     70.0,
+     19.5,
+     60.0
+    ],
+    "bevel": 2.0
+   },
+   {
+    "name": "a010_window",
+    "lo": [
+     47.0,
+     -18.0,
+     -3.5
+    ],
+    "hi": [
+     60.0,
+     18.0,
+     14.5
+    ],
+    "bevel": 1.5
+   },
+   {
+    "name": "usb_access",
+    "lo": [
+     -90.0,
+     -10.0,
+     20.0
+    ],
+    "hi": [
+     -80.0,
+     10.0,
+     30.0
+    ],
+    "bevel": 1.5
+   },
+   {
+    "name": "xt60_access",
+    "lo": [
+     -40.0,
+     -6.0,
+     -45.0
+    ],
+    "hi": [
+     -35.0,
+     6.0,
+     -34.0
+    ],
+    "bevel": 1.0
+   }
+  ]
+ },
+ "pcb_stack": {
+  "lo": [
+   -80.5,
+   -26.67,
+   -31.0
+  ],
+  "hi": [
+   -64.5,
+   26.67,
+   39.0
+  ],
+  "note": "UNO Q + resized HAT, 70 tall x 53.34 across, 16 mm stack; behind the leg sweep (check_pcb_target.py target region)"
+ },
+ "a010": {
+  "lo": [
+   37.3,
+   -20.35,
+   -6.125
+  ],
+  "hi": [
+   47.8,
+   20.35,
+   17.125
+  ],
+  "mass_g": 10.0
+ },
+ "battery": {
+  "lo": [
+   -45.0,
+   -14.0,
+   -25.0
+  ],
+  "hi": [
+   -30.0,
+   14.0,
+   35.0
+  ],
+  "note": "2S LiPo ~800-1000 mAh, 60 x 28 x 15 mm, XT60 lead (XT30 also fits)",
+  "mass_g": 55.0
+ },
+ "xt60": {
+  "lo": [
+   -44.0,
+   -8.0,
+   -35.5
+  ],
+  "hi": [
+   -31.0,
+   8.0,
+   -26.0
+  ],
+  "note": "XT60 pair below the pack; unplug through the keel's bottom opening"
+ },
+ "head": {
+  "cx": -2.0,
+  "widen": 1.1,
+  "rear_push": 16.0,
+  "rear_y0": 22.0,
+  "rear_y1": 48.0,
+  "upper_zshift": 22.35,
+  "jaw": {
+   "lo": [
+    -60.0,
+    -80.0,
+    -5.0
+   ],
+   "hi": [
+    60.0,
+    -46.0,
+    19.0
+   ],
+   "gap": 2.0,
+   "hinge_y": -46.0,
+   "hinge_z": 12.0,
+   "open_deg": 30.0
+  },
+  "mouth_servo": {
+   "lo": [
+    2.0,
+    -33.5,
+    14.5
+   ],
+   "hi": [
+    36.0,
+    -14.5,
+    40.5
+   ],
+   "mass_g": 18.0,
+   "note": "XL330-size (34 x 20 x 26) lying sideways above the lower-shell pedestal, under the forehead; drives the jaw through a short link"
+  },
+  "_note": "cx/widen/rear_*/upper_zshift: record of the one-off deformation that made head_upper_v4.stl and head_lower_v4_whole.stl from the V3 head (deleted); jaw and mouth_servo are rebuilt by build_v4.py"
+ }
+}

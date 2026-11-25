@@ -7,5 +7,5 @@ addpath(fullfile(proj,'mujoco-simulink-blockset','examples'));
 addpath(fullfile(proj,'mujoco-simulink-blockset','src'));
 setenv('PATH', [fullfile(proj,'mujoco-simulink-blockset','blocks') ';' getenv('PATH')]);  % mujoco.dll, glfw3.dll
 DUCK_PROJ = proj;
-DUCK_XML  = fullfile(proj,'model','duck_v3_scene.xml');
+DUCK_XML  = fullfile(proj,'model','duck_v4_scene.xml');
 fprintf('Duckling project: %s\n', proj);

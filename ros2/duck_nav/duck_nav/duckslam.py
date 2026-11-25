@@ -546,8 +546,17 @@ class FrameLocalizer:
     def __init__(self, slam, matcher="correlative", sweep=1.0, gain=0.6, fresh=False, slip=True,
                  relocalize_after=3.0, reloc_window=0.8, reloc_ang=math.radians(25), map_move=0.03,
                  map_turn=math.radians(3), scan_timeout=0.75, match_timeout=1.5, use_sweep=True,
-                 loop_closure=False, graph_max_nodes=160):
+                 loop_closure=False, graph_max_nodes=160, reloc_confirm=False, confirm_xy=0.06,
+                 confirm_th=math.radians(4), bootstrap_turn=0.0):
         self.slam = slam
+        # bootstrap_turn (rad): stay in bootstrap mapping (every frame is mapped) until the body has also turned this
+        # much. A body-fixed sensor has no head sweep, so the start-up map is built by turning in place; after
+        # bootstrap only accepted frames are mapped, and a partly new view is rarely accepted.
+        self.bootstrap_turn, self.turned, self.last_heading = bootstrap_turn, 0.0, None
+        # reloc_confirm: a relocalisation correction is applied only when the next relocalisation match proposes
+        # the same correction (within confirm_xy m / confirm_th rad); one confident wrong jump is the failure mode
+        self.reloc_confirm, self.confirm_xy, self.confirm_th = reloc_confirm, confirm_xy, confirm_th
+        self.pending_reloc = None
         self.matcher, self.gain, self.fresh, self.slip = matcher, gain, fresh, slip
         self.relocalize_after, self.reloc_window, self.reloc_ang = relocalize_after, reloc_window, reloc_ang
         self.map_move, self.map_turn = map_move, map_turn
@@ -588,8 +597,26 @@ class FrameLocalizer:
             if self.matcher == "correlative":
                 kw = dict(window=self.reloc_window, ang_window=self.reloc_ang, prior_xy=1.0, prior_th=0.6) \
                     if self.relocalizing else {}
+                before = slam.pose.copy()
                 accepted = slam.match_correlative(*cons, current_scan=fresh, gain=1.0 if self.relocalizing else self.gain,
                                                   **kw)
+                if not self.relocalizing:
+                    self.pending_reloc = None
+                elif accepted and self.reloc_confirm:
+                    delta = slam.pose - before
+                    delta[2] = (delta[2] + math.pi) % (2 * math.pi) - math.pi
+                    p = self.pending_reloc           # (delta, time); consecutive sweeps share frames: need >= 0.5 s
+                    if p is not None and not 0.5 <= ts - p[1] <= 3.0:
+                        p = None if ts - p[1] > 3.0 else p
+                    agree = p is not None and ts - p[1] >= 0.5 and math.hypot(*(delta[:2] - p[0][:2])) <= self.confirm_xy \
+                        and abs((delta[2] - p[0][2] + math.pi) % (2 * math.pi) - math.pi) <= self.confirm_th
+                    if not agree:                    # hold it: wait for an independent confirmation
+                        if p is None or ts - p[1] >= 0.5:
+                            self.pending_reloc = (delta, ts)
+                        slam.pose = before; slam.last_offset = None
+                        slam.match_reason = "reloc_unconfirmed"; accepted = False
+                    else:
+                        self.pending_reloc = None
             else:
                 accepted = slam.match(*cons, current_scan=fresh)
         if accepted and self.sweep is not None:
@@ -630,9 +657,13 @@ class FrameLocalizer:
                     slam.update_map(ang, r, hit)
             self.last_map_pose = slam.pose.copy()
         self.health.observe(ts, accepted)
+        if self.last_heading is not None:
+            self.turned += abs((pose_acq[2] - self.last_heading + math.pi) % (2 * math.pi) - math.pi)
+        self.last_heading = pose_acq[2]
         if self.health.state(ts) == "ok":
             self.last_ok = ts
-            self.bootstrap = False
+            if self.turned >= self.bootstrap_turn:
+                self.bootstrap = False
         elif self.last_ok is None and not self.bootstrap:
             self.last_ok = ts
         if self.slip:

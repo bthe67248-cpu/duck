@@ -14,7 +14,8 @@ Publishes   /clock                      simulation time (all other nodes run wit
             /camera/camera_info         intrinsics of that image (same stamp)
             /camera/pose_level          camera pose in the level body frame: what leg/neck encoders + IMU tilt give
             sensor_profile:=ideal      -> /camera/depth  32FC1 camera-axis depth, same stamp as the image (perfect RGB-D)
-            sensor_profile:=realistic  -> /tof/zones  sensor_msgs/PointCloud2, VL53L5CX-like 8x8 multizone ranges
+            sensor_profile:=realistic  -> /tof/zones  sensor_msgs/PointCloud2, multizone ranges: Sipeed A010-like n x n (default,
+                                          25 x 25 binned from 100 x 100, on the V4 body) or VL53L5CX-like 8 x 8
                                           (fields x y z range status zone; status 0 valid, 1 no target / out of range,
                                           2 dropout), stamped at acquisition and published `tof_latency` later;
                                           /tof/pose_level  ToF pose in the level body frame at the same stamp;
@@ -72,6 +73,7 @@ def pose_msg(stamp, frame, R, t):
     return p
 
 
+
 class WorldSim(Node):
     def __init__(self):
         super().__init__("world_sim")
@@ -84,13 +86,15 @@ class WorldSim(Node):
         self.declare_parameter("cmd_wall_timeout", 1.0)      # s steady clock (host-stall guard)
         self.declare_parameter("cam_width", 320); self.declare_parameter("cam_height", 240)
         self.declare_parameter("cam_noise", 4.0)             # realistic profile: RGB noise sigma, 0..255 units
-        # VL53L5CX-like ToF (realistic profile). Pololu #3417 / ST datasheet values; usable range is scene-dependent.
-        self.declare_parameter("tof_zones", 8)
-        self.declare_parameter("tof_fov_deg", 45.0)          # per axis (65 deg is the diagonal)
-        self.declare_parameter("tof_rate_hz", 10.0)          # 8x8 supports up to 15 Hz
-        self.declare_parameter("tof_max_range", 2.0)         # m; 4 m is the best-case datasheet maximum
-        self.declare_parameter("tof_min_range", 0.02)
-        self.declare_parameter("tof_noise_rel", 0.015); self.declare_parameter("tof_noise_abs", 0.005)
+        # Multizone ToF (realistic profile). Defaults: Sipeed MaixSense A010 (100 x 100, 70 x 60 deg, 0.2-2.5 m) binned
+        # 4 x 4 to 25 x 25. VL53L5CX (Pololu #3417): tof_zones 8, tof_fov_deg 45, tof_rate_hz 10, range 0.02-2.0 m.
+        self.declare_parameter("tof_zones", 25)
+        self.declare_parameter("tof_fov_deg", 70.0)          # horizontal
+        self.declare_parameter("tof_fov_v_deg", 60.0)       # vertical; 0 = same as tof_fov_deg
+        self.declare_parameter("tof_rate_hz", 15.0)          # A010 up to 30 fps; VL53L5CX 8x8 up to 15 Hz
+        self.declare_parameter("tof_max_range", 2.5)         # m (A010 datasheet 0.2-2.5 m)
+        self.declare_parameter("tof_min_range", 0.2)
+        self.declare_parameter("tof_noise_rel", 0.01); self.declare_parameter("tof_noise_abs", 0.005)
         self.declare_parameter("tof_zone_dropout", 0.03); self.declare_parameter("tof_frame_dropout", 0.02)
         self.declare_parameter("tof_latency", 0.06)          # s from acquisition to publication
         self.declare_parameter("tof_range_convention", "radial")   # what the published `range` means
@@ -100,13 +104,20 @@ class WorldSim(Node):
         # the boresight: 12 mm is clear of the head and bill over 135 head poses (results/post_fix/fov_check.txt), and
         # the bill's collision proxy still shows up if it ever enters the field of view. /tof/pose_level uses it too.
         self.declare_parameter("tof_origin_offset", 0.012)
+        # where the depth sensor sits: "body" (A010 in the V4 chest pocket, site `tof_body`) | "head" (site `tof`)
+        self.declare_parameter("tof_mount", "body")
         self.declare_parameter("seed", 0)
         self.profile = str(self.get_parameter("sensor_profile").value)
         if self.profile not in ("ideal", "realistic"):
             raise ValueError(f"sensor_profile must be 'ideal' or 'realistic', not '{self.profile}'")
         self.rng = np.random.default_rng(int(self.get_parameter("seed").value))
 
+        self.tof_mount = str(self.get_parameter("tof_mount").value)
+        if self.tof_mount not in ("head", "body"):
+            raise ValueError(f"tof_mount must be 'head' or 'body', not '{self.tof_mount}'")
         self.m = mujoco.MjModel.from_xml_path(self.get_parameter("mjcf").value)
+        if self.tof_mount == "body" and mujoco.mj_name2id(self.m, mujoco.mjtObj.mjOBJ_SITE, "tof_body") < 0:
+            raise ValueError("tof_mount:=body needs a model with a `tof_body` site (the V4 body: model/duck_v4_gc_world.xml)")
         self.m.opt.timestep = 0.005
         self.n_sub = round(POLICY_DT / self.m.opt.timestep)
         self.d = mujoco.MjData(self.m)
@@ -119,7 +130,7 @@ class WorldSim(Node):
         self.qadr = np.array([self.m.jnt_qposadr[j] for j in jid]); self.vadr = np.array([self.m.jnt_dofadr[j] for j in jid])
         self.gyro = self.m.sensor_adr[self.m.sensor("gyro").id]; self.acc = self.m.sensor_adr[self.m.sensor("accel").id]
         self.trunk = self.m.body("trunk_base").id; self.cam = self.m.camera("head_cam").id
-        self.tof_site = self.m.site("tof").id
+        self.tof_site = self.m.site("tof_body" if self.tof_mount == "body" else "tof").id
         pdir = os.path.dirname(self.get_parameter("policy").value)
         self.sessions = {}
         for mode, fname in (("walk", os.path.basename(self.get_parameter("policy").value)), ("sit", "alpha_sitstand.onnx"),
@@ -143,7 +154,8 @@ class WorldSim(Node):
         # renders did); realistic: rendered, so any part of the head/bill inside the field of view appears in images
         self.opt.geomgroup[2] = 0 if self.profile == "ideal" else 1
         n = int(self.get_parameter("tof_zones").value)
-        self.tof_rays = tof_zone_rays(n, float(self.get_parameter("tof_fov_deg").value), float(self.get_parameter("tof_fov_deg").value))
+        fov_h = float(self.get_parameter("tof_fov_deg").value)
+        self.tof_rays = tof_zone_rays(n, fov_h, float(self.get_parameter("tof_fov_v_deg").value) or fov_h)
         self.tof_every = max(1, round(1.0 / (float(self.get_parameter("tof_rate_hz").value) * POLICY_DT)))
         self.tof_queue = deque()                              # (publish_at_sim_t, PointCloud2)
         # rays hit collision geometry (groups 0, 1, 3) of the world AND the robot, so a bill or bracket in the field
@@ -171,7 +183,9 @@ class WorldSim(Node):
         self.create_subscription(String, "duck/behavior", self.on_behavior, 10)
         self.pub_mode = self.create_publisher(String, "duck/mode", 10)
         self.create_timer(0.002, self.step, clock=Clock(clock_type=ClockType.STEADY_TIME))
-        extra = (f"ToF {n}x{n} at {1 / (self.tof_every * POLICY_DT):.0f} Hz, latency {self.get_parameter('tof_latency').value:.2f} s"
+        extra = (f"ToF {n}x{n} at {1 / (self.tof_every * POLICY_DT):.0f} Hz, latency {self.get_parameter('tof_latency').value:.2f} s, "
+                 f"FOV {fov_h:.0f}x{float(self.get_parameter('tof_fov_v_deg').value) or fov_h:.0f} deg, "
+                 f"range {self.get_parameter('tof_min_range').value}-{self.get_parameter('tof_max_range').value} m, mount {self.tof_mount}"
                  if self.profile == "realistic" else "ideal depth")
         self.get_logger().info(f"world_sim up ({self.profile} sensors): 50 Hz policy, 200 Hz physics, "
                                f"camera {self.W}x{self.H} at 5 Hz, {extra}")
@@ -281,39 +295,36 @@ class WorldSim(Node):
         return self.d.site_xpos[self.tof_site] + R[:, 0] * float(self.get_parameter("tof_origin_offset").value)
 
     def tof_frame(self, stamp):
-        """Simulate one VL53L5CX acquisition at the current state: centre ray per zone, noise, dropouts, max range."""
+        """Simulate one multizone ToF acquisition (VL53L5CX 8x8 or A010-like n x n) at the current state: centre ray
+        per zone (one batched mj_multiRay call), noise, dropouts, min/max range."""
         d, m = self.d, self.m
         R = d.site_xmat[self.tof_site].reshape(3, 3); p0 = self.tof_origin()
         n = len(self.tof_rays)
-        rng = np.full(n, np.nan, np.float32); status = np.ones(n, np.uint8)
-        gid = np.zeros(1, np.int32)
         rmax, rmin = float(self.get_parameter("tof_max_range").value), float(self.get_parameter("tof_min_range").value)
         frame_drop = self.rng.random() < float(self.get_parameter("tof_frame_dropout").value)
-        for z, ray in enumerate(self.tof_rays):
-            vec = R @ ray
-            dist = mujoco.mj_ray(m, d, p0, vec, self.ray_groups, 1, -1, gid)
-            if frame_drop or self.rng.random() < float(self.get_parameter("tof_zone_dropout").value):
-                status[z] = 2; continue
-            if dist < 0 or not rmin <= dist <= rmax:
-                status[z] = 1; continue                      # no target / out of range: NOT free space
-            sigma = max(float(self.get_parameter("tof_noise_abs").value), float(self.get_parameter("tof_noise_rel").value) * dist)
-            meas = dist + self.rng.normal(0.0, sigma)
-            if self.get_parameter("tof_range_convention").value == "axial":
-                meas *= ray[0]
-            rng[z] = meas; status[z] = 0
-        pts = []
-        for z in range(n):
-            r = float(rng[z])
-            if status[z] == 0:
-                rad = r / self.tof_rays[z][0] if self.get_parameter("tof_range_convention").value == "axial" else r
-                x, y, zz = (self.tof_rays[z] * rad).tolist()
-            else:
-                x = y = zz = float("nan")
-            pts.append((x, y, zz, r, int(status[z]), z))
+        zdrop = float(self.get_parameter("tof_zone_dropout").value)
+        n_abs, n_rel = float(self.get_parameter("tof_noise_abs").value), float(self.get_parameter("tof_noise_rel").value)
+        axial = self.get_parameter("tof_range_convention").value == "axial"
+        vec = np.ascontiguousarray((self.tof_rays @ R.T).ravel(), dtype=np.float64)
+        dist = np.zeros(n); gid = np.zeros(n, np.int32)
+        mujoco.mj_multiRay(m, d, np.asarray(p0, np.float64), vec, self.ray_groups, 1, -1, gid, dist, None, n, rmax + 1.0)
+        drop = np.full(n, frame_drop) | (self.rng.random(n) < zdrop)
+        ok = ~drop & (dist >= 0) & (dist >= rmin) & (dist <= rmax)
+        status = np.where(drop, 2, np.where(ok, 0, 1)).astype(np.uint8)   # 1: no target / out of range, NOT free space
+        sigma = np.maximum(n_abs, n_rel * dist)
+        meas = (dist + self.rng.normal(0.0, 1.0, n) * sigma).astype(np.float32)
+        rng = np.where(ok, meas * (self.tof_rays[:, 0] if axial else 1.0), np.nan).astype(np.float32)
+        rad = np.where(ok, rng / (self.tof_rays[:, 0] if axial else 1.0), np.nan)
+        xyz = (self.tof_rays * rad[:, None]).astype(np.float32)
+        arr = np.zeros(n, dtype=np.dtype({"names": ["x", "y", "z", "range", "status", "zone"],
+                                          "formats": ["<f4", "<f4", "<f4", "<f4", "u1", "<u2"],
+                                          "offsets": [0, 4, 8, 12, 16, 18], "itemsize": 20}))
+        arr["x"], arr["y"], arr["z"], arr["range"] = xyz[:, 0], xyz[:, 1], xyz[:, 2], rng
+        arr["status"], arr["zone"] = status, np.arange(n)
         hdr = Header(); hdr.stamp = stamp; hdr.frame_id = "tof"
-        cloud = point_cloud2.create_cloud(hdr, TOF_FIELDS, pts)
-        cloud.height, cloud.width = int(round(math.sqrt(n))), int(round(math.sqrt(n)))   # row-major zone grid
-        cloud.row_step = cloud.point_step * cloud.width
+        side = int(round(math.sqrt(n)))
+        cloud = PointCloud2(header=hdr, height=side, width=side, fields=TOF_FIELDS, is_bigendian=False,
+                            point_step=20, row_step=20 * side, data=arr.tobytes(), is_dense=False)   # row-major zone grid
         return cloud
 
     # ---- main loop -------------------------------------------------------------------------------

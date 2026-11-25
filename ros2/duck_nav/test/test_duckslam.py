@@ -501,3 +501,33 @@ def test_frame_localizer_widens_the_search_after_a_long_weak_spell():
         acc, corr = loc.step(t, pose, a, r, h); pose = pose + corr; t += 0.1
         ok = ok or loc.relocalizing
     assert ok and np.hypot(*pose[:2]) < 0.05
+
+
+def test_confirmed_relocalisation_holds_a_jump_until_a_later_match_agrees():
+    s = corner_reference(); loc = ds.FrameLocalizer(s, relocalize_after=1.0, use_sweep=False, reloc_confirm=True)
+    a, r, h = corner_scan(np.linspace(-30, 100, 40))
+    for i in range(5):
+        loc.step(i * 0.1, np.zeros(3), a, r, h)
+    off = np.array([0.5, -0.4, math.radians(15)])
+    pose = off.copy(); t = 0.5; held = applied_at = None
+    for _ in range(80):
+        acc, corr = loc.step(t, pose, a, r, h)
+        if loc.relocalizing and s.match_reason == "reloc_unconfirmed" and held is None:
+            held = t; assert not np.any(corr)            # the first relocalisation result is not applied
+        if np.hypot(*corr[:2]) > 0.2 and applied_at is None:
+            applied_at = t
+        pose = pose + corr; t += 0.1
+    assert held is not None and applied_at is not None and applied_at - held >= 0.5 - 1e-9
+    assert np.hypot(*pose[:2]) < 0.05
+
+
+def test_bootstrap_mapping_lasts_until_the_body_has_turned():
+    s = corner_reference(); loc = ds.FrameLocalizer(s, use_sweep=False, bootstrap_turn=math.radians(90))
+    a, r, h = corner_scan(np.linspace(-30, 100, 40))
+    for i in range(5):                                   # healthy, but has not turned yet: still bootstrapping
+        loc.step(i * 0.1, np.zeros(3), a, r, h)
+    assert loc.health.state(0.4) == "ok" and loc.bootstrap
+    for i in range(5, 25):                               # turn in place 100 deg (matching corrects the heading)
+        pose = np.array([0.0, 0.0, math.radians(5 * (i - 4))])
+        loc.step(i * 0.1, pose, *corner_scan(np.linspace(-30, 100, 40)))
+    assert loc.turned >= math.radians(90)

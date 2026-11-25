@@ -13,7 +13,7 @@ from pathlib import Path
 import mujoco, numpy as np
 
 ROOT = Path(os.environ.get("DUCKLING_ROOT", Path(__file__).resolve().parents[1]))
-m = mujoco.MjModel.from_xml_path(str(ROOT / "model" / "duck_v3_gc_scene.xml")); d = mujoco.MjData(m)
+m = mujoco.MjModel.from_xml_path(str(ROOT / "model" / "duck_v4_gc_scene.xml")); d = mujoco.MjData(m)
 key = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_KEY, "STAND")
 mujoco.mj_resetDataKeyframe(m, d, key); mujoco.mj_forward(m, d)
 home = d.qpos.copy()

@@ -1,11 +1,11 @@
-r"""check_contacts.py -- S1 validation of the head/shield collision proxies on model/duck_v3_gc_scene.xml.
+r"""check_contacts.py -- S1 validation of the head/jaw/body collision proxies on model/duck_v4_gc_scene.xml.
 
 Usage:  .venv\Scripts\python.exe scripts\check_contacts.py
 1. STAND pose: any contact other than feet/floor is reported.
 2. Joint-range sweep (head chain over its full range, legs over a walking-size range, random combinations):
-   robot-robot contacts that involve a head/shield proxy are counted per geom pair. They must be empty (or explained).
+   robot-robot contacts that involve a head/jaw/body proxy are counted per geom pair. They must be empty (or explained).
 3. Lie-down drops: the robot is dropped on its front, back, left and right side; which proxies reach the floor.
-Exits 1 for STAND self-contact OR a head/shield clash in the sampled operating
+Exits 1 for STAND self-contact OR a head/jaw/body clash in the sampled operating
 envelope. --report-only restores the old stand-only exit status. Random sampling
 does not prove full-range clearance or get-up feasibility. Historical reports are
 preserved: the default output is results/hardware_readiness/contact_check.txt.
@@ -17,7 +17,7 @@ import mujoco, numpy as np
 
 ROOT = Path(os.environ.get("DUCKLING_ROOT", Path(__file__).resolve().parents[1]))
 ap = argparse.ArgumentParser(description=__doc__)
-ap.add_argument("--scene", type=Path, default=ROOT / "model" / "duck_v3_gc_scene.xml")
+ap.add_argument("--scene", type=Path, default=ROOT / "model" / "duck_v4_gc_scene.xml")
 ap.add_argument("--samples", type=int, default=6000)
 ap.add_argument("--seed", type=int, default=1)
 ap.add_argument("--output", type=Path, default=ROOT / "results/hardware_readiness/contact_check.txt")
@@ -42,11 +42,12 @@ def gname(g):
 
 
 PROXY = {m.geom(i).name for i in range(m.ngeom) if m.geom(i).name.endswith("_collision") and
-         m.geom(i).name.split("_")[0] in ("head", "bill", "shield")}
-required = {"head_dome_collision", "head_lower_collision", "head_upper_skirt_collision", "bill_collision",
-            "shield_back_collision", "shield_side_l_collision", "shield_side_r_collision"}
+         m.geom(i).name.split("_")[0] in ("head", "bill", "jaw", "body")}
+required = {"head_dome_collision", "head_lower_collision", "head_upper_skirt_collision", "bill_upper_collision",
+            "jaw_collision", "body_front_upper_collision", "body_rear_upper_collision", "body_chest_a010_collision",
+            "body_board_bay_collision", "body_battery_keel_collision", "body_xt60_keel_collision"}
 if not required <= PROXY:
-    ap.error("contact gate needs the ground-contact model with all head/shield collision proxies; missing " +
+    ap.error("contact gate needs the ground-contact model with all head/jaw/body collision proxies; missing " +
              ", ".join(sorted(required - PROXY)))
 for name in required:
     geom = m.geom(name).id
@@ -111,14 +112,14 @@ def sweep(full):
     return pairs
 
 
-log(f"\n2a. {N} random poses inside the operating envelope (head {ENV} about STAND, legs +-0.3 rad): self-contacts with head/shield proxies")
+log(f"\n2a. {N} random poses inside the operating envelope (head {ENV} about STAND, legs +-0.3 rad): self-contacts with head/jaw/body proxies")
 env = sweep(False)
 if not env:
     log("   none")
 for (a, b), n in env.most_common():
     log(f"   {a} <-> {b}: {n} poses ({100*n/N:.1f}%)  <== OPERATING-ENVELOPE CLASH (contact kept enabled)"); findings += 1
 log(f"\n2b. INFORMATIONAL, {N} random poses over the FULL head joint limits and legs +-0.5 rad: real geometric clashes of the "
-    "V3 head/shield with neck/torso/legs (kept enabled; keep head commands out of them on hardware)")
+    "head/jaw/body with neck/torso/legs (kept enabled; keep head commands out of them on hardware)")
 full = sweep(True)
 for (a, b), n in full.most_common(12):
     log(f"   {a} <-> {b}: {n} poses ({100*n/N:.1f}%)")

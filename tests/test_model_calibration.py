@@ -20,8 +20,7 @@ def built(tmp_path_factory):
         pytest.skip("clone the pinned microduck_rl model to run model integration tests")
     root = tmp_path_factory.mktemp("model")
     # Copy rather than symlink: Windows symlinks can require elevated rights.
-    shutil.copytree(ROOT / "design/modified", root / "design/modified")
-    shutil.copy2(ROOT / "design/mesh_checks.json", root / "design/mesh_checks.json")
+    shutil.copytree(ROOT / "design/v4", root / "design/v4", ignore=shutil.ignore_patterns("preview", "sim_runs", "*.py"))
     (root / "scripts").mkdir()
     (root / "scripts/collision_proxies.json").write_bytes((ROOT / "scripts/collision_proxies.json").read_bytes())
     env = {**os.environ, "DUCKLING_ROOT": str(root), "DUCKLING_UPSTREAM": str(UPSTREAM)}
@@ -30,45 +29,45 @@ def built(tmp_path_factory):
         return subprocess.run([sys.executable, str(ROOT / "scripts" / script), *map(str, args)],
                               env=env, text=True, capture_output=True, check=check)
 
-    run("prep_v3_meshes.py")
-    run("make_duck_v3.py")
-    baseline = mujoco.MjModel.from_xml_path(str(root / "model/duck_v3_scene.xml"))
+    run("prep_meshes.py")
+    run("make_duck.py")
+    baseline = mujoco.MjModel.from_xml_path(str(root / "model/duck_v4_scene.xml"))
     weights = root / "weights.json"
     weights.write_text(json.dumps({"schema_version": 1,
         "measured_mass_kg": {"jaw_soft": .125, "trunk_base": .250, "neck": .025},
-        "print_mass_g": {"duck_head_upper_v3": 50, "duck_head_lower_v3": 40, "hat_rear_shield_v3": 30},
-        "shield_pos_m": [-.06, 0, .04],
+        "print_mass_g": {"head_upper_v4": 50, "head_lower_v4": 40, "jaw_v4": 4, "body_shell_v4": 70},
         "servo": {"kp": .8, "kv": .02, "stall": .6, "delay_s": .04},
         "whole_robot_mass_kg": .8}))
-    run("make_duck_v3.py", "--tag", "measured", "--calibration", weights)
-    measured = mujoco.MjModel.from_xml_path(str(root / "model/duck_v3_measured_scene.xml"))
+    run("make_duck.py", "--tag", "measured", "--calibration", weights)
+    measured = mujoco.MjModel.from_xml_path(str(root / "model/duck_v4_measured_scene.xml"))
     return root, run, baseline, measured
 
 
 def test_weighed_links_replace_mass_and_shells_are_not_added_twice(built):
     root, _, base, measured = built
     assert measured.body("jaw_soft").mass[0] == pytest.approx(.125)
-    assert measured.body("trunk_base").mass[0] == pytest.approx(.280)  # 250g torso plus shield only
+    assert measured.body("trunk_base").mass[0] == pytest.approx(.250)  # weighed torso includes the body and its contents
     assert measured.body("neck").mass[0] == pytest.approx(.025)
-    changed = {"jaw_soft", "trunk_base", "neck"}
+    changed = {"jaw_soft", "trunk_base", "neck", "jaw"}      # jaw: its print mass is in the weights file
     for i in range(base.nbody):
         if base.body(i).name not in changed:
             assert measured.body_mass[i] == base.body_mass[i]
     np.testing.assert_allclose(measured.actuator_gainprm[:14, 0], .8)
     np.testing.assert_allclose(measured.actuator_forcerange[:14], [[-.6, .6]] * 14)
     ledger = json.loads((root / "model/mass_ledger_measured.json").read_text())
-    assert ledger["parts"]["duck_head_upper_v3"]["included_in_measured_head"]
+    assert ledger["parts"]["head_upper_v4"]["included_in_measured_head"]
+    assert ledger["parts"]["body_shell_v4"]["included_in_measured_torso"]
     assert ledger["servo_delay_s"] == .04
 
 
 def test_stand_numbers_uses_tagged_ledger_and_reports_scale_disagreement(built):
     root, run, _, _ = built
     output = root / "numbers.json"
-    result = run("stand_numbers.py", root / "model/duck_v3_measured_scene.xml",
+    result = run("stand_numbers.py", root / "model/duck_v4_measured_scene.xml",
                  "--output", output, "--strict-mass", check=False)
     numbers = json.loads(output.read_text())
     assert numbers["servo_delay_s"] == .04
-    assert numbers["printed_part_mass_g"]["duck_head_upper_v3"] == 50
+    assert numbers["printed_part_mass_g"]["head_upper_v4"] == 50
     assert numbers["mass_error_fraction"] == pytest.approx(abs(numbers["mass"] - .8) / .8)
     assert result.returncode == (0 if numbers["mass_within_5_percent"] else 1)
     assert len(numbers["calibration_sha256"]) == 64
@@ -76,11 +75,11 @@ def test_stand_numbers_uses_tagged_ledger_and_reports_scale_disagreement(built):
 
 def test_stale_ledger_is_rejected(built):
     root, run, _, _ = built
-    path = root / "model/duck_v3_measured.xml"
+    path = root / "model/duck_v4_measured.xml"
     original = path.read_bytes()
     try:
         path.write_bytes(original + b"\n")
-        result = run("stand_numbers.py", root / "model/duck_v3_measured_scene.xml", check=False)
+        result = run("stand_numbers.py", root / "model/duck_v4_measured_scene.xml", check=False)
         assert result.returncode == 1
         assert "does not match" in result.stderr
     finally:
@@ -89,7 +88,7 @@ def test_stale_ledger_is_rejected(built):
 
 def test_contact_gate_rejects_feet_only_model(built):
     root, run, _, _ = built
-    result = run("check_contacts.py", "--scene", root / "model/duck_v3_scene.xml",
+    result = run("check_contacts.py", "--scene", root / "model/duck_v4_scene.xml",
                  "--samples", 1, check=False)
     assert result.returncode == 2
     assert "needs the ground-contact model" in result.stderr

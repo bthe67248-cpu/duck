@@ -22,7 +22,7 @@ Policy contract (from microduck_rl/scripts/infer_policy.py): 50 Hz control, 200 
 Servos here are the model's plain PD actuators (upstream trains with the BAM XL330 model).
 
 Fall monitor (Duck.mon, sampled every 50 Hz control step, latched): FALL when torso up-axis z < 0.5 (tilt > 60 deg),
-or torso height < 0.07 m, or a head-dome/head-lower/shield collision proxy touches the floor for >= 3 consecutive
+or torso height < 0.07 m, or a head-dome/head-lower/body collision proxy touches the floor for >= 3 consecutive
 steps. The bill proxy is deliberately not a fall indicator (picking uses it). Final uprightness alone is never used.
 """
 import argparse, math, os, sys
@@ -33,10 +33,10 @@ import mujoco, numpy as np, onnxruntime as ort
 ROOT = Path(os.environ.get("DUCKLING_ROOT", Path(__file__).resolve().parents[1]))
 POL = ROOT / "policies"
 OUT = ROOT / "results" / "post_fix" / "motions"
-SCENE = ROOT / "model" / "duck_v3_gc_scene.xml"
-DISABLE = None          # None | "shield" | "head" | "all": switch off those S1 collision proxies (A/B diagnosis only)
+SCENE = ROOT / "model" / "duck_v4_gc_scene.xml"
+DISABLE = None          # None | "body" | "head" | "all": switch off those S1 collision proxies (A/B diagnosis only)
 BODY_FALL_GEOMS = {"head_dome_collision", "head_lower_collision", "head_upper_skirt_collision",
-                   "shield_back_collision", "shield_side_l_collision", "shield_side_r_collision"}
+                   "body_front_upper_collision", "body_rear_upper_collision", "body_board_bay_collision"}
 
 
 def make_obstacle_scene(heights_mm, spacing=0.30, first=0.35):
@@ -48,7 +48,7 @@ def make_obstacle_scene(heights_mm, spacing=0.30, first=0.35):
         geoms += (f'<geom name="plank{i}" type="box" size="0.015 0.4 {h/2000:.5f}" pos="{x:.3f} 0 {h/2000:.5f}" '
                   f'rgba="0.85 0.55 0.2 1"/>\n')
     txt = txt.replace("</worldbody>", geoms + "</worldbody>", 1)
-    path = SCENE.parent / "duck_v3_gc_obstacles.xml"
+    path = SCENE.parent / "duck_v4_gc_obstacles.xml"
     path.write_text(txt)
     return path
 
@@ -92,7 +92,7 @@ class Monitor:
             elif (n1 in dk.proxy_names) or (n2 in dk.proxy_names):
                 self.self_pairs[tuple(sorted((n1, n2)))] += 1
         self._body_run = self._body_run + 1 if body_now else 0
-        if self._body_run >= 3 and not why: why = "head/shield proxy on the floor"
+        if self._body_run >= 3 and not why: why = "head/body proxy on the floor"
         if why and not self.fell:
             self.fell, self.t_fell, self.why = True, float(d.time), why
 
@@ -116,9 +116,9 @@ class Duck:
         self.push_x = self.m.actuator("push_x").id
         self.floor = self.m.geom("floor").id
         self.gname = [self.m.geom(g).name or f"{self.m.body(self.m.geom_bodyid[g]).name}/geom{g}" for g in range(self.m.ngeom)]
-        self.proxy_names = {n for n in self.gname if n.split("_")[0] in ("head", "bill", "shield") and n.endswith("_collision")}
+        self.proxy_names = {n for n in self.gname if n.split("_")[0] in ("head", "bill", "jaw", "body") and n.endswith("_collision")}
         for n in self.proxy_names:                                 # A/B switch, never on by default
-            if DISABLE == "all" or (DISABLE == "shield" and n.startswith("shield")) or (DISABLE == "head" and not n.startswith("shield")):
+            if DISABLE == "all" or (DISABLE == "body" and n.startswith("body")) or (DISABLE == "head" and not n.startswith("body")):
                 self.m.geom_contype[self.m.geom(n).id] = 0; self.m.geom_conaffinity[self.m.geom(n).id] = 0
         self.last = np.zeros(14, np.float32)
         self.cmd = np.zeros(13, np.float32)
@@ -198,7 +198,7 @@ def yaw_of(d):
 
 
 def self_note(d):
-    """robot-robot proxy contacts seen during the monitored phase (head vs shield etc.)"""
+    """robot-robot proxy contacts seen during the monitored phase (head vs body etc.)"""
     if not d.mon.self_pairs:
         return ""
     top = ", ".join(f"{a}~{b}x{n}" for (a, b), n in d.mon.self_pairs.most_common(3))
@@ -407,8 +407,8 @@ if __name__ == "__main__":
     ap.add_argument("--obstacle-speed", type=float, default=0.5,
                     help="forward command on the plank course (tune_obstacles.py: 0.3 stalls at 5 mm, 0.5 clears 12 mm)")
     ap.add_argument("--heights", type=float, nargs="+", default=[3, 5, 8, 10, 12], help="plank heights, mm")
-    ap.add_argument("--xml", help="scene xml to use instead of model/duck_v3_gc_scene.xml (e.g. the pre-fix model for A/B)")
-    ap.add_argument("--disable-proxies", choices=["shield", "head", "all"], help="diagnosis: switch off these collision proxies")
+    ap.add_argument("--xml", help="scene xml to use instead of model/duck_v4_gc_scene.xml (e.g. the pre-fix model for A/B)")
+    ap.add_argument("--disable-proxies", choices=["body", "head", "all"], help="diagnosis: switch off these collision proxies")
     ap.add_argument("--out", help="output directory for gifs/summary")
     a = ap.parse_args()
     if a.xml: SCENE = Path(a.xml).resolve()

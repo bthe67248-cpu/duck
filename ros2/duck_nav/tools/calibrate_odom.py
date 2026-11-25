@@ -45,7 +45,7 @@ def run(m, sess, inp, cmd, seconds=12.0, settle=3.0):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--mjcf", default=os.path.join(ROOT, "ros2", "duck_nav", "mjcf", "duck_v3_gc_world.xml"))
+    ap.add_argument("--mjcf", default=os.path.join(ROOT, "ros2", "duck_nav", "mjcf", "duck_v4_gc_world.xml"))
     ap.add_argument("--policy", default=os.path.join(ROOT, "policies", "velstand.onnx"))
     ap.add_argument("--out", default=os.path.join(ROOT, "results", "post_fix", "odom_calibration.txt"))
     a = ap.parse_args()

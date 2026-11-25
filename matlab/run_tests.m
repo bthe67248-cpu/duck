@@ -96,7 +96,7 @@ set_param(dly, 'Commented','through');
 %% 6. Mass error: torso +10 %% / -10 %%
 for tag = ["mplus","mminus"]
     clear mj_initbus          % fresh helper process: the blockset's bus parser can crash on repeated model loads
-    set_param(plant, 'xmlFileRel', fullfile(DUCK_PROJ,'model', "duck_v3_" + tag + "_scene.xml"));
+    set_param(plant, 'xmlFileRel', fullfile(DUCK_PROJ,'model', "duck_v4_" + tag + "_scene.xml"));
     ra = runOne(mdl, 1, 0, 20, CRIT, HOME, SAT_ANKLE);  rb = runOne(mdl, 1, 2, 6, CRIT, HOME, SAT_ANKLE);
     logf('6. Torso mass %-6s         : stand %s (band %.2f deg, tilt max %.1f), 2 N push %s (peak %.1f deg, tilt max %.1f)\n', ...
          tag, verdict(ra), ra.pitchBand, ra.tiltMax, verdict(rb), rb.pitchPeak, rb.tiltMax);

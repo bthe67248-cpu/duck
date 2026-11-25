@@ -1,6 +1,6 @@
 """tune_gains.py -- sweep the ankle PD gains against extra delay and pushes (MuJoCo only, fast).
 
-Usage:  .venv\\Scripts\\python.exe scripts\\tune_gains.py [model\\duck_v3_scene.xml]
+Usage:  .venv\\Scripts\\python.exe scripts\\tune_gains.py [model\\duck_v4_scene.xml]
 For every (K_TH, K_D) pair it runs: extra delay 0..4 controller samples with a +2 N and a
 -1.5 N push (0.05 s), 10 s each, and counts how many of those runs stay standing.
 Python delay N corresponds to Simulink "Extra delay" N-1 (Simulink's rate transitions add one).
@@ -10,7 +10,7 @@ from pathlib import Path
 import mujoco, numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-xml = sys.argv[1] if len(sys.argv) > 1 else str(ROOT / "model" / "duck_v3_scene.xml")
+xml = sys.argv[1] if len(sys.argv) > 1 else str(ROOT / "model" / "duck_v4_scene.xml")
 m = mujoco.MjModel.from_xml_path(xml)
 kid = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_KEY, "sim_start")
 home = m.key_ctrl[kid][:14].copy()
