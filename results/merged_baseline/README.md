@@ -41,5 +41,8 @@ Per run: `table.txt`.
 - One run per cell: differences of one beacon or a few tenths of a metre between rows are within run-to-run noise.
   The layout A vs B gap and the diverging errors-on run are the robust findings.
 
+**Model.** These runs predate the head and body fit fixes (PR #16): the torso was 257.6 g, now 278.2 g with a lower COM
+and different inertia. They are the earlier reference, not a measurement of the current model.
+
 **Not covered.** Hardware; the yaw sweep (off by default, no measured benefit in PR #13's repeated trials); repeated
 runs per cell.

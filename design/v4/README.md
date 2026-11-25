@@ -187,6 +187,46 @@ stiffness on a print first).
 - Collision proxies (`scripts/collision_proxies.json`) for the head and jaw are unchanged; the body's follow the outer
   blocks (a new box for the connector well).
 
+## Validation commands and the jaw control path (third review, 25 November 2026)
+
+- **Contact gate (`scripts/check_contacts.py`).** It required `body_xt60_keel_collision`, a block the shell no longer
+  has, so it refused every new ground-contact model before checking anything. The required proxies now come from the
+  files the model is built from (`scripts/collision_proxies.json` for the head and jaw, the outer blocks of
+  `v4_params.json` for the body), and a test builds the ground-contact model and runs the gate on it.
+  **Running it shows the current geometry fails the gate** (6000 poses, seed 1; no self-contact at STAND):
+
+  | Pair (collision proxies) | Poses in the sampled operating envelope |
+  |-|-|
+  | `body_board_bay` – `head_lower` | 188 (3.1 %) |
+  | `body_rear_upper` – `head_lower` | 172 (2.9 %) |
+  | `body_front_upper` – `head_lower` | 75 (1.2 %) |
+  | `body_board_bay` – `head_upper_skirt` | 17 (0.3 %) |
+  | `body_connector_well` – left / right shank | 14 / 14 (0.2 %) |
+  | `body_rear_upper` – `head_upper_skirt` | 5 (0.1 %) |
+
+  The head pairs need the neck at its upper limit (0.70 rad, +0.35 from STAND) together with the head pitched about
+  0.6 rad; no single head joint reaches the body over its full range. `check_v4_fit.py` (mesh against mesh) finds no
+  head–body clash in its envelope, so the boxes are conservative here, but they are what the simulation collides.
+  **Not fixed here; decided approach** (head-assembly work): tighten the proxies where mesh checks confirm real
+  clearance while keeping conservative coverage of the shells; verify the combined neck/head-pitch sweep (both joints
+  together, not each alone) and shank clearance by mesh and by proxy; add a coupled neck/head-pitch limit only if the
+  real mechanism needs it, never an independent limit on either joint. Until then the gate is expected to fail on these
+  pairs, and motion/navigation results on this geometry are development comparisons, not a reference baseline.
+- **Mesh build.** `head_lower_v4.stl` held a zero-volume pair of triangles (an n-gon the STL writer folded into two
+  back-to-back faces, invisible to `drop_slivers` before triangulation). `build_v4.py` now triangulates before and after
+  cleaning and refuses to export a part with an edge not shared by exactly two faces; the head parts were rebuilt
+  (volumes unchanged: 56.72 / 38.20 / 4.76 cm³). `prep_meshes.py` fails on an open print mesh or an open decimated
+  asset (checked on the file as written; the jaw now keeps its full 54 k triangles, since decimating it opened it), marks
+  `head_upper_v4_whole` as a placement `reference` rather than an asset, and `preflight.py` skips references.
+  `make_duck.py` stops on an open V4 mesh instead of warning. Effect on the model: inertias change in the fifth digit.
+- **Jaw control in `world_sim`.** New `/duck/mouth_cmd` (`std_msgs/Float64`, rad, clipped to 0–0.52), outside the
+  policy's 14-joint observation/action, delayed like the other servos and expiring to closed after `cmd_timeout`;
+  `/joint_states` now ends with `mouth` (simulated angle, no encoder error model). The mouth joint had no class and so
+  inherited the upstream default friction of 0.1 N·m, a ±0.2 rad dead band at the servo's kp 0.5; it now has the head
+  XL330 joints' 0.0048 (ESTIMATE) and settles within 0.01 rad in about 0.23 s. Checked through ROS: 0.401 rad while
+  commanding 0.4, 0.001 rad after the commands stop.
+- The motion and navigation baselines predate this CAD revision (see "Baseline of the merged code").
+
 ## Mechanical validation and dynamics (review fixes, 24 November 2026)
 
 A review found that the fit check missed deep penetration, the LiPo kept the upstream battery's mass, the servo delay
@@ -705,6 +745,8 @@ All of the above merged together (main at 1bb43b3), 600 s, seeds 0–5, full tab
 | Layout B, errors on | 2/6 | 0.83 m (0.82 m) | 3.09 m | 63 % |
 
 Earlier tables in this file come from individual branches and are not measurements of this combination.
+These runs used the model before the fit fixes above (torso 257.6 g; now 278.2 g with a lower COM and different
+inertia). Keep them as the earlier reference and compare the current model against them once its geometry is final.
 
 ## Files
 

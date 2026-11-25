@@ -72,14 +72,19 @@ vm = model / "v4_meshes.json"
 if not vm.exists():
     err("model/v4_meshes.json missing (run scripts/prep_meshes.py)")
 else:
+    n_ref = 0
     for n, r in json.loads(vm.read_text()).items():
-        if not (model / "assets" / f"{n}.stl").exists():
-            err(f"model/assets/{n}.stl missing")
         if not (ROOT / "design" / "v4" / f"{n}.stl").exists():
             err(f"design/v4/{n}.stl missing")
-        elif not r.get("watertight", False):
+        if r.get("role") == "reference":                     # placement source: bounds only, no simulation asset
+            n_ref += 1; continue
+        if not (model / "assets" / f"{n}.stl").exists():
+            err(f"model/assets/{n}.stl missing")
+        if not r.get("watertight", False):
             err(f"design/v4/{n}.stl is not watertight")
-    ok("model/v4_meshes.json + V4 asset meshes + design/v4 print meshes (watertight)")
+        if not r.get("asset_watertight", False):
+            err(f"model/assets/{n}.stl is not watertight (or v4_meshes.json predates the check: re-run prep_meshes.py)")
+    ok(f"model/v4_meshes.json + V4 asset meshes + design/v4 print meshes (watertight); {n_ref} placement reference(s)")
 led = model / "mass_ledger.json"
 if led.exists() and "PROVISIONAL" in json.loads(led.read_text()).get("status", ""):
     warn("mass ledger is PROVISIONAL (30% infill proxy, not slicer/scale values)")

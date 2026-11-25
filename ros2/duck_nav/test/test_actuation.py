@@ -67,3 +67,38 @@ def test_same_response_as_mujoco_native_actuator_delay_where_available():
         dp.ctrl[:] = s.step([target])
         mujoco.mj_step(native, dn); mujoco.mj_step(plain, dp)
     assert dp.qpos[0] == pytest.approx(dn.qpos[0], abs=1e-6)
+
+
+def test_mouth_command_clips_rejects_nan_and_expires_to_closed():
+    from duck_nav.actuation import MouthCommand
+    c = MouthCommand(0.0, 0.5, timeout=0.5)
+    assert c.target(0.0) == 0.0                           # closed before any command
+    assert c.set(0.3, 1.0) and c.target(1.2) == pytest.approx(0.3)
+    c.set(2.0, 1.3); assert c.target(1.3) == pytest.approx(0.5)
+    c.set(-1.0, 1.4); assert c.target(1.4) == 0.0
+    assert not c.set(float("nan"), 1.5) and c.target(1.5) == 0.0
+    c.set(0.2, 2.0); assert c.target(2.5) == pytest.approx(0.2) and c.target(2.51) == 0.0
+
+
+MOUTH_XML = """<mujoco><compiler angle="radian"/><option timestep="0.005" gravity="0 0 0"/>
+<worldbody><body><joint name="leg" type="hinge" damping="0.05"/><geom type="box" size=".05 .02 .02" mass="0.2"/>
+<body pos=".1 0 0"><joint name="mouth" type="hinge" axis="0 1 0" range="0 0.5236" damping="0.01" armature="0.0005"/>
+<geom type="box" size=".03 .01 .005" pos=".03 0 0" mass="0.005"/></body></body></worldbody>
+<actuator><position name="leg" joint="leg" kp="0.5"/><position name="mouth" joint="mouth" kp="0.5" kv="0.02"
+ctrlrange="0 0.5236"/></actuator></mujoco>"""
+
+
+def test_mouth_actuator_is_found_by_name_and_follows_its_command():
+    from duck_nav.actuation import MouthCommand, find_mouth
+    m = mujoco.MjModel.from_xml_string(MOUTH_XML); d = mujoco.MjData(m)
+    a, qadr, _ = find_mouth(m)
+    assert m.actuator(a).name == "mouth"
+    assert find_mouth(mujoco.MjModel.from_xml_string(XML.format(custom=""))) is None
+    c = MouthCommand(*m.actuator_ctrlrange[a], timeout=0.5)
+    servo = ServoDelay(0.02, m.opt.timestep, [0.0])
+    c.set(0.4, 0.0)
+    for k in range(200):                                  # 1 s, the command refreshed every step
+        c.set(0.4, k * m.opt.timestep)
+        d.ctrl[a] = servo.step([c.target(k * m.opt.timestep)])[0]
+        mujoco.mj_step(m, d)
+    assert d.qpos[qadr] == pytest.approx(0.4, abs=0.02), d.qpos[qadr]
