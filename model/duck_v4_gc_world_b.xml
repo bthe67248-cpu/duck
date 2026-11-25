@@ -1,0 +1,37 @@
+<mujoco model="scene">
+  <include file="duck_v4_gc.xml" />
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0" />
+    <rgba haze="0.15 0.25 0.35 1" />
+    <global azimuth="160" elevation="-20" />
+  </visual>
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072" />
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300" />
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2" />
+  <material name="beacon_mat" rgba="1 0 1 1" emission="0.8"/>
+</asset>
+  <worldbody>
+    <light pos="0 0 3.5" dir="0 0 -1" directional="true" />
+    <geom name="floor" size="0 0 0.05" pos="0 0 0" type="plane" material="groundplane" />
+  <geom name="w_south" type="box" size="2.600 0.030 0.150" pos="1.900 -2.000 0.150" euler="0 0 0.000" rgba="0.75 0.75 0.7 1"/>
+<geom name="w_north" type="box" size="2.600 0.030 0.150" pos="1.900 2.000 0.150" euler="0 0 0.000" rgba="0.75 0.75 0.7 1"/>
+<geom name="w_west" type="box" size="0.030 2.000 0.150" pos="-0.700 0.000 0.150" euler="0 0 0.000" rgba="0.7 0.75 0.75 1"/>
+<geom name="w_east" type="box" size="0.030 2.000 0.150" pos="4.500 0.000 0.150" euler="0 0 0.000" rgba="0.7 0.75 0.75 1"/>
+<geom name="q1" type="box" size="1.500 0.030 0.150" pos="1.500 0.650 0.150" euler="0 0 0.000" rgba="0.3 0.6 0.4 1"/>
+<geom name="q2" type="box" size="0.030 0.550 0.150" pos="3.300 -1.450 0.150" euler="0 0 0.000" rgba="0.3 0.4 0.7 1"/>
+<geom name="box1" type="box" size="0.100 0.100 0.060" pos="1.000 -1.000 0.060" euler="0 0 0.300" rgba="0.9 0.6 0.1 1"/>
+<geom name="box2" type="box" size="0.120 0.080 0.050" pos="2.200 -1.500 0.050" euler="0 0 0.000" rgba="0.2 0.7 0.8 1"/>
+<geom name="box3" type="box" size="0.070 0.070 0.070" pos="2.000 1.350 0.070" euler="0 0 0.600" rgba="0.8 0.2 0.2 1"/>
+<geom name="box4" type="box" size="0.100 0.120 0.080" pos="0.200 1.400 0.080" euler="0 0 0.200" rgba="0.8 0.8 0.2 1"/>
+<geom name="box5" type="box" size="0.090 0.090 0.040" pos="4.000 0.900 0.040" euler="0 0 0.000" rgba="0.3 0.8 0.3 1"/>
+<geom name="beacon" type="cylinder" size="0.04 0.14" pos="3.950 -1.550 0.14" material="beacon_mat"/>
+</worldbody>
+  <keyframe>
+    <key name="INIT" qpos="0 0 0.12 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" ctrl="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" />
+    <key name="STAND" qpos="0 0 0.12 1 0 0 0 0 -0.08726646259971647 -0.457924 -0.004940 0.452984 0.3490658503988659 0.3490658503988659 0 0 0 0 0.08726646259971647 0.457924 0.004940 -0.452984" ctrl="0 -0.08726646259971647 -0.457924 -0.004940 0.452984 0.3490658503988659 0.3490658503988659 0 0 0 0.08726646259971647 0.457924 0.004940 -0.452984 0 0 0" />
+    <key name="SIT" qpos="0 0 0.07 1 0 0 0 0 0 -0.5236 1.0472 0 0.5 1.6 0 0 0 0 0 0.5236 -1.0472 0" ctrl="0 0 -0.5236 1.0472 0 0.5 1.6 0 0 0 0 0.5236 -1.0472 0 0 0 0" />
+    <key name="FOLD" qpos="0 0 0.07 1 0 0 0 0 0 1.57 1.57 0 1 1 0 0 0 0 0 -1.57 -1.57 0" ctrl="0 0 1.57 1.57 0 1 1 0 0 0 0 -1.57 -1.57 0 0 0 0" />
+    <key name="sim_start" qpos="0 0 0.1172 1 0 0 0 0 -0.08726646259971647 -0.457924 -0.004940 0.452984 0.3490658503988659 0.3490658503988659 0 0 0 0 0.08726646259971647 0.457924 0.004940 -0.452984" ctrl="0 -0.08726646259971647 -0.457924 -0.004940 0.452984 0.3490658503988659 0.3490658503988659 0 0 0 0.08726646259971647 0.457924 0.004940 -0.452984 0 0 0" />
+  </keyframe>
+</mujoco>

@@ -396,8 +396,14 @@ before), covered 89 % of the room instead of 57 %, and walked twice as far; mean
 still worse than the head-mounted A010 (0.08 m), and late drift remains: three seeds end with 1.4–2.1 m error after
 the beacon was reached. The yaw sweep cut the worst-case error on those seeds (max under 1 m on all six, against 2.1 m)
 and reached the beacon sooner, at slightly lower coverage. On some seeds it was worse (seeds 3 and 4 by mean error),
-and with one run per seed the difference is within the noise, so it stays opt-in until a repeat confirms it. Frame cost
+and with one run per seed the difference is within the noise, so it stays opt-in until a repeat confirms it (the repeat below did not). Frame cost
 is unchanged (mean 39–54 ms per 25 × 25 frame on a desktop CPU).
+
+**Corners (later change, `results/corner_nav/`).** The clearance guard used to fire 24–162 times per run at corners,
+because pure pursuit cut inside the margin-hugging shortest path. The planner now keeps off walls where there is room,
+the lookahead and speed shrink at corners, and a clear arc is searched before stopping. Guard events fell to 1–12 per
+run, and the duck reached the beacon on 6/6 seeds against 4/6 on the same `main`, with 93 % coverage against 80 %.
+Exploration still does not complete.
 
 Ideas not adopted: a wider normal search while turning was not needed once the ratchet was fixed (the relocalisation
 window variant above did nothing). The 0.13 m sensor height is not a problem for `scan_from_points`: at 60° vertical
@@ -408,6 +414,115 @@ classification. On the real A010, range noise and multipath near the floor can b
 **100 × 100 vs 25 × 25:** SLAM frame cost on a desktop CPU 16–52 ms (25×25) vs 36–91 ms (100×100) per frame, about 2× more.
 On the UNO Q (A53, roughly 5–10× slower than a desktop CPU) 25×25 at about 5–10 Hz is plausible, 100×100 only at 1–3 Hz.
 Accuracy was not better at 100×100 in these runs. Binning to 25×25 (or 50×50) is the sensible default.
+
+### Late drift and the yaw sweep (branch `v4-slam-drift`)
+
+**Diagnosis.** Replaying the three runs that ended with 1.4–2.1 m error (`v4snew_s1`, `_s2`, `_s5`; the replay reproduces
+0.65 / 0.37 / 0.48 m mean) and reading the per-frame dumps, every big step in the error is an *aliased* match:
+
+- `_s5`, 155 s: facing a wall, the duck relocalises (±0.8 m, weak prior) and takes a 0.6 m jump *along* the wall. The jump
+  is "confirmed", because the next relocalisation match sees the same alias in an overlapping sweep window. The frames
+  are then mapped at the wrong pose and the error is permanent.
+- `_s2`, 236–243 s: normal tracking with 9–11 hits per frame; accepted and partial matches walk the pose 1.1 m in 5 s.
+- `_s1`, 126–200 s: standing with 3–5 hits per frame, accepted matches turn the heading by 14–50°.
+
+The match covariance is computed only over ±4 cells (±0.1 m) around the optimum, so a second, separate peak 0.6 m away
+does not widen it, and the match looks confident.
+
+**Second-peak test** (`DuckSLAM.match_correlative`, `peak_margin`): after the branch and bound, a second exact branch
+and bound finds the best score among candidates that differ from the optimum by more than 0.125 m in a *constrained*
+direction (both axes for a full match, the across-wall axis for a partial one, so the expected ridge along a wall does not
+count) or by more than 5° in heading. `match_gap` = best score − that score (log-likelihood units, 40 effective points).
+In the replays the harmful corrections (error worse by > 5 cm, 15–30 per run) sit almost all at gaps below 1; at 2 and
+above they are rare. New `FrameLocalizer` options use it (all default **off**; launch arguments of the same names):
+
+| Option | Effect |
+|-|-|
+| `peak_margin` | reject any match whose gap is below this |
+| `reloc_peak_margin` | the same, only while relocalising (wide window, weak prior) |
+| `map_min_gap` | after bootstrap, map only accepted matches with at least this gap |
+| `partial_tracks` | a partial (along-wall) match restarts the relocalisation timer |
+
+**Replay** (12 recorded runs: `v4snew_s0`–`5` without and `v4syaw_s0`–`5` with yaw sweep; mean error, runs whose error ever
+exceeded 1 m, share of time the motion gate would allow driving). Replays are chaotic (one rejected frame changed one run
+from 0.65 to 1.17 m), so only many runs mean anything:
+
+| Policy | Mean error | Runs > 1 m | Motion gate ok |
+|-|-|-|-|
+| V4 defaults | 0.52 m | 5 / 12 | 58 % |
+| `reloc_peak_margin` 1 | **0.40 m** | **4 / 12** | 57 % |
+| `map_min_gap` 1.5 + `reloc_peak_margin` 1 | 0.47 m | 6 / 12 | 53 % |
+| `map_min_gap` 2 + `reloc_peak_margin` 1 | 0.73 m | 9 / 12 | 49 % |
+| `map_min_gap` 2 + `reloc_peak_margin` 1.5 | 0.69 m | 9 / 12 | 49 % |
+| `peak_margin` 1 (6 runs without sweep) | 0.34 m | 1 / 6 | 54 % |
+| `map_min_gap` 3 + `reloc_peak_margin` 1 + `partial_tracks` (6 runs) | 2.49 m | 6 / 6 | 25 % |
+
+`peak_margin` everywhere lowers the replay error but holds the duck still (closed loop below). Gating the map
+(`map_min_gap`) starves it: it stops growing where new views are naturally ambiguous, the duck gets lost or stops
+exploring, worst with the sweep. `partial_tracks` was inconsistent (0.42 m together with `reloc_peak_margin`, but one run
+lost at 1.95 m with the map gate). Only `reloc_peak_margin` alone helped without costing driving time.
+
+**Closed loop.** 600 s, realistic profile, 25 × 25 zones, seeds 0–5, **two runs per seed and cell** (12 runs per cell);
+every run held real time (`sim N s, wall N s` equal in its `launch.log`). Main's runs are `v4snew_*` / `v4syaw_*`
+(the `v4-body-slam` runs above) plus `dsw_boff_*` / `dsw_bon_*`; `reloc_peak_margin` runs are `dc2offa_s0`–`2`,
+`dc2offr_s3`–`5`, `dc2offb_*` and `dc2on{a,b}_*` (`dc2offa_s3`–`5` lost their bags and were replaced by the reruns
+`dc2offr_*`, a rule fixed before those ran; the lost runs had 0.16–0.47 m mean error and reached the beacon 3/3).
+Metrics from `result.json` and `tools/trial_metrics.py` on the bags: error near walls = true body centre within 0.25 m
+of an obstacle; SLAM ok = share of the time `/slam/state` was "ok" after it first was; recovery = length of the spells
+in which it was not. Exploration completion is not tabulated: no run reported it complete within 600 s.
+Every run, with all of these values: `results/v4_slam_drift/closed_loop_runs.csv`.
+
+| Policy | Runs | SLAM mean (median) / worst max | Near walls / open | Time > 0.5 m | SLAM ok | Recovery mean / max | Beacon (mean time) | Coverage | Falls |
+|-|-|-|-|-|-|-|-|-|-|
+| main, sweep off | 12 | 0.42 (0.40) / 2.88 m | 0.44 / 0.37 m | 22 % | 60 % | 2.6 / 69 s | **12/12** (258 s) | 89 % | 2 |
+| main, sweep 0.4 rad/s | 12 | 0.38 (0.30) / 3.13 m | 0.34 / 0.36 m | 23 % | 56 % | 3.7 / 355 s | 11/12 (241 s) | 84 % | 3 |
+| `reloc_peak_margin` 1, sweep off | 12 | 0.43 (0.31) / 3.09 m | 0.38 / 0.47 m | 18 % | 52 % | 5.0 / 398 s | 9/12 (244 s) | 86 % | 4 |
+| `reloc_peak_margin` 1, sweep 0.4 rad/s | 12 | 0.39 (0.27) / **1.92 m** | 0.40 / 0.38 m | 17 % | 52 % | 4.8 / 249 s | 11/12 (220 s) | 84 % | 2 |
+| `peak_margin` 1 + `map_min_gap` 2 + `partial_tracks` | 3 | 0.29 (0.18) / 1.44 m | 0.31 / 0.21 m | 21 % | 23 % | 9.3 / 257 s | 1/3 | 63 % | 1 |
+| `map_min_gap` 2 + `reloc_peak_margin` 1 | 6 | 0.27 (0.27) / 1.14 m | 0.25 / 0.27 m | 12 % | 42 % | 6.6 / 302 s | 4/6 | 75 % | 2 |
+
+Two-sided Mann–Whitney over the 12 runs per cell, per-run mean error: sweep on vs off p = 0.34 (main) and 0.71
+(`reloc_peak_margin`); `reloc_peak_margin` vs main p = 0.51 (sweep off) and 0.75 (sweep on). Per-run *maximum* error:
+only `reloc_peak_margin` + sweep vs main without sweep reaches p = 0.03 (one of ten comparisons, so weak evidence).
+
+**Second layout** (`scripts/worldgen.py --layout b`: same room, one 3 m featureless partition parallel to the north wall,
+beacon behind a short wall in the south-east corner; one run per seed, seeds 0–2):
+
+| Policy | SLAM mean / worst max | Time > 0.5 m | SLAM ok | Beacon | Coverage |
+|-|-|-|-|-|-|
+| main, sweep off | 0.39 / 0.89 m | 10 % | 37 % | 0/3 | 51 % |
+| main, sweep 0.4 rad/s | 0.51 / 1.49 m | 49 % | 52 % | 1/3 | 69 % |
+| `reloc_peak_margin` 1, sweep off | 0.50 / 1.45 m | 36 % | 53 % | 2/3 | 70 % |
+| `reloc_peak_margin` 1, sweep 0.4 rad/s | 0.46 / 2.32 m | 32 % | 17 % | 0/3 | 46 % |
+
+This layout is much harder for the navigator (the duck tends to stay north of the partition; 3 of 12 runs reach the
+beacon), and the map shows the partition twice, about 15 cm apart: drift along that wall written into the map. With three
+runs per cell it decides nothing about the options; the sweep did not help here either.
+
+**Result.**
+
+- **Yaw sweep: stays off by default.** With two runs per seed it makes no measurable difference with either SLAM policy
+  (mean 0.38 against 0.42 m with main's, worst case 3.1 against 2.9 m, beacon 11/12 against 12/12, slightly less SLAM
+  "ok" time), and none in the second layout. The gain seen with one run per seed (table above) was noise. An adaptive
+  sweep (on only when the scan geometry is weak) was therefore not built: the fixed sweep gave no gain for it to keep.
+- **`reloc_peak_margin`: stays opt-in (default off).** In replay it removes the confirmed aliased relocalisation jumps
+  (0.52 → 0.40 m over 12 bags), but closed loop it is no better than main: same mean error, lower median and less time
+  above 0.5 m, but longer "weak" spells (rejected relocalisation matches; 5.0 against 2.6 s), the motion gate open less
+  (52 against 60 %), and 9/12 beacons against 12/12. Combined with the sweep, its worst case was the lowest of all
+  (1.9 m), which is the one hint worth a further repeat. Enable with `reloc_peak_margin:=1.0`.
+- `peak_margin` everywhere, `map_min_gap` and `partial_tracks` stay off: closed loop they stall the duck (SLAM "ok"
+  23 %) or starve the map (4/6 beacons). The launch defaults are unchanged from main.
+- Frame cost of the peak test (desktop CPU, synthetic 200-point scan): 21.5 → 29.1 ms per normal match, 49.5 → 63.7 ms
+  per relocalisation match; with `reloc_peak_margin` only relocalising frames pay it.
+
+**What is left.** Late drift is not solved. Two failure kinds remain in the runs above. (1) Translation along a
+featureless wall *while tracking*, where the along-wall direction is weakly constrained and accepted matches walk the
+pose (`v4snew_s2` 236 s: 1.1 m in 5 s with 9–11 hits; the doubled partition in layout b). (2) Jumps while the duck stands
+closer to an obstacle than the A010's 0.2 m minimum range, so a handful of zones decide the match (`dc2offb_s5`: 0.17 →
+1.7 m within 20 s of a weak spell 9–16 cm from a partition end; `v4snew_s1` 126 s with 3–5 hits per frame). Candidates
+for the next step: a minimum number of hits in the *newest frame* (not only in the sweep window) before a match may move
+the pose; bounding along-wall corrections by the measured motion; keeping raw keyframes so a region can be rebuilt after a
+relocalisation (loop closure stays off). None of them is in this branch.
 
 ## Files
 

@@ -103,6 +103,10 @@ class SlamNode(Node):
         self.declare_parameter("reloc_partial", True)          # apply partial matches while relocalising
         self.declare_parameter("confirm_free_xy", 0.0)         # m: smaller relocalisation corrections need no confirmation
         self.declare_parameter("confirm_free_th", 0.0)         # rad
+        self.declare_parameter("peak_margin", 0.0)             # reject matches with a separate peak this close in score (0 = off)
+        self.declare_parameter("map_min_gap", 0.0)             # map only matches this far above any separate peak (0 = off)
+        self.declare_parameter("partial_tracks", False)        # partial (along-wall) matches restart the relocalisation timer
+        self.declare_parameter("reloc_peak_margin", 0.0)       # as peak_margin, while relocalising only (0 = off)
         # translation for dead reckoning: command (gait command x gain x slip) | flow | flow_or_command (camera floor
         # optical flow, command where flow finds no fit; offline replay: lower error on 9/12 bags, results/floor_flow)
         self.declare_parameter("translation", "command")
@@ -162,6 +166,10 @@ class SlamNode(Node):
             reloc_partial=bool(self.get_parameter("reloc_partial").value),
             confirm_free_xy=float(self.get_parameter("confirm_free_xy").value),
             confirm_free_th=float(self.get_parameter("confirm_free_th").value),
+            match_kw={"peak_margin": float(self.get_parameter("peak_margin").value)},
+            map_min_gap=float(self.get_parameter("map_min_gap").value),
+            partial_tracks=bool(self.get_parameter("partial_tracks").value),
+            reloc_peak_margin=float(self.get_parameter("reloc_peak_margin").value),
             scan_timeout=float(self.get_parameter("scan_timeout").value),
             match_timeout=float(self.get_parameter("match_timeout").value))
         self.health = self.loc.health
@@ -169,7 +177,9 @@ class SlamNode(Node):
                                f"+-{math.degrees(self.loc.reloc_ang):.1f} deg after {self.loc.relocalize_after:.1f} s unhealthy, "
                                f"confirm {self.loc.reloc_confirm}, bootstrap until turned {self.loc.bootstrap_turn:.1f} rad; map keyframes "
                                f"{self.loc.map_move:.2f} m / {math.degrees(self.loc.map_turn):.0f} deg, unknown_ll {self.slam.unknown_ll}, "
-                               f"reloc partial {self.loc.reloc_partial}, unconfirmed reloc up to {self.loc.confirm_free_xy:.2f} m")
+                               f"reloc partial {self.loc.reloc_partial}, unconfirmed reloc up to {self.loc.confirm_free_xy:.2f} m; "
+                               f"peak margin {self.loc.match_kw.get('peak_margin', 0.0):g}, map min gap {self.loc.map_min_gap:g}, "
+                               f"partial tracks {self.loc.partial_tracks}, reloc peak margin {self.loc.reloc_peak_margin:g}")
         self.last_frame_ns = -1
         self.last_empty_t = None
         self.cmd = (0.0, 0.0); self.cmd_t = -1e9; self.last_imu_t = None

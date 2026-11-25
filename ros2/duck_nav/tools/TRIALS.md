@@ -123,6 +123,15 @@ Use `--config '{"loc":{"gain":0.6}}'` for shared policy overrides;
 `--legacy`; unknown top-level options fail. Legacy mode retains the earlier
 matcher experiment policy. It is not the current live default.
 
+The second-peak options go through `loc` too, e.g.
+`--config '{"loc":{"reloc_peak_margin":1.0}}'` or `{"loc":{"match_kw":{"peak_margin":1.0},"map_min_gap":2.0}}`;
+`--dump` then also writes each match's `gap`. Replays are chaotic (one changed frame can move a run's mean error by
+0.5 m), so compare policies over many bags, not one.
+
+`tools/trial_metrics.py <bag>... --world <world.json>` scores live runs from their bags: SLAM error split near walls
+(true clearance below `--near`, default 0.25 m) and in the open, time above 0.5 m error, share of time
+`/slam/state` was "ok", and the number and length of not-ok spells (recovery time).
+
 Offline replay holds the recorded path fixed and sorts events by acquisition
 time. It does not reproduce ROS queue loss, callback timing or publication
 latency, and therefore cannot establish live navigation or rate-2 safety.

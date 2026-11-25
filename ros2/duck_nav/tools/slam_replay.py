@@ -348,7 +348,8 @@ def run(cfg, dump=None):
                                  slam.match_reason, round(slam.match_overlap, 3), int(accepted), int(slam.map_version != v0),
                                  int(loc.relocalizing), int(loc.bootstrap), int(hit.sum()), len(ang), loc.health.state(ts),
                                  round(math.sqrt(float(np.linalg.eigvalsh(slam.match_cov[:2, :2])[1])), 4)
-                                 if slam.match_cov is not None else ""))
+                                 if slam.match_cov is not None else "",
+                                 round(slam.match_gap, 3) if slam.match_gap is not None else ""))
             reasons[slam.match_reason] = reasons.get(slam.match_reason, 0) + 1
             n_acc += bool(accepted); slips.append(slam.slip)
             relocs += loc.relocalizing
@@ -434,7 +435,8 @@ if args.dump:
     with open(args.dump, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["t", "gt_x", "gt_y", "gt_yaw", "acq_x", "acq_y", "acq_yaw", "x", "y", "yaw", "err_m", "yaw_err_deg",
-                    "reason", "overlap", "accepted", "mapped", "reloc", "bootstrap", "hits", "bins", "health", "std_xy"])
+                    "reason", "overlap", "accepted", "mapped", "reloc", "bootstrap", "hits", "bins", "health", "std_xy",
+                    "gap"])
         w.writerows(rows)
 if args.output:
     args.output.parent.mkdir(parents=True, exist_ok=True)
