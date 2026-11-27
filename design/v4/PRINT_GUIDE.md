@@ -16,17 +16,19 @@ sticking out through the original outer skin.
 
 ## 1. Parts and checks (current geometry)
 
-| File in `design/v4/print/` | What it is | Size (mm, as oriented) | Volume | Walls (5th pct / median) | Check |
+| File in `design/v4/print/` | What it is | Printed as | Volume | Walls (5th pct / median) | Check |
 |-|-|-|-|-|-|
-| `head_upper_v4.stl` | dome + upper bill, M12 lens opening, mouth-servo cradle, 4 pilot holes | 98 × 50 × 122 | 61.1 cm³ | 1.49 / 3.11 | ok |
-| `head_lower_v4.stl` | lower shell: neck clearance, jaw hinge ears, 4 clearance holes | 95 × 22 × 121 | 38.9 cm³ | 1.11 / 3.0 | ok |
-| `jaw_v4.stl` | jaw (lower bill), hinge bosses, pushrod lever | 76 × 17 × 31 | 4.8 cm³ | 0.64 / 1.96 | **warn**: thin areas |
-| `body_shell_v4.stl` | body: board bay, battery compartment, connector well, A010 pocket, trunk mounts | 136 × 69 × 89 | 68.9 cm³ | 1.53 / 2.0 | ok |
-| `body_lid_v4.stl` | rear lid of the board bay | 85 × 60 × 5 | 7.5 cm³ | 1.5 / 1.8 | ok |
-| `keel_cover_v4.stl` | bottom cover of the connector well, LiPo rails | 33 × 30 × 20 | 3.2 cm³ | 2.0 / 2.0 | ok |
+| `head_upper_v4.stl` | dome + upper bill, M12 lens opening, mouth-servo cradle, 4 pilot holes | seam down | 61.0 cm³ | 1.48 / 3.13 mm | ok |
+| `head_lower_v4.stl` | lower shell: neck clearance, jaw hinge ears and webs, 4 clearance holes, 2 counterbores | seam down | 38.9 cm³ | 1.11 / 3.0 mm | ok |
+| `jaw_v4.stl` | jaw (lower bill), hinge bosses, pushrod lever | on its side | 4.7 cm³ | 0.62 / 1.91 mm | **warn**: thin areas |
+| `body_shell_v4.stl` | body: board bay, battery compartment, connector well, A010 pocket, trunk mounts | upside down | 68.9 cm³ | 1.53 / 2.0 mm | ok |
+| `body_lid_v4.stl` | rear lid of the board bay | flat | 7.5 cm³ | 1.5 / 1.8 mm | ok |
+| `keel_cover_v4.stl` | bottom cover of the connector well, LiPo rails | rails up | 3.2 cm³ | 2.0 / 2.0 mm | ok |
+
+No added feature sticks out through the shells' original skin (protrusion check: 0 samples).
 
 All six are closed solids. The jaw's thin areas are along the top lip of the bill and the back of the heel. They
-come from the upstream shell (the original jaw had them too: 5.9 % of the surface under 0.8 mm, 6.2 % now).
+come from the upstream shell (the original jaw had them too: 5.9 % of the surface under 0.8 mm, 6.4 % now).
 Turn on variable-width walls (Arachne: PrusaSlicer 2.5+, Cura 5+, OrcaSlicer, Bambu Studio) and look at those
 areas in the slicer preview.
 
@@ -101,13 +103,19 @@ After printing, clear every hole with a drill bit of the listed size. Printed ho
 ## 6. What the checks cover, and what they do not
 
 - `design/v4/check_v4_fit.py`: mesh-against-mesh fit of every part at rest, over 3000 sampled poses and over
-  recorded motions. Result for this geometry: no static clash except the known 0.9 mm contact face of the upstream
-  motor support. The screw-head envelopes sit flush under the bosses. The new hinge ears, webs, bosses and cradle
-  are clear of the neck mechanism, the camera and the jaw over its whole travel. The only pose-envelope clashes
-  left are the upstream legs touching each other in extreme crossed-leg samples.
+  recorded motions. Result for this geometry: at rest, nothing deeper than 0.8 mm except the known 0.9 mm contact
+  face of the upstream motor support. The screw heads (round envelopes) clear the shell and the jaw. The hinge
+  ears, webs, bosses and cradle are clear of the neck mechanism, the camera and the jaw over its whole travel. The
+  only pose-envelope clashes are the upstream legs touching each other in extreme crossed-leg samples (77/3000,
+  unchanged from before).
 - `scripts/check_contacts.py`: the simulation's collision proxies (convex hulls of the head shells and jaw, and
   chamfered blocks for the body). Gate: no proxy contact deeper than 0.8 mm in 6000 sampled operating poses.
   PASS. Four grazing contacts under 0.5 mm remain at the corners of that envelope.
+- `design/v4/export_print.py`: closed solids, walls, bed fit, and no protrusion through the original skin.
+- An independent read-only review (by an agent) of the first version found the cradle poking through the
+  forehead, the stop bar touching the servo, a screw/washer conflict with the jaw, a hinge screw that would bind,
+  and print orientations that put the holes horizontal. All are fixed (design/v4/README.md, "Printable head").
 - **Not checked:** the real servo cases, horn and clevis sizes, cable diameters, the UNO Q's bottom-side
-  connector height (the standoffs assume ≤ 5 mm), and the screw lengths against the real boss depths. These are
-  estimates. Do a test fit of the head first: it is the cheapest print and has the most new mechanism.
+  connector height (the standoffs assume ≤ 5 mm), the press fit of the dowels in your printer's holes, and the
+  screw lengths against the real boss depths. These are estimates. Do a test fit of the head first: it is the
+  cheapest print and has the most new mechanism.
