@@ -2,6 +2,7 @@ r"""motions.py -- run the official Microduck ONNX policies on the Duckling V4 mo
 
 Usage:
   .venv\Scripts\python.exe scripts\motions.py <motion> [--view] [--gif] [--kp-scale 1.0] [--servo-delay S] [--record DIR]
+                                                     [--walk-policy policies/duck_v4_walk.onnx] [--out DIR]
 Motions:
   balance     stand 10 s at zero command: tilt, height, drift, settling, joint-limit margin, actuator saturation
   walk        walk forward 8 s: minimum travel, drift, heading, continuous fall monitoring
@@ -42,6 +43,7 @@ SCENE = ROOT / "model" / "duck_v4_gc_scene.xml"
 DISABLE = None          # None | "body" | "head" | "all": switch off those S1 collision proxies (A/B diagnosis only)
 SERVO_DELAY = None      # s; None = the model's servo_delay_s
 RECORD = None           # directory for the qpos recordings (--record)
+WALK_POLICY = None      # path of an ONNX that replaces velstand (--walk-policy), e.g. training/runs/<run>/policy.onnx
 BODY_FALL_GEOMS = {"head_upper_collision", "head_lower_collision",
                    "body_front_upper_collision", "body_rear_upper_collision", "body_board_bay_collision"}
 
@@ -147,7 +149,8 @@ class Duck:
 
     def use(self, name):
         if name not in self.sessions:
-            self.sessions[name] = ort.InferenceSession(str(POL / f"{name}.onnx"), providers=["CPUExecutionProvider"])
+            path = WALK_POLICY if (name == "velstand" and WALK_POLICY) else POL / f"{name}.onnx"
+            self.sessions[name] = ort.InferenceSession(str(path), providers=["CPUExecutionProvider"])
         self.policy = self.sessions[name]
 
     def up_z(self):
@@ -429,8 +432,11 @@ if __name__ == "__main__":
     ap.add_argument("--out", help="output directory for gifs/summary")
     ap.add_argument("--servo-delay", type=float, help="servo command delay, s (default: the model's servo_delay_s)")
     ap.add_argument("--record", help="save each motion's qpos (50 Hz) to RECORD/<motion>.npz for check_v4_fit.py")
+    ap.add_argument("--walk-policy", help="ONNX policy used wherever velstand is (walk, balance, obstacles, get-up, "
+                                          "dance, and the stand phases of the others); e.g. policies/duck_v4_walk.onnx")
     a = ap.parse_args()
     SERVO_DELAY, RECORD = a.servo_delay, a.record
+    WALK_POLICY = Path(a.walk_policy).resolve() if a.walk_policy else None
     if a.xml: SCENE = Path(a.xml).resolve()
     if a.out: OUT = Path(a.out).resolve()
     DISABLE = a.disable_proxies

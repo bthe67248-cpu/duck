@@ -44,6 +44,10 @@ DEFAULT_CFG = dict(
     joint_damping=(0.5, 2.0), joint_friction=(0.5, 2.0), armature=(0.8, 1.2),
     mass=(0.9, 1.1), com_m=0.008, foot_friction=(0.5, 1.2), imu_tilt_deg=5.0, encoder_bias=0.015,
     push_interval_s=(3.0, 6.0), push_dv=0.3, init_joint_noise=0.05,
+    # fall recovery: this share of episodes starts lying (dropped in a random attitude and settled); in them a fall
+    # does not end the episode until the duck has stood upright for `recovered_s`; uprighting pays by potential
+    # (progress in up-axis and height, so lying still earns nothing and holding upright earns the normal terms)
+    recover_prob=0.15, recovered_s=1.0, w_rise=20.0, max_recover_s=10.0,
     # observation noise (uniform half-widths, as upstream)
     n_gyro=0.03, n_grav=0.01, n_qpos=0.002, n_qvel=0.25,
     # rewards
@@ -196,7 +200,31 @@ class DuckEnv:
         self.foot_pos = np.array([d.site_xpos[s].copy() for s in self.foot_sites])
         self.head_ema = np.zeros(4)
         self._resample_cmd()
+        self.recovering, self.t_upright = False, 0.0
+        if r.uniform() < c["recover_prob"]:
+            self._drop()
+        self.phi = self._potential()
         return self.obs()
+
+    def _drop(self):
+        """Lay the duck down: random attitude (front, back, sides or anything between) 0.2 m up, settled 1.5 s with the
+        stand targets, so the episode starts from a real resting pose on the floor."""
+        m, d, r = self.m, self.d, self.rng
+        ax = r.normal(size=3); ax[2] *= 0.3; ax /= np.linalg.norm(ax)
+        ang = r.uniform(math.radians(70), math.radians(180))
+        q = np.zeros(4); mujoco.mju_axisAngle2Quat(q, ax, ang)
+        yaw = r.uniform(-math.pi, math.pi); qy = np.array([math.cos(yaw / 2), 0, 0, math.sin(yaw / 2)])
+        out = np.zeros(4); mujoco.mju_mulQuat(out, qy, q)
+        d.qpos[2] = 0.2; d.qpos[3:7] = out; d.qvel[:] = 0
+        for _ in range(int(1.5 / PHYS_DT)):
+            mujoco.mj_step(m, d)
+        self.recovering = True
+        self.cmd[:3] = 0.0
+        self.foot_pos = np.array([d.site_xpos[s_].copy() for s_ in self.foot_sites])
+
+    def _potential(self):
+        up_z = -quat_rotate_inv(self.d.qpos[3:7], np.array([0.0, 0.0, -1.0]))[2]
+        return 0.5 * up_z + 5.0 * min(float(self.d.qpos[2]), 0.12)
 
     # ------------------------------------------------------------------ observation
     def _grav(self):
@@ -246,6 +274,8 @@ class DuckEnv:
         self.t_cmd -= CTRL_DT
         if self.t_cmd <= 0:
             self._resample_cmd()
+        if self.recovering:
+            self.cmd[:3] = 0.0                                    # get up first; walking commands come afterwards
         rew, info, fell = self._reward(action)
         self.last = action.copy()
         done = fell or self.t >= c["episode_s"]
@@ -302,7 +332,23 @@ class DuckEnv:
             torque=c["w_torque"] * torque,
         )
         up_z = -grav[2]
-        fell = bool(up_z < 0.5 or d.qpos[2] < 0.07 or body_floor or not np.all(np.isfinite(d.qpos)))
+        # task terms only pay when upright (1 above 0.9, 0 below 0.5 up-axis): lying still with a zero command would
+        # otherwise collect the velocity/pose rewards (the "positive reward in a bad state" trap)
+        gate = min(1.0, max(0.0, (up_z - 0.5) / 0.4)) * min(1.0, max(0.0, (float(d.qpos[2]) - 0.06) / 0.04))
+        for k in ("lin", "ang", "up", "pose", "head", "air"):
+            if terms[k] > 0:
+                terms[k] *= gate
+        down = bool(up_z < 0.5 or d.qpos[2] < 0.07 or body_floor)
+        fell = down or not np.all(np.isfinite(d.qpos))
+        if self.recovering:
+            phi = self._potential()
+            terms["rise"] = c["w_rise"] * (phi - self.phi) / CTRL_DT
+            self.phi = phi
+            self.t_upright = self.t_upright + CTRL_DT if (up_z > 0.9 and d.qpos[2] > 0.1) else 0.0
+            if self.t_upright >= c["recovered_s"]:
+                self.recovering = False                           # from now on a fall ends the episode as usual
+            fell = (not np.all(np.isfinite(d.qpos))) or self.t > c["max_recover_s"]
+            terms["self"] = 0.0                                   # legs may touch the body while scrambling up
         if fell:
             terms["term"] = c["w_term"] / CTRL_DT
         rew = sum(terms.values()) * CTRL_DT

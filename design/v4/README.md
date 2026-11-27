@@ -1,6 +1,7 @@
 # Duckling V4: A010 depth sensor, boards and LiPo inside the body, opening mouth
 
-24–25 November 2026. **Simulation and concept CAD only.** The body now has its assembly split, board standoffs,
+24–25 November 2026; printable head 27 November (see "Printable head", and [`PRINT_GUIDE.md`](PRINT_GUIDE.md)).
+**Simulation and concept CAD; the printed parts pass the print checks but no part has been printed yet.** The body now has its assembly split, board standoffs,
 mounting bosses, battery retention and connector/cable envelopes, and the head clears the neck mechanism and the camera
 (see "Fit fixes and assembly geometry"); hinge, pushrod and head-shell fasteners are still to do, and every clearance
 must be checked on the real parts. V4 is now the only robot model: the V3 model, its rear shield, the V3 head
@@ -174,8 +175,8 @@ stiffness on a print first).
 
 ### Still open (not modelled)
 
-- Jaw hinge pin, knuckles and bushing; horn, pushrod and clevis hardware; mouth-servo bosses in the dome.
-- Screws or clips joining the upper and lower head shells.
+- ~~Jaw hinge pin, knuckles; mouth-servo mount; screws joining the head shells~~: done 27 November, see
+  "Printable head" below. Still open: horn, pushrod and clevis hardware sizes against the real parts.
 - Neck cable pass-through for the head servos' bus, the mouth servo and the head camera (slack for yaw ±170°, pitch and
   roll).
 - Trunk mounts: the two holes and inserts in the upstream trunk plate (x −15.5, y ±2.5) and the XL330 case holes the
@@ -186,6 +187,29 @@ stiffness on a print first).
 - Panel-mount XT60 screws; foam pads for the LiPo; strain relief at the lid's USB slot.
 - Collision proxies (`scripts/collision_proxies.json`) for the head and jaw are unchanged; the body's follow the outer
   blocks (a new box for the connector well).
+
+## Printable head (27 November 2026)
+
+All three features are parametric (`v4_params.json` → `head.fasteners`, `head.hinge`, `head.mouth_cradle`) and
+built by `build_v4.py`; every part stays a closed solid.
+
+- **Head-shell screws.** The upstream shells already carry four screw bosses (rear at x −33.9 / 29.9, y 46.8; front
+  at x −31.7 / 27.7, y −37.0), but the one-off V4 widening stretched the rear bores into 2.1 × 3.6 mm ovals that a
+  self-tapping screw cannot grip. Each upper boss bore is filled (r 2.4) and re-drilled Ø1.75 (pilot for M2
+  self-tappers); the lower rear bosses are filled (r 2.8) and all four lower bores re-drilled Ø2.4 (clearance).
+  Rear M2 × 12, front M2 × 10, from below with washers.
+- **Jaw hinge.** The jaw split removes all shell material within 12.5 mm of the hinge axis (y −46, z 12), so
+  there was nothing for a pin to sit in. Now each side has two knuckles: the jaw's side wall, thickened by a
+  Ø6.4 boss kept inside the jaw's skin (convex hull inset 0.6 mm), outside; and an ear on the lower shell, inside
+  (x −28.5…−25.5 and 21.5…24.5), hanging from a 3 mm web at the seam that wraps the front screw boss (the
+  boss gains strength; the screw head bears on the web). Pin: M2 × 10 from outside, free in the jaw (Ø2.3), threaded
+  into the ear (Ø1.75). The jaw is cut clear of each ear grown by 0.5 mm over −3…33° (one prism: the 2-D hull of
+  the turned outlines). Fit check: jaw vs shells and ears clear at every sampled opening.
+- **Mouth-servo cradle.** End plates at the servo's ±y ends hang from the dome (trimmed to the inside of the
+  shell), with lips under the servo, a stop bar on the −x side (front half only: further back the head-roll
+  XL330 sweeps up to z 39 mm, found by the fit check), a window for the cable plugs and slots for a cable tie.
+- **Mass.** The features add about 6 g (robot 0.819 → 0.825 kg; `model/mass_ledger.json`).
+- **Collision proxies** for the head and jaw are now the convex hulls of these meshes (main README, Part A).
 
 ## Validation commands and the jaw control path (third review, 25 November 2026)
 

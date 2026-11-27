@@ -44,7 +44,7 @@ def nodes(context):
     return [
         Node(package="duck_nav", executable="world_sim", output="screen",
              parameters=[{"mjcf": LaunchConfiguration("mjcf").perform(context) or os.path.join(share, "mjcf", "duck_v4_gc_world.xml"),
-                          "policy": os.path.join(share, "models", "velstand.onnx"),
+                          "policy": os.path.join(share, "models", LaunchConfiguration("walk_policy").perform(context)),
                           "world_json": LaunchConfiguration("world_json").perform(context) or os.path.join(share, "mjcf", "world.json"),
                           "sensor_profile": sensors, "seed": seed,
                           "real_time": ParameterValue(LaunchConfiguration("real_time"), value_type=bool),
@@ -107,6 +107,8 @@ def nodes(context):
 def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument("sensors", default_value="ideal"),
+        # walking policy file in the package's models/ (setup_nav.sh copies policies/duck_v4_walk.onnx there when it exists)
+        DeclareLaunchArgument("walk_policy", default_value="velstand.onnx"),
         DeclareLaunchArgument("mjcf", default_value=""),
         DeclareLaunchArgument("world_json", default_value=""),
         DeclareLaunchArgument("beacon_x", default_value="4.0"),

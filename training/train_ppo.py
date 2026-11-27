@@ -99,7 +99,7 @@ class VecEnv:
 
 # ---------------------------------------------------------------------------- model
 class Normalizer(nn.Module):
-    def __init__(self, n, clip=5.0):
+    def __init__(self, n, clip=1e4):   # effectively unclipped, like upstream rsl_rl's empirical normalization
         super().__init__()
         self.register_buffer("mean", torch.zeros(n)); self.register_buffer("var", torch.ones(n))
         self.register_buffer("count", torch.tensor(1e-4)); self.clip = clip
@@ -212,6 +212,9 @@ def main(argv=None):
     ap.add_argument("--lr-min", type=float, default=1e-4); ap.add_argument("--lr-max", type=float, default=1e-3)
     ap.add_argument("--target-kl", type=float, default=0.01)
     ap.add_argument("--init-onnx"); ap.add_argument("--resume")
+    ap.add_argument("--critic-warmup", type=int, default=0,
+                    help="iterations at the start that train only the critic (actor frozen); use ~30 with --init-onnx "
+                         "so an untrained critic cannot drag a pretrained actor away")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--cfg", default="{}", help="JSON overrides of duck_env.DEFAULT_CFG")
     ap.add_argument("--max-hours", type=float, default=1e9)
@@ -286,7 +289,7 @@ def main(argv=None):
                 vc = Xv[idx] + torch.clamp(v - Xv[idx], -0.2, 0.2)
                 vl = torch.max((v - Xret[idx]) ** 2, (vc - Xret[idx]) ** 2).mean()
                 ent = dist.entropy().sum(-1).mean()
-                loss = pl + 1.0 * vl - a.entropy * ent
+                loss = (vl if it < a.critic_warmup else pl + 1.0 * vl - a.entropy * ent)
                 opt.zero_grad(); loss.backward(); nn.utils.clip_grad_norm_(ac.parameters(), 1.0); opt.step()
             with torch.no_grad():
                 ac.log_std.clamp_(math.log(0.05), math.log(1.0))
@@ -299,7 +302,8 @@ def main(argv=None):
         # learning rate adapted once per iteration on the KL target, bounded (rsl_rl-style schedule, but per
         # iteration: with Adam every minibatch step moves the policy by about the same amount, so a per-minibatch
         # rule ratchets the rate down to its floor on small CPU batches)
-        if kls[-1] > 1.5 * a.target_kl: lr = max(a.lr_min, lr / 1.5)
+        if it < a.critic_warmup: pass                         # actor frozen: KL is 0, keep the starting rate
+        elif kls[-1] > 1.5 * a.target_kl: lr = max(a.lr_min, lr / 1.5)
         elif kls[-1] < 0.5 * a.target_kl: lr = min(a.lr_max, lr * 1.5)
         for gp in opt.param_groups: gp["lr"] = lr
         st = venv.stats()

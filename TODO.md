@@ -1,8 +1,13 @@
-# Duckling V3: what is left
+# Duckling V4: what is left
 
 Everything in this repo runs in simulation on estimated numbers. These steps make it match the real robot. Do them in order. The carrier board is at [bthe67248-cpu/UNO_Q_HAT_IMU_SERVOS_XT60](https://github.com/bthe67248-cpu/UNO_Q_HAT_IMU_SERVOS_XT60). The step-by-step board plan is [UNO_Q_GUIDE.md](UNO_Q_GUIDE.md).
 
 **Software progress:** [hardware-readiness handoff](results/hardware_readiness/HANDOFF.md). Measurement JSON input and strict contact checking are implemented. Sensor acquisition interfaces and TF pose lookup are implemented, with offline tests; the actual VL53L5CX bus adapter and hardware encoder/IMU TF remain missing. Weak/stale stopping is implemented. The patch's strict scan-match rules were replaced by a correlative matcher with slip estimation and local relocalisation ([SLAM tuning](results/slam_tuning/README.md)); loop closure and hardware localisation remain open.
+
+**Production-readiness update (27 Nov 2026):** the V4 printed parts now have head-shell fasteners, a jaw hinge and a
+mouth-servo cradle, pass the print checks (`design/v4/export_print.py`, [print guide](design/v4/PRINT_GUIDE.md)), the
+mesh fit check and the contact gate, and a V4-trained walking policy exists ([training](training/README.md)). Next
+physical step: print the head first as a test fit (section 2).
 
 ## 1. Board bring-up (UNO_Q_HAT_IMU_SERVOS_XT60)
 
@@ -14,11 +19,13 @@ Everything in this repo runs in simulation on estimated numbers. These steps mak
 
 ## 2. Print and measure the robot (goes into `scripts/make_duck.py`, top block)
 
+- [x] Make the V4 parts printable: head-shell screws, jaw hinge, mouth-servo cradle; closed solids, wall and bed checks; oriented STLs in `design/v4/print/` ([print guide](design/v4/PRINT_GUIDE.md))
+- [ ] Test-print the head (upper, lower, jaw): check the hinge swings 0–30°, the screws bite, the mouth servo fits the cradle
 - [ ] Print the visible rigid parts in black PLA at 30% infill. Save the slicer project and record the slicer version, filament density, orientation, walls, top/bottom layers, infill and support mass
 - [ ] Weigh each V4 print (head shells, jaw, body shell) after removing supports → `PART_MASS_G` in `scripts/make_duck.py`; weigh the bought parts → `BOUGHT_G`. Old note: (provisional now: upper head 51.5 g, lower head 43.1 g, rear shield 32.3 g)
 - [ ] Weigh each link with servos and screws: `trunk_base`, `jaw_soft`, `upper_leg_left/right`, `leg`, `leg_2`, `ankle_left/right` → `MEASURED_MASS`
 - [ ] Build the installed mass ledger (prints, servos, UNO Q, HAT, battery, BMS, camera, ToF, wiring, fasteners). Do not count both the old Raspberry Pi electronics and their replacements
-- [ ] Measure the shield centre in the torso frame → `SHIELD_POS`. **This matters most:** at the guessed position the shield hits the legs and blocks get-up in simulation. Check leg and head clearance through their full range
+- [x] ~~Measure the shield centre~~ (V3 rear shield removed; the V4 body shell replaces it). Contact gate now passes with hull proxies
 - [ ] Check the V4 head position against the real robot → `HEAD_SHIFT`
 - [ ] Check the new bill's wall thickness, seam fit and internal clearance
 - [ ] Count the servos (model has 14, the XGO-Duck parts list names 15)
@@ -32,7 +39,7 @@ Everything in this repo runs in simulation on estimated numbers. These steps mak
 ## 4. Re-run the simulation with real numbers
 
 - [ ] `make_duck.py`, `make_duck.py --base robot_groundcontact.xml --tag gc`, `stand_numbers.py`, then in MATLAB `startup_duck`, `duck_numbers`, `build_duck_sim`, `run_tests`
-- [ ] `scripts/motions.py all`: no leg-on-shield contacts; walk, obstacles and get-up pass
+- [ ] `scripts/motions.py all --walk-policy policies/duck_v4_walk.onnx`: walk, obstacles and get-up pass on the measured model
 - [ ] `scripts/tune_gains.py` again: the safe gain band depends on servo stiffness and delay
 - [ ] Gate: model mass within 5% of the scale, all Simulink assertions pass, p·td below 0.3
 - [ ] Re-export the URDF and rebuild the ROS 2 workspace (`mjcf_to_urdf.py`, `check_urdf.py`, `sync_ros2_assets.py`, `setup_ws.sh`, `setup_nav.sh`)
@@ -70,7 +77,8 @@ Windows-only `job2.sh`/`patch_ort.py` were not supplied. Ten-seed/layout and pai
 - [ ] Stop the escape / plan loop near walls (pure pursuit cuts corners into the clearance margin)
 - [ ] Roll (sideways) balance: only pitch is controlled now
 - [ ] YOLO: domain randomization, then fine-tune on real labelled camera photos
-- [ ] Retrain walking policies on measured masses and a Feetech servo model (needs a rented NVIDIA GPU); now required, since the pretrained walk fails on the corrected model
+- [x] Walking policy trained for V4 on the CPU (`training/`, PPO fine-tune of velstand with wide servo randomization and fall recovery)
+- [ ] Fine-tune it again on measured masses and the bench-tested servo (`training/README.md`, "Before it goes on the real duck")
 - [ ] Finish `ros2/parked_commands` (steps in its README.txt), after command ownership is settled
 - [ ] Update `scripts/slam_nav.py` to use the fixed planner, or retire it
 - [ ] Fresh-workspace build check (dependency versions are pinned in `requirements-test.txt`; CI runs the tests)

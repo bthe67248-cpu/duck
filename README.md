@@ -14,6 +14,43 @@ MuJoCo model, Simulink balance controller, and a ROS 2 SLAM + YOLO navigation st
 
 ---
 
+## Production-readiness update (27 November 2026, branch `production-ready`)
+
+This update makes the V4 printable and adds a walking policy trained for the V4 itself. Each item below says how to
+reproduce it, and the parts further down give the details.
+
+| Area | Before | Now | How to reproduce |
+|-|-|-|-|
+| Head shells | no fasteners modelled; the V4 widening had stretched the rear screw pilots to 2.1 × 3.6 mm ovals | 4 × M2 screw paths re-drilled round (Ø1.75 pilots up, Ø2.4 clearance down, rear bosses filled first) | `build_v4.py` (Part A) |
+| Jaw | no hinge at all: the shell had no material at the hinge axis | two-knuckle hinge per side: shell ear hanging from a web at the seam, a jaw boss, an M2 pin; the jaw is cut clear of the ears over its whole 0–30° travel | `build_v4.py` |
+| Mouth servo | a placeholder box floating in the dome | a cradle hanging from the dome (end plates, lips, stop bar, cable window, cable-tie slots), clear of the head-roll servo's sweep | `build_v4.py` |
+| Printability | not checked | closed-solid, wall-thickness and bed-fit check, oriented print STLs, slicer settings, hardware list, assembly order | `design/v4/export_print.py`, [`design/v4/PRINT_GUIDE.md`](design/v4/PRINT_GUIDE.md) |
+| Collision proxies | head/jaw boxes: 23 % of the jaw surface outside, the lower-head box up to 22 mm past the shell; the contact gate failed | convex hulls of the real shells (0 % outside), chamfered body blocks; the gate counts > 0.8 mm (as the mesh fit check) | `make_duck.py --tag gc`, `check_contacts.py`, `check_collision_proxies.py` |
+| Walking policy | pretrained velstand fails walk, planks and backward get-up on V4 | PPO fine-tune on the V4 model on a CPU, with wide servo randomization (see Part D) | [`training/README.md`](training/README.md) |
+| `model/stand_numbers.json` | stale (0.804 kg) | regenerated from the current model (0.825 kg) | `stand_numbers.py` |
+
+**Linux / macOS quick start** (the PowerShell commands further down work the same way. Use `python` from the venv):
+
+```bash
+git clone --depth 1 https://github.com/pollen-robotics/microduck_rl     # or the pinned commit from .github/workflows
+python3.12 -m venv .venv && .venv/bin/pip install -r requirements-test.txt torch onnx rtree manifold3d
+.venv/bin/python scripts/prep_meshes.py && .venv/bin/python scripts/make_duck.py
+.venv/bin/python scripts/make_duck.py --base robot_groundcontact.xml --tag gc
+.venv/bin/python scripts/stand_numbers.py model/duck_v4_scene.xml && .venv/bin/python scripts/worldgen.py
+# policies: download each file in policies/manifest.json from
+#   https://huggingface.co/pollen-robotics/microduck-policies/resolve/main/<file>  into policies/
+.venv/bin/python scripts/preflight.py                                     # must end "0 error(s)"
+.venv/bin/python -m pytest tests ros2/duck_nav/test -q
+.venv/bin/python scripts/check_contacts.py                                # GATE: PASS
+.venv/bin/python design/v4/check_v4_fit.py                                # mesh fit, about 10 minutes
+.venv/bin/python design/v4/export_print.py                                # print-ready STLs
+```
+
+**After printing** (in this order): weigh every print and every complete link, bench-test one servo (TODO.md steps
+2–3), and write the numbers into a copy of `config/robot_measurements.example.json`. Then rebuild the model,
+re-run the gates, and fine-tune the walking policy again on the measured model (`training/README.md`, "Before it
+goes on the real duck").
+
 ## What was set up, and how to replicate it
 
 Everything lives in one folder (keep it out of cloud-synced folders: the Python venv and build files are large). The examples use `C:\dev\duckling_sim`. The scripts find the folder from their own location, so another path works too; `DUCKLING_ROOT` / `DUCK_ROOT` override it.
@@ -81,7 +118,9 @@ Then, from `C:\dev\duckling_sim`:
 .\.venv\Scripts\python.exe scripts\prep_meshes.py
 ```
 
-- **Collision shapes** (ground-contact model `duck_v4_gc.xml` only): primitives for the head dome, skirt, lower shell, upper bill and jaw (`scripts\collision_proxies.json`), and the six outer blocks of the body (from `v4_params.json`). Check with `scripts\check_collision_proxies.py`, `scripts\check_contacts.py` and `design\v4\check_v4_fit.py` (mesh-mesh containment over the standing pose, 3000 sampled poses and recorded motions; it finds head-shell interferences with the neck and camera parts and a rubbing jaw, listed in `design\v4\README.md`; no moving part enters the body with the neck-pitch limit of 0.70 rad).
+- **Rebuilding the CAD without installing Blender:** `pip install bpy==5.3.0` (Blender as a Python module, Python 3.13) and run `python design/v4/build_v4.py [-- body|head|head_upper|head_lower]`. It reproduces the committed body volumes exactly. The head build adds the shell screw paths (`head.fasteners`), the jaw hinge (`head.hinge`) and the mouth-servo cradle (`head.mouth_cradle`), all driven by `v4_params.json`. Every boolean result must stay a closed solid: the builder refuses to export otherwise, and `V4_DEBUG=1` prints each boolean and where any non-manifold edges are. Two rules keep the exact solver healthy: never let a new feature share a face with an existing one (offset by 0.1–0.3 mm), and replace a swept cut by one prism (the 2-D hull of the swept outline) instead of one boolean per angle.
+- **Print-ready files:** `python design/v4/export_print.py` checks and orients the six printed parts into `design/v4/print/`. See [`design/v4/PRINT_GUIDE.md`](design/v4/PRINT_GUIDE.md) for settings, hardware and assembly.
+- **Collision shapes** (ground-contact model `duck_v4_gc.xml` only): the head shells and the jaw collide as the convex hulls of their print meshes (`type: hull` in `scripts\collision_proxies.json`; MuJoCo collides any mesh geom as its convex hull, and the bodies have explicit inertia, so the dynamics do not change). The six outer blocks of the body (from `v4_params.json`) collide as chamfered blocks whose chamfers are tangent to the blocks' bevels (`model/assets/proxy_body_*.stl`, written by `make_duck.py`). The earlier boxes and ellipsoids are kept in the JSON for reference. Check with `scripts\check_collision_proxies.py`, `scripts\check_contacts.py` and `design\v4\check_v4_fit.py` (mesh-mesh containment over the standing pose, 3000 sampled poses and recorded motions; it finds head-shell interferences with the neck and camera parts and a rubbing jaw, listed in `design\v4\README.md`; no moving part enters the body with the neck-pitch limit of 0.70 rad).
 - **Masses.** Every number is recorded in `model\mass_ledger.json`: printed parts from the provisional 30 % infill formula, bought parts as estimates, replaced upstream parts subtracted (no double counting, no clamping), including the upstream battery, which the 55 g 2S LiPo replaces at its V4 location. Robot about 789 g in simulation.
 
 **Estimates you must replace with measurements** (top block of `make_duck.py`):
@@ -136,7 +175,7 @@ Two blockset gotchas the script handles:
 
 | Quantity | Value |
 |-|-|
-| Mass | 0.760 kg (PROVISIONAL print masses; was 0.789 kg) |
+| Mass | 0.760 kg in this MATLAB run. **The current model is 0.825 kg** (V4 parts, hinge, cradle; `model/stand_numbers.json`, centre of mass 0.118 m above the ankle, so p ≈ 9.1 rad/s): re-run `duck_numbers` / `run_tests` in MATLAB to refresh this table |
 | Centre of mass above ankle pivot | 0.117 m |
 | Fall rate p | 9.17 rad/s (doubling time 76 ms) |
 | Needed bandwidth / loop rate | 2.9 Hz / 58 Hz (controller runs at 100 Hz) |
@@ -481,7 +520,7 @@ Pre-fix results (old model, old code, latest-message scoring) are in `results\pr
 - **A ROS node for the real ToF**, and a hardware publisher for `/camera/pose_level` from the neck encoders and IMU. Its frame must be the MuJoCo camera convention (looks along −z, y up), while `usb_camera_node` stamps images in the REP-103 optical frame.
 - **YOLO on real images.** The detector has only ever seen MuJoCo renders. Collect and label photos from the real black duck's camera (split by recording session), retrain, and benchmark the ONNX model on the UNO Q.
 - **Simscape Multibody / URDF import in MATLAB, linearisation, margins** ("Industry Way" Steps 1 and 4): need Simscape Multibody / Robotics System Toolbox, not used here.
-- **Retraining the walking policy** on your measured masses and Feetech servo model: needs an NVIDIA GPU (local or rented). With the corrected masses the pretrained walk fails its criteria (Part D), so this is now required, not optional.
+- **Retraining the walking policy on measured numbers.** The V4 fine-tune (Part D, `training/`) runs on a CPU, but it is trained on estimated masses and on wide servo randomization in place of a measured Feetech model. Run it again after weighing and the servo bench test. The upstream GPU route (mjlab, BAM actuator model) would also need a BAM fit of the Feetech servo.
 - **Dependency pinning and a fresh-workspace build** (part of S8) are not done.
 - **Anything on the UNO Q**: see `UNO_Q_GUIDE.md` for the step-by-step plan.
 - **Roll (sideways) balance**: only pitch is controlled. The PDF's "repeat for roll" step is still open.
