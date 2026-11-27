@@ -82,6 +82,31 @@ warning. Floor flow pairs images at least `flow_interval` (0.15 s) and at most
 `flow_max_gap` (0.3 s) apart, keeping the older image until the interval has passed,
 so a 30 fps camera gives a pair about every 5th frame.
 
+Images are decoded by `duck_nav.image_codec` in both `slam_node` (floor flow) and `yolo_node`: rgb8, bgr8 and
+mono8, honouring `Image.step` (padded rows from V4L2 drivers or bridges). Other encodings and inconsistent buffers
+(step shorter than a row, data shorter than height x step) are dropped with a throttled warning; they never stop
+the node.
+
+## Subscription QoS
+
+`slam_node` subscribes to its sensor topics (`/imu`, `/camera/camera_info`, `/camera/depth`, `/tof/zones`,
+`/camera/image_raw`, `/camera/pose_level`, `/tof/pose_level`) best-effort by default (parameter
+`sensor_qos:=best_effort|reliable`). A best-effort subscription receives from both best-effort publishers (most
+sensor drivers use sensor-data QoS) and reliable ones (the simulator); a reliable subscription would receive nothing
+from a best-effort IMU, and SLAM would sit waiting for pose history. `/cmd_vel` and `/yolo/detections` stay reliable.
+`sensor_pose_node` and `yolo_node` already used best-effort for their inputs. Checked in
+`test/test_sensor_io.py` against ROS shims; a real-ROS job that publishes both ways is still to do (TODO.md).
+
+## USB camera recovery (`usb_camera_node`)
+
+Each opened device handle belongs to one capture worker thread (`duck_nav.capture_supervisor`). If no frame
+arrives for `stale_after` s, the watchdog abandons that worker and starts a new one that opens the device again: a
+read blocked inside V4L2 can no longer stop recovery, and the blocked handle is released by its own thread if the
+read ever returns (its late frame is discarded). At most two abandoned workers may still be blocked; beyond that
+`/camera/status` reports `stuck` instead of opening more. Shutdown is bounded (1 s). Statuses: `ok`, `stale`
+(restarted), `stuck`, `calibration_mismatch`. Tested with fake blocking/failing/unplugged devices; the real driver's
+behaviour still has to be checked on the UNO Q.
+
 ## Exact acquisition-time poses
 
 `sensor_pose_node` subscribes to `/camera/image_raw` and `/tof/zones`. For each

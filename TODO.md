@@ -10,6 +10,8 @@ mesh fit check and the contact gate. A CPU trainer for a V4 walking policy exist
 see README Part D for what the current policy does and does not pass yet. Next physical step: print the head first as
 a test fit (section 2).
 
+**Review of `ff34442` (27 Nov 2026):** item-by-item status in [results/review_ff34442/STATUS.md](results/review_ff34442/STATUS.md). A01–A06 are fixed; B03 (a real ROS 2 job), C (policy robustness), D and every hardware item are still open; E01 (head mass budget) needs a decision.
+
 ## 1. Board bring-up (UNO_Q_HAT_IMU_SERVOS_XT60)
 
 - [ ] Order the board with 2 oz outer copper (gerbers: `fabrication/UNOQ_HAT_gerbers_2026-11-13.zip` in the HAT repo)
@@ -47,7 +49,7 @@ a test fit (section 2).
 
 ## 5. Camera and ToF (UNO_Q_GUIDE.md, Step 6)
 
-- [ ] Get the Arducam B0385 (OV9782 USB UVC) and a Pololu #3417 VL53L5CX carrier
+- [x] Camera and depth/ToF sensor are in hand (owner's report, 27 Nov 2026). Record the exact variants, drawings, mass and power (review ff34442 H01). V4 mounts a Sipeed A010 in the body; the VL53L5CX path is the alternative
 - [ ] Check the drawings, mass, current and V4L2 modes; check USB streaming on the UNO Q (hub or not)
 - [ ] ToF at 3.3 V logic; zone order and range convention; a rigid shared bracket; a clear optical opening
 - [ ] Calibrate camera intrinsics, then camera and ToF extrinsics
@@ -59,7 +61,7 @@ a test fit (section 2).
 - [ ] STM32 sketch: servo bus, IMU, 100 Hz loop, watchdog
 - [ ] Port `tiltFilter` and the two gains (about ten lines of C); stand with the loop on, a hand ready
 - [ ] Compare the real knee sag with the simulated 4.6°
-- [ ] Walking: use the XGO-Duck project's own runtime and policy, not the Microduck one
+- [ ] Walking: the V4 fine-tune `policies/duck_v4_walk.onnx` (passes the nominal simulated tests, 9/12 with servo variations; **not validated on measured hardware**: re-train after weighing and the servo bench test) or the XGO-Duck project's runtime and policy. The pretrained upstream Microduck policies do not transfer
 - [ ] Replay the same `/cmd_vel` in `world_sim` and on the robot; fix the model first, gains second
 
 ## 7. Open software work
@@ -82,6 +84,6 @@ Windows-only `job2.sh`/`patch_ort.py` were not supplied. Ten-seed/layout and pai
 - [ ] Train it until `motions.py all --walk-policy` passes walk and obstacles (status: README Part D)
 - [ ] Fine-tune it again on measured masses and the bench-tested servo (`training/README.md`, "Before it goes on the real duck")
 - [ ] Finish `ros2/parked_commands` (steps in its README.txt), after command ownership is settled
-- [ ] Update `scripts/slam_nav.py` to use the fixed planner, or retire it
+- [x] Retire `scripts/slam_nav.py` (runs only with `--legacy`; the maintained planner is the ROS one)
 - [ ] Fresh-workspace build check (dependency versions are pinned in `requirements-test.txt`; CI runs the tests)
 - [ ] Optional: Simscape Multibody route and linear margins (needs toolboxes not installed)

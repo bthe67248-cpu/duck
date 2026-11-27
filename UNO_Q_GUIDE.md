@@ -114,7 +114,7 @@ docker run -it --net=host --privileged -v ~/duck_ws:/duck_ws ros:jazzy-ros-base
 
 ## Step 6. Range sensing: chosen hardware, and what is left
 
-**Decision (handoff, 17 Nov 2026): option B.** Main camera: **Arducam B0385**, OV9782 colour global shutter, USB 2.0 UVC board with a low-distortion M12 lens (alternative: Arducam B0196, IMX219 UVC; do not use a Pi CSI ribbon camera). Range: **ST VL53L5CX on a Pololu #3417 carrier**, 8×8 zones over I²C, start at 10 Hz (15 Hz is the 8×8 ceiling). Neither is bought or tested yet.
+**Decision (handoff, 17 Nov 2026): option B.** Main camera: **Arducam B0385**, OV9782 colour global shutter, USB 2.0 UVC board with a low-distortion M12 lens (alternative: Arducam B0196, IMX219 UVC; do not use a Pi CSI ribbon camera). Range: **ST VL53L5CX on a Pololu #3417 carrier**, 8×8 zones over I²C, start at 10 Hz (15 Hz is the 8×8 ceiling). Both are in hand now (owner's report, 27 Nov 2026) and not tested yet. V4 then moved depth sensing to a **Sipeed MaixSense A010** in the body (`design/v4`, `duck_nav/a010_backend.py`); the VL53L5CX stays the alternative path.
 
 In simulation this is `sensors:=realistic` (README Part F). With the correlative matcher it explores the room and finds the beacon, but it is still weaker than the ideal depth camera: without loop closure the pose drifts in long runs, and runs vary a lot between seeds ([`results/slam_tuning/README.md`](results/slam_tuning/README.md)). For reference, the options that were considered:
 
@@ -200,7 +200,7 @@ Replay the same `/cmd_vel` through `world_sim` on the development computer. Wher
 | 2 | Step 3: weigh, bench-test, rerun the simulation tests | Scale, one servo, PC |
 | 3 | Step 4: stand, then walk with the re-trained `duck_v4_walk` policy or the XGO-Duck policy | Finished robot, measured masses and servo |
 | 4 | Step 5: ROS 2 in Docker, `duck_hw`, `usb_camera_node`, `duck_tof` | Robot walking |
-| 5 | Step 6: buy, check, mount and calibrate the B0385 camera and VL53L5CX | Parts |
+| 5 | Step 6: check, mount and calibrate the camera and the depth sensor (A010, or the VL53L5CX alternative) | Parts in hand |
 | 6 | Step 7: photos, labels, retrain YOLO | Camera working |
 | 7 | Steps 8 to 10: budget, RViz link, staged bring-up | Everything above |
 | 8 | Step 11: bags back into the simulation | Ongoing |
