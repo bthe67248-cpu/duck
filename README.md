@@ -26,7 +26,8 @@ reproduce it, and the parts further down give the details.
 | Mouth servo | a placeholder box floating in the dome | a cradle hanging from the dome (end plates, lips, stop bar, cable window, cable-tie slots), clear of the head-roll servo's sweep | `build_v4.py` |
 | Printability | not checked | closed-solid, wall-thickness and bed-fit check, oriented print STLs, slicer settings, hardware list, assembly order | `design/v4/export_print.py`, [`design/v4/PRINT_GUIDE.md`](design/v4/PRINT_GUIDE.md) |
 | Collision proxies | head/jaw boxes: 23 % of the jaw surface outside, the lower-head box up to 22 mm past the shell; the contact gate failed | convex hulls of the real shells (0 % outside), chamfered body blocks; the gate counts > 0.8 mm (as the mesh fit check) | `make_duck.py --tag gc`, `check_contacts.py`, `check_collision_proxies.py` |
-| Walking policy | pretrained velstand fails walk, planks and backward get-up on V4 | PPO fine-tune on the V4 model on a CPU, with wide servo randomization (see Part D) | [`training/README.md`](training/README.md) |
+| Walking policy | pretrained velstand fails walk, planks and backward get-up on V4 (5/12 in the scored set) | `policies/duck_v4_walk.onnx`: PPO fine-tune on the V4 model on a CPU; passes all 8 motion tests (9/12 with servo variations); walking still slow and drifts (Part D) | [`training/README.md`](training/README.md), `training/evaluate.py` |
+| Reviewing motions | GIFs at 320 × 240 with shadow streaks headless | `--gif-size`, no shadows; `scripts/make_review_video.py` makes one captioned MP4, side by side with `--compare` | Part D |
 | `model/stand_numbers.json` | stale (0.804 kg) | regenerated from the current model (0.825 kg) | `stand_numbers.py` |
 
 **Linux / macOS quick start** (the PowerShell commands further down work the same way. Use `python` from the venv):
@@ -37,7 +38,7 @@ python3.12 -m venv .venv && .venv/bin/pip install -r requirements-test.txt torch
 .venv/bin/python scripts/prep_meshes.py && .venv/bin/python scripts/make_duck.py
 .venv/bin/python scripts/make_duck.py --base robot_groundcontact.xml --tag gc
 .venv/bin/python scripts/stand_numbers.py model/duck_v4_scene.xml && .venv/bin/python scripts/worldgen.py
-# policies: download each file in policies/manifest.json from
+# policies: download each file in policies/manifest.json (except duck_v4_walk.onnx, which is in this repo) from
 #   https://huggingface.co/pollen-robotics/microduck-policies/resolve/main/<file>  into policies/
 .venv/bin/python scripts/preflight.py                                     # must end "0 error(s)"
 .venv/bin/python -m pytest tests ros2/duck_nav/test -q
@@ -341,6 +342,49 @@ GIFs and contact sheets: `results\post_fix\motions\` (pre-fix: `results\pre_fix\
 - *Dance.* There is no dance policy. The routine in `m_dance` is choreography I wrote on top of the velstand policy's own command inputs (body roll and pitch, body height, four head joints, turn rate), on a 120 bpm beat. Edit the `choreo` function to change it.
 
 **Caveats.** The policies were trained for the upstream Microduck with the BAM XL330 servo model; here they drive the V3 masses through the model's simple PD servos. With the corrected masses and the shield's collision shapes they **no longer** walk as before: this is the "needs retraining" outcome in the PDF's Part 9 table, not "walks as before". The masses are still provisional, and nothing here says anything yet about your Feetech servos.
+
+### V4-trained walking policy (27 November 2026): `policies/duck_v4_walk.onnx`
+
+The pretrained policies were trained for the upstream Microduck. `training/` fine-tunes velstand on the V4 model on
+a plain CPU. See [`training/README.md`](training/README.md) for the design and the commands. In short: PPO with
+4 worker processes (~3 500 steps/s); a warm start from velstand with a frozen normalizer and a critic-only warm-up;
+wide servo randomization because the Feetech servos are not measured; 15 % of episodes starting lying down
+(get-up); and the commands navigation and the dance actually send.
+
+```powershell
+.\.venv\Scripts\python.exe training\train_ppo.py --out training\runs\walk_v4_ft --init-onnx policies\velstand.onnx --critic-warmup 40 --lr 3e-5 --lr-max 1e-4 --lr-min 1e-5 --target-kl 0.005 --iters 2500
+.\.venv\Scripts\python.exe training\export_checkpoint.py training\runs\walk_v4_ft\last.pt --out candidate.onnx
+.\.venv\Scripts\python.exe training\evaluate.py policies\velstand.onnx candidate.onnx       # scored table
+.\.venv\Scripts\python.exe scripts\motions.py all --walk-policy policies\duck_v4_walk.onnx --gif --gif-size 480 360 --out results\v4_policy\mine
+.\.venv\Scripts\python.exe scripts\make_review_video.py results\v4_policy\mine --compare results\v4_policy\gifs_pretrained
+```
+
+For GIFs on a machine without a display, set `MUJOCO_GL=osmesa` (Linux: `apt install libosmesa6`).
+
+**Results** (`results/v4_policy/eval.md`): the 8 motion tests, plus walking with servo stiffness ×0.8 / ×1.2 and
+servo delay 10 / 40 ms:
+
+| Policy | Score | balance | walk | planks | get-up | sit/stand | roll | pick | dance | walk kp×0.8 | walk kp×1.2 | walk 10 ms | walk 40 ms |
+|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
+| velstand (pretrained) | 5/12 | PASS | FAIL | FAIL (2/5) | FAIL (back) | PASS | PASS | PASS | PASS | FAIL | FAIL | FAIL | FAIL |
+| **duck_v4_walk** (iteration 550) | **9/12** | PASS | PASS | PASS (5/5) | PASS (1.2 s / 1.2 s) | PASS | PASS | PASS | PASS | FAIL | FAIL | FAIL | PASS |
+| iteration 700 | 7/12 | PASS | FAIL | PASS | PASS | PASS | PASS | PASS | PASS | FAIL | FAIL | FAIL | FAIL |
+| iteration 900 | 8/12 | PASS | FAIL | PASS | PASS | PASS | PASS | PASS | PASS | PASS | FAIL | FAIL | FAIL |
+
+Video: `results/v4_policy/review_before_after_cand550.mp4` (pretrained on the left, V4-trained on the right).
+
+What this shows, and what it does not:
+- The V4 policy fixes the three failures of the pretrained one on this model. It clears all five planks up to
+  12 mm, and it gets up from a backward fall, which the pretrained one never did on the V4 body.
+- **Walking is the weak point.** Speed is 0.10 m/s for a 0.3 m/s command, barely over the test's 0.8 m in 8 s.
+  Open loop, the heading drifts 42° in 8 s (limit 45°), and 47–59° with the servo varied. The pretrained policy
+  drifts 66–109° under the same conditions, or walks only 0.3–0.7 m. The policy has no memory, so it can only
+  cut its yaw-rate bias, not correct heading it has already lost. In navigation the planner corrects heading from
+  SLAM. Training past iteration 550 (936 iterations, 8.6M steps in all, including two reward changes) did not
+  improve it on 4 CPU cores. Upstream trains gaits with about 100× more samples on a GPU.
+- Simulation only, on estimated masses and the XL330 servo model with wide randomization. Before the real robot:
+  weigh, bench-test a servo, rebuild the model, and fine-tune again from this policy (`training/README.md`, last
+  section). Run it on `world_sim` with `ros2 launch duck_nav duck_nav.launch.py walk_policy:=duck_v4_walk.onnx`.
 
 ## Part E: SLAM navigation with the head camera and depth
 
