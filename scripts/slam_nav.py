@@ -1,6 +1,11 @@
-r"""slam_nav.py -- camera + depth SLAM and navigation for the Duckling V3 in MuJoCo.
+r"""slam_nav.py -- LEGACY: the first standalone camera + depth SLAM demo (Duckling V3, head camera) in MuJoCo.
 
-Usage:  .venv\Scripts\python.exe scripts\slam_nav.py [--view] [--gif] [--time 240] [--seed 0]
+RETIRED from active use (review ff34442 J05). It keeps its own copy of the old planner, with the bugs fixed in the
+maintained ROS planner (ros2/duck_nav: start area that could clear real walls, diagonal corner cutting, no map-bounds
+checks), and it models the V3 head-camera setup, not the V4 body-mounted A010. Use the ROS stack (README Part F).
+It only runs with --legacy, to reproduce the historical results in results/slam/.
+
+Usage:  .venv\Scripts\python.exe scripts\slam_nav.py --legacy [--view] [--gif] [--time 240] [--seed 0]
 
 The duck starts in a room it has never seen and must reach a magenta beacon hidden behind walls.
 Sensors used by the algorithm:
@@ -235,7 +240,11 @@ def main():
     ap.add_argument("--view", action="store_true"); ap.add_argument("--gif", action="store_true")
     ap.add_argument("--time", type=float, default=240.0); ap.add_argument("--walk", type=float, default=0.4)
     ap.add_argument("--no-match", action="store_true", help="disable scan matching (dead reckoning only), for comparison")
+    ap.add_argument("--legacy", action="store_true", help="confirm running the retired standalone demo")
     a = ap.parse_args()
+    if not a.legacy:
+        sys.exit("slam_nav.py is retired (old planner with known bugs, V3 head camera). Use the ROS stack: "
+                 "ros2 launch duck_nav duck_nav.launch.py (README Part F). Pass --legacy to reproduce results/slam/.")
     OUT.mkdir(parents=True, exist_ok=True)
     gain = calibrate(a.walk)
     print(f"calibration: walk command {a.walk} -> {gain * a.walk:.3f} m/s (gain {gain:.2f})", flush=True)

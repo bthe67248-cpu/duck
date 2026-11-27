@@ -212,3 +212,54 @@ def test_a010_reader_failure_is_raised_by_read():
     with pytest.raises(RuntimeError, match="unplugged"):
         b.read()
     b.stop.set()
+
+
+def test_a010_queue_eviction_survives_consumer_draining_in_between():
+    """Review ff34442 A02: the reader saw a full queue, the consumer drained it, and the eviction's queue.Empty ended
+    the reader thread; every later read() then raised. Deterministic interleaving, no threads."""
+    import queue as _q
+    from duck_nav.a010_backend import A010Backend
+
+    class RacyQueue(_q.Queue):
+        """full() reports True once, then the 'consumer' empties the queue before the producer evicts."""
+        def __init__(self):
+            super().__init__(maxsize=2); self.armed = False
+        def full(self):
+            f = super().full()
+            if f and self.armed:
+                self.armed = False
+                while True:
+                    try:
+                        super().get_nowait()
+                    except _q.Empty:
+                        break
+            return f
+
+    b = object.__new__(A010Backend)
+    b.q = RacyQueue(); b.stats = dict(queue_dropped=0); b.error = None
+    b._offer("f1"); b._offer("f2")
+    b.q.armed = True
+    b.q.put_nowait = _racy_put(b.q)                    # the put sees Full, then the consumer drains the queue
+    b._offer("f3")                                     # used to raise queue.Empty (via full() + get_nowait())
+    assert b.read() == "f3" and b.read() is None and b.error is None
+    # plain overflow still evicts the oldest and counts it
+    b.q = _q.Queue(maxsize=2); b.stats = dict(queue_dropped=0)
+    for f in ("a", "b", "c", "d"):
+        b._offer(f)
+    assert b.stats["queue_dropped"] == 2 and b.read() == "c" and b.read() == "d"
+
+
+def _racy_put(q):
+    """put_nowait that raises Full once while the queue is full, after which the consumer drains everything."""
+    import queue as _q
+    orig = _q.Queue.put_nowait
+    state = {"done": False}
+
+    def put(item):
+        if not state["done"] and q.qsize() >= q.maxsize:
+            state["done"] = True
+            while q.qsize():
+                _q.Queue.get_nowait(q)               # consumer drains between the Full and the eviction
+            raise _q.Full
+        return orig(q, item)
+    return put

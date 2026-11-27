@@ -34,7 +34,10 @@ reproduce it, and the parts further down give the details.
 
 ```bash
 git clone --depth 1 https://github.com/pollen-robotics/microduck_rl     # or the pinned commit from .github/workflows
-python3.12 -m venv .venv && .venv/bin/pip install -r requirements-test.txt torch onnx rtree manifold3d
+python3.12 -m venv .venv && .venv/bin/pip install -r requirements-test.txt     # what CI installs
+# extras, as needed: requirements-vision.txt (camera/optical flow), requirements-tools.txt (print checks, videos),
+# requirements-train.txt (policy training; add --extra-index-url https://download.pytorch.org/whl/cpu),
+# requirements-hw.txt (robot computer: A010 serial, camera)
 .venv/bin/python scripts/prep_meshes.py && .venv/bin/python scripts/make_duck.py
 .venv/bin/python scripts/make_duck.py --base robot_groundcontact.xml --tag gc
 .venv/bin/python scripts/stand_numbers.py model/duck_v4_scene.xml && .venv/bin/python scripts/worldgen.py
@@ -388,10 +391,10 @@ What this shows, and what it does not:
 
 ## Part E: SLAM navigation with the head camera and depth
 
-`scripts\slam_nav.py` puts the duck in a 4.4 × 3.2 m room it has never seen (two partition walls forming an S-shaped route, three boxes) and asks it to reach a magenta beacon it cannot see from the start.
+**Retired (27 Nov 2026):** this standalone script keeps the old planner and the V3 head camera; it now runs only with `--legacy`, to reproduce the historical results. Use Part F. `scripts\slam_nav.py` puts the duck in a 4.4 × 3.2 m room it has never seen (two partition walls forming an S-shaped route, three boxes) and asks it to reach a magenta beacon it cannot see from the start.
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\slam_nav.py --gif
+.\.venv\Scripts\python.exe scripts\slam_nav.py --legacy --gif      # retired: runs only with --legacy
 ```
 
 Add `--view` to watch, `--no-match` to switch scan matching off.
@@ -445,7 +448,7 @@ The package `ros2\duck_nav` runs the whole thing as six ROS 2 nodes in WSL. The 
 
 | | `sensors:=ideal` (default) | `sensors:=realistic` |
 |-|-|-|
-| What it stands for | A perfect RGB-D camera: the original simulation, an upper bound | What the V3 will actually carry: a USB colour camera and a VL53L5CX 8×8 ToF (Pololu #3417) |
+| What it stands for | A perfect RGB-D camera: the original simulation, an upper bound | The V3 plan (historical): a USB colour camera and a VL53L5CX 8×8 ToF. V4 carries the Sipeed A010 in the body (`design/v4/README.md`) |
 | Range data | 320×240 depth image, perfect | 64 zones, 45° × 45°, 10 Hz, 2 m usable, ±1.5% noise, 3% zone and 2% frame dropouts, 60 ms latency. "No return" is never treated as free space |
 | YOLO range | Median depth inside the box | ToF zones that project into the box, after correcting for the body motion between the two stamps. Must agree within 15 cm, otherwise the detection is reported as `unranged` and gives no goal |
 | Mapping | 2° bearing bins, at least 3 points each | One bearing per zone column, 1 point is enough; scan matching needs 8 ToF hits in the 1 s sweep window (`tof_min_hits`) |

@@ -9,14 +9,14 @@ Parameters device        stable path, e.g. /dev/v4l/by-id/usb-Arducam_..-video-i
                          SLAM/ToF association; without it CameraInfo is not published and detections stay unranged)
            frame_id      optical frame name (head_cam_optical: z forward, x right, y down -- REP 103)
            exposure      manual exposure in V4L2 units (0 = leave auto); fix it to bound motion blur
-           stale_after   s without a frame -> status "stale", reopen the device
+           stale_after   s without a frame -> status "stale": the blocked capture worker is abandoned and a new one
+                         opens the device again (duck_nav.capture_supervisor); "stuck" if too many are blocked
 Frame convention: this publishes images in a REP-103 optical frame. slam_node expects /camera/pose_level in the
 MuJoCo camera convention (looks along -z, y up) -- the hardware pose publisher must convert (rotate 180 deg about x).
 Stamps: the capture time is taken when the frame is dequeued (host clock); latency of the USB pipeline is not
 compensated -- measure it (e.g. LED + photodiode test) and set `latency` to subtract it.
 """
 import threading
-import time
 
 import numpy as np
 import rclpy
@@ -26,6 +26,8 @@ import yaml
 from rclpy.node import Node
 from sensor_msgs.msg import CameraInfo, Image
 from std_msgs.msg import String
+
+from .capture_supervisor import CaptureSupervisor
 
 
 def load_camera_info(path):
@@ -59,9 +61,11 @@ class UsbCameraNode(Node):
         self.pub = self.create_publisher(Image, "camera/image_raw", 1)
         self.pub_info = self.create_publisher(CameraInfo, "camera/camera_info", 1)
         self.pub_status = self.create_publisher(String, "camera/status", 1)
-        self.latest = None; self.lock = threading.Lock(); self.last_frame = 0.0; self.cap = None
-        self.running = True; self.reopen = False; self.calibration_mismatch = False
-        threading.Thread(target=self.capture_loop, daemon=True).start()
+        self.latest = None; self.lock = threading.Lock(); self.calibration_mismatch = False
+        # every device handle lives in one worker thread; a read that blocks forever is abandoned, not waited on
+        self.sup = CaptureSupervisor(self.open, self.on_frame, clock_fn=self.get_clock().now,
+                                     stale_after=float(self.get_parameter("stale_after").value))
+        self.sup.start()
         self.create_timer(0.005, self.publish_latest)
         self.create_timer(0.5, self.watchdog)
 
@@ -84,21 +88,10 @@ class UsbCameraNode(Node):
             self.get_logger().error(f"capture {w}x{h} does not match calibration {self.info.width}x{self.info.height}; images and CameraInfo withheld")
         return cap
 
-    def capture_loop(self):
-        while self.running:
-            if self.reopen and self.cap is not None:
-                self.cap.release(); self.cap = None
-            self.reopen = False
-            if self.cap is None:
-                self.cap = self.open()
-                if self.cap is None:
-                    time.sleep(1.0); continue
-            ok, bgr = self.cap.read()
-            t = self.get_clock().now()
-            if not ok:
-                self.cap.release(); self.cap = None; continue
-            with self.lock:
-                self.latest = (t, bgr); self.last_frame = time.monotonic()
+    def on_frame(self, t, bgr):
+        """From the current capture worker: keep only the newest frame (t = acquisition time, host clock)."""
+        with self.lock:
+            self.latest = (t, bgr)
 
     def publish_latest(self):
         with self.lock:
@@ -119,12 +112,15 @@ class UsbCameraNode(Node):
             self.info.header = im.header; self.pub_info.publish(self.info)
 
     def watchdog(self):
-        stale = time.monotonic() - self.last_frame > float(self.get_parameter("stale_after").value)
-        self.pub_status.publish(String(data="stale" if stale else
-                                      "calibration_mismatch" if self.calibration_mismatch else "ok"))
-        if stale and self.cap is not None and not self.reopen:
-            self.get_logger().warn("no frames: reopening camera", throttle_duration_sec=5.0)
-            self.reopen = True                               # the capture thread owns the device handle
+        state = self.sup.check()                             # restarts a stale capture worker
+        if state == "stale":
+            self.get_logger().warn("no frames: abandoning the capture worker and reopening the camera",
+                                   throttle_duration_sec=5.0)
+        elif state == "stuck":
+            self.get_logger().error("capture workers are blocked in the driver; not opening more until one returns",
+                                    throttle_duration_sec=5.0)
+        self.pub_status.publish(String(data=state if state != "ok" else
+                                       "calibration_mismatch" if self.calibration_mismatch else "ok"))
 
 
 def main():
@@ -138,4 +134,7 @@ def main():
         if rclpy.ok():
             raise
     finally:
-        node.running = False; node.destroy_node(); rclpy.try_shutdown()
+        left = node.sup.close()                              # bounded: blocked workers are daemon threads
+        if left:
+            node.get_logger().warn(f"capture workers still blocked at shutdown: {left}")
+        node.destroy_node(); rclpy.try_shutdown()

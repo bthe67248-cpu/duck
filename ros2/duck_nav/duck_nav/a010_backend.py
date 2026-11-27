@@ -139,10 +139,23 @@ class A010Backend:
                 continue
             self.stats["frames"] += len(good)
             self.stats["superseded"] += len(good) - 1       # only the newest has a correct receive-time stamp
-            fr = frame_from_pixels(good[-1], t - self.latency_ns, self.unit, self.flip_lr, self.flip_ud)
-            if self.q.full():
-                self.q.get_nowait(); self.stats["queue_dropped"] += 1   # keep the newest acquisitions
-            self.q.put_nowait(fr)
+            self._offer(frame_from_pixels(good[-1], t - self.latency_ns, self.unit, self.flip_lr, self.flip_ud))
+
+    def _offer(self, fr):
+        """Queue a frame without ever blocking, evicting the oldest one when full (newest data wins). `full()`
+        followed by `get_nowait()` is not atomic: the consumer can drain the queue in between, and the eviction's
+        queue.Empty used to end the reader thread for good. This thread is the only producer, so once an eviction
+        succeeds or finds the queue already drained, the next put has room."""
+        while True:
+            try:
+                self.q.put_nowait(fr)
+                return
+            except queue.Full:
+                try:
+                    self.q.get_nowait()
+                    self.stats["queue_dropped"] += 1         # keep the newest acquisitions
+                except queue.Empty:
+                    pass                                     # the consumer took them meanwhile: just retry the put
 
     @property
     def dropped(self):
