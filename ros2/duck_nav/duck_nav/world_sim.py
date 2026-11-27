@@ -137,10 +137,10 @@ class WorldSim(Node):
         self.declare_parameter("tof_latency", 0.06)          # s from acquisition to publication
         self.declare_parameter("tof_range_convention", "radial")   # what the published `range` means
         # The model's `tof` site sits ~2 mm behind the head shell's visual front surface and inside the head's collision
-        # primitives (mj_ray does not report hits from inside a primitive, so that alone does not self-occlude here).
+        # hulls (convex hulls of the shell meshes since 27 Nov 2026; rays from inside reach the hull 1.7-3 mm away).
         # The real sensor must look through an opening, so the simulated optical origin is put this far forward along
         # the boresight: 12 mm is clear of the head and bill over 135 head poses (results/post_fix/fov_check.txt), and
-        # the bill's collision proxy still shows up if it ever enters the field of view. /tof/pose_level uses it too.
+        # the bill's collision hull still shows up if it ever enters the field of view (rechecked with the hulls). /tof/pose_level uses it too.
         self.declare_parameter("tof_origin_offset", 0.012)
         # where the depth sensor sits: "body" (A010 in the V4 chest pocket, site `tof_body`) | "head" (site `tof`)
         self.declare_parameter("tof_mount", "body")

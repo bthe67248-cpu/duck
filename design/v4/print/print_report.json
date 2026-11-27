@@ -2,62 +2,66 @@
  "head_upper_v4": {
   "description": "upper head shell (dome, bill, lens opening, mouth-servo cradle, 4 pilot holes)",
   "closed": true,
-  "volume_cm3": 61.06,
+  "volume_cm3": 61.0,
   "bbox_mm": [
    97.9,
-   50.0,
-   121.6
+   121.6,
+   50.0
   ],
-  "orientation": "on -y side",
+  "orientation": "as modelled",
   "fits_bed": true,
-  "overhang_cm2": 55.4,
+  "overhang_cm2": 73.5,
   "wall_mm": {
-   "p1": 1.07,
-   "p5": 1.49,
-   "median": 3.11,
+   "p1": 1.08,
+   "p5": 1.48,
+   "median": 3.13,
    "share_below_min_pct": 0.1
   },
+  "protruding_samples": 0,
+  "protrusion_example_mm": null,
   "warning": ""
  },
  "head_lower_v4": {
   "description": "lower head shell (neck clearance, jaw hinge ears, 4 clearance holes)",
   "closed": true,
-  "volume_cm3": 38.91,
+  "volume_cm3": 38.88,
   "bbox_mm": [
    95.4,
-   22.4,
-   120.7
+   120.7,
+   22.4
   ],
-  "orientation": "on -y side",
+  "orientation": "upside down",
   "fits_bed": true,
-  "overhang_cm2": 24.7,
+  "overhang_cm2": 48.9,
   "wall_mm": {
-   "p1": 0.36,
+   "p1": 0.29,
    "p5": 1.11,
    "median": 3.0,
-   "share_below_min_pct": 2.6
+   "share_below_min_pct": 3.0
   },
+  "protruding_samples": 0,
+  "protrusion_example_mm": null,
   "warning": ""
  },
  "jaw_v4": {
   "description": "jaw / lower bill (hinge bosses, pushrod lever)",
   "closed": true,
-  "volume_cm3": 4.75,
+  "volume_cm3": 4.68,
   "bbox_mm": [
-   76.1,
-   17.0,
-   31.2
+   16.9,
+   31.2,
+   76.1
   ],
-  "orientation": "on +y side",
+  "orientation": "on -x side",
   "fits_bed": true,
-  "overhang_cm2": 4.5,
+  "overhang_cm2": 3.8,
   "wall_mm": {
-   "p1": 0.12,
-   "p5": 0.64,
-   "median": 1.96,
-   "share_below_min_pct": 6.2
+   "p1": 0.1,
+   "p5": 0.62,
+   "median": 1.91,
+   "share_below_min_pct": 6.4
   },
-  "warning": "5th-percentile wall 0.64 mm < 0.8 mm: enable variable-width walls (Arachne) and check the thin areas in the slicer preview"
+  "warning": "5th-percentile wall 0.62 mm < 0.8 mm: enable variable-width walls (Arachne) and check the thin areas in the slicer preview"
  },
  "body_shell_v4": {
   "description": "body shell (board bay, battery compartment, connector well, A010 pocket, trunk mounts)",

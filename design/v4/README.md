@@ -3,7 +3,8 @@
 24–25 November 2026; printable head 27 November (see "Printable head", and [`PRINT_GUIDE.md`](PRINT_GUIDE.md)).
 **Simulation and concept CAD; the printed parts pass the print checks but no part has been printed yet.** The body now has its assembly split, board standoffs,
 mounting bosses, battery retention and connector/cable envelopes, and the head clears the neck mechanism and the camera
-(see "Fit fixes and assembly geometry"); hinge, pushrod and head-shell fasteners are still to do, and every clearance
+(see "Fit fixes and assembly geometry"); the hinge, the head-shell fasteners and the mouth-servo cradle were added on
+27 November ("Printable head"; the pushrod hardware is still an estimate), and every clearance
 must be checked on the real parts. V4 is now the only robot model: the V3 model, its rear shield, the V3 head
 STLs and the V3 generator have been deleted (they are in git history).
 
@@ -185,31 +186,47 @@ stiffness on a print first).
 - The UNO Q's bottom-connector height (the 6 mm standoffs assume ≤ 5 mm) and the real positions of its USB-C and the
   HAT headers.
 - Panel-mount XT60 screws; foam pads for the LiPo; strain relief at the lid's USB slot.
-- Collision proxies (`scripts/collision_proxies.json`) for the head and jaw are unchanged; the body's follow the outer
-  blocks (a new box for the connector well).
+- (25 Nov) Collision proxies for the head and jaw unchanged; the body's follow the outer blocks. Superseded 27 Nov:
+  convex hulls of the shells and chamfered body blocks (main README, Part A).
 
 ## Printable head (27 November 2026)
 
-All three features are parametric (`v4_params.json` → `head.fasteners`, `head.hinge`, `head.mouth_cradle`) and
-built by `build_v4.py`; every part stays a closed solid.
+All features are parametric (`v4_params.json` → `head.fasteners`, `head.hinge`, `head.mouth_cradle`) and built by
+`build_v4.py`; every part stays a closed solid, and `export_print.py` checks that no added feature sticks out
+through the original outer skin (it flags the first cradle version, which did by 1.4 mm, and passes this one).
+An independent review (agent, read-only) found the problems listed under "Review fixes" below; all are fixed.
 
 - **Head-shell screws.** The upstream shells already carry four screw bosses (rear at x −33.9 / 29.9, y 46.8; front
   at x −31.7 / 27.7, y −37.0), but the one-off V4 widening stretched the rear bores into 2.1 × 3.6 mm ovals that a
-  self-tapping screw cannot grip. Each upper boss bore is filled (r 2.4) and re-drilled Ø1.75 (pilot for M2
-  self-tappers); the lower rear bosses are filled (r 2.8) and all four lower bores re-drilled Ø2.4 (clearance).
-  Rear M2 × 12, front M2 × 10, from below with washers.
+  self-tapping screw cannot grip. Each upper boss bore is filled (r 2.4, from 0.1 mm above the seam, so the
+  bosses meet within 0.25 mm) and re-drilled Ø1.75 (pilot for M2 self-tappers); the lower rear bosses are filled
+  (r 2.8) and all four lower bores re-drilled Ø2.4. Rear: M2 × 12 with a washer (about 7 mm of thread
+  engagement). Front: M2 × 10, no washer, the head in a Ø4.4 × 1 mm counterbore in the hinge web: at full opening
+  the jaw heel passes 1.6 mm below the screw head.
 - **Jaw hinge.** The jaw split removes all shell material within 12.5 mm of the hinge axis (y −46, z 12), so
   there was nothing for a pin to sit in. Now each side has two knuckles: the jaw's side wall, thickened by a
-  Ø6.4 boss kept inside the jaw's skin (convex hull inset 0.6 mm), outside; and an ear on the lower shell, inside
-  (x −28.5…−25.5 and 21.5…24.5), hanging from a 3 mm web at the seam that wraps the front screw boss (the
-  boss gains strength; the screw head bears on the web). Pin: M2 × 10 from outside, free in the jaw (Ø2.3), threaded
-  into the ear (Ø1.75). The jaw is cut clear of each ear grown by 0.5 mm over −3…33° (one prism: the 2-D hull of
-  the turned outlines). Fit check: jaw vs shells and ears clear at every sampled opening.
-- **Mouth-servo cradle.** End plates at the servo's ±y ends hang from the dome (trimmed to the inside of the
-  shell), with lips under the servo, a stop bar on the −x side (front half only: further back the head-roll
-  XL330 sweeps up to z 39 mm, found by the fit check), a window for the cable plugs and slots for a cable tie.
+  Ø6.4 boss kept inside the local skin, outside; and an ear on the lower shell, inside (x −28.5…−25.5 and
+  21.5…24.5), hanging from a 2.75 mm web at the seam that wraps the front screw boss. Pin: a Ø2 × 10 mm steel dowel
+  pressed into the ear (Ø1.9) with a drop of CA glue, free in the jaw (Ø2.3). The jaw turns on a smooth pin and
+  nothing clamps the knuckles together (a self-tapping screw would have pulled the jaw onto the ear and fought the
+  0.6 N·m mouth servo). The jaw straddles both ears, so it cannot slide off. The jaw is cut clear of each ear
+  grown by 0.5 mm over −3…33° (one prism: the 2-D hull of the turned outlines).
+- **Pushrod lever.** The quarter-disc lever plate on the jaw heel used to bulge up to about 2 mm through the
+  bill's underside (the bottom is concave behind the hinge). Its lower edge now follows the bill's inner surface,
+  ray-traced, 0.3 mm into the wall. The pin hole is unchanged.
+- **Mouth-servo cradle.** End plates at the servo's ±y ends (34.8 mm gap for the 34 mm case) hang from the dome.
+  Each plate's top is a slope ray-traced from the dome, 0.6 mm under the outer surface at both faces, and checked to
+  reach at least 0.4 mm past the inner surface: the dome is concave there, so the first version (trimmed to the
+  convex hull) poked 1.4 mm through the forehead. Lips run under the servo. The stop bar on the −x side covers
+  only the front half and stays 0.4 mm clear of the servo, because further back the head-roll XL330 sweeps up to
+  z 39 mm (fit check). There is a window for the cable plugs and slots for a cable tie.
 - **Mass.** The features add about 6 g (robot 0.819 → 0.825 kg; `model/mass_ledger.json`).
 - **Collision proxies** for the head and jaw are now the convex hulls of these meshes (main README, Part A).
+
+Review fixes (27 November): cradle through the forehead; stop bar overlapping the servo by 0.3 mm (9.6 mm³);
+front screw heads seated on the shell edge, and washers there would have met the jaw at 33°; a self-tapping hinge
+pin that would bind or loosen; print orientations that put the screw and hinge holes horizontal; a 0.75 mm gap
+between the shell bosses; the lever bulge (found by the new protrusion check).
 
 ## Validation commands and the jaw control path (third review, 25 November 2026)
 

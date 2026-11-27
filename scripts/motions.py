@@ -26,8 +26,9 @@ value; --servo-delay overrides it; ros2/duck_nav/duck_nav/actuation.py). --recor
 50 Hz to DIR/<motion>.npz for design/v4/check_v4_fit.py --traj.
 
 Fall monitor (Duck.mon, sampled every 50 Hz control step, latched): FALL when torso up-axis z < 0.5 (tilt > 60 deg),
-or torso height < 0.07 m, or a head-dome/head-lower/body collision proxy touches the floor for >= 3 consecutive
-steps. The jaw (lower bill) proxy is deliberately not a fall indicator (picking uses it). Final uprightness alone is never used.
+or torso height < 0.07 m, or a head-upper/head-lower/body collision proxy touches the floor for >= 3 consecutive
+steps (training/duck_env.py uses the same set and persistence). The head_upper hull includes the upper bill, so a
+very deep pick could register as a fall; the jaw (lower bill) proxy is deliberately not a fall indicator (picking uses it). Final uprightness alone is never used.
 """
 import argparse, math, os, sys
 from collections import Counter
@@ -43,6 +44,7 @@ SCENE = ROOT / "model" / "duck_v4_gc_scene.xml"
 DISABLE = None          # None | "body" | "head" | "all": switch off those S1 collision proxies (A/B diagnosis only)
 SERVO_DELAY = None      # s; None = the model's servo_delay_s
 RECORD = None           # directory for the qpos recordings (--record)
+GIF_W, GIF_H = 320, 240 # --gif-size
 WALK_POLICY = None      # path of an ONNX that replaces velstand (--walk-policy), e.g. training/runs/<run>/policy.onnx
 BODY_FALL_GEOMS = {"head_upper_collision", "head_lower_collision",
                    "body_front_upper_collision", "body_rear_upper_collision", "body_board_bay_collision"}
@@ -139,7 +141,9 @@ class Duck:
         self.mon = Monitor(self)
         self.frames, self.renderer, self.viewer = [], None, None
         if record:
-            self.renderer = mujoco.Renderer(self.m, 240, 320)
+            self.m.vis.global_.offwidth = max(self.m.vis.global_.offwidth, GIF_W)
+            self.m.vis.global_.offheight = max(self.m.vis.global_.offheight, GIF_H)
+            self.renderer = mujoco.Renderer(self.m, GIF_H, GIF_W)
             self.cam = mujoco.MjvCamera(); self.cam.distance = 0.75; self.cam.azimuth = 120; self.cam.elevation = -15
         if view:
             from mujoco import viewer as mj_viewer
@@ -185,7 +189,11 @@ class Duck:
         self.mon.update()
         if self.renderer and self.steps % 2 == 0:                  # 25 fps
             self.cam.lookat[:] = [self.d.qpos[0], self.d.qpos[1], 0.10]
-            self.renderer.update_scene(self.d, self.cam); self.frames.append(self.renderer.render().copy())
+            self.renderer.update_scene(self.d, self.cam)
+            # no shadows/reflections: software (headless) GL draws them as streaks
+            self.renderer.scene.flags[mujoco.mjtRndFlag.mjRND_SHADOW] = 0
+            self.renderer.scene.flags[mujoco.mjtRndFlag.mjRND_REFLECTION] = 0
+            self.frames.append(self.renderer.render().copy())
         if self.viewer:
             import time
             self.viewer.sync(); time.sleep(0.02)
@@ -206,9 +214,9 @@ class Duck:
         imgs = [Image.fromarray(f) for f in self.frames]
         imgs[0].save(OUT / f"{name}.gif", save_all=True, append_images=imgs[1:], duration=40, loop=0)
         n = 12; idx = np.linspace(0, len(imgs) - 1, n).astype(int)
-        sheet = Image.new("RGB", (320 * 6, 240 * 2))
+        sheet = Image.new("RGB", (GIF_W * 6, GIF_H * 2))
         for k, i in enumerate(idx):
-            sheet.paste(imgs[i], (320 * (k % 6), 240 * (k // 6)))
+            sheet.paste(imgs[i], (GIF_W * (k % 6), GIF_H * (k // 6)))
         sheet.save(OUT / f"{name}_sheet.png")
 
 
@@ -434,7 +442,9 @@ if __name__ == "__main__":
     ap.add_argument("--record", help="save each motion's qpos (50 Hz) to RECORD/<motion>.npz for check_v4_fit.py")
     ap.add_argument("--walk-policy", help="ONNX policy used wherever velstand is (walk, balance, obstacles, get-up, "
                                           "dance, and the stand phases of the others); e.g. policies/duck_v4_walk.onnx")
+    ap.add_argument("--gif-size", type=int, nargs=2, default=[320, 240], metavar=("W", "H"), help="GIF frame size")
     a = ap.parse_args()
+    GIF_W, GIF_H = a.gif_size
     SERVO_DELAY, RECORD = a.servo_delay, a.record
     WALK_POLICY = Path(a.walk_policy).resolve() if a.walk_policy else None
     if a.xml: SCENE = Path(a.xml).resolve()

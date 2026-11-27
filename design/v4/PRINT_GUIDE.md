@@ -11,7 +11,8 @@ python design/v4/export_print.py          # checks every part and writes design/
 ```
 
 It exits with status 1 if any part is not a closed solid, does not fit a 220 × 220 × 250 mm bed (change this
-with `--bed X Y Z`), or has its 5th-percentile wall below 0.6 mm.
+with `--bed X Y Z`), has its 5th-percentile wall below 0.6 mm, or (head shells and jaw) has an added feature
+sticking out through the original outer skin.
 
 ## 1. Parts and checks (current geometry)
 
@@ -46,14 +47,17 @@ parts and put the weights in the calibration file (step 5).
 
 ## 3. Orientation
 
-`export_print.py` writes each STL already oriented: of the six axis-aligned orientations, it picks the one with
-the least area overhanging more than 45°. These are suggestions, so check them in your slicer:
+`export_print.py` writes each STL already oriented. Where holes or mating faces decide the orientation it is fixed;
+otherwise it picks the axis-aligned orientation with the least overhang:
 
-- **Head upper:** exported standing on its back (bill up). The usual alternative is open side down, dome up. That
-  needs support inside the dome but gives the outside of the dome a cleaner finish. Either works.
-- **Head lower:** exported standing on its back. Open side up (bowl on the plate) also works, with supports under
-  the curved bottom.
-- **Jaw:** on its side. The hinge bosses are then circles in the layer plane, so the pin holes come out round.
+- **Head upper:** seam (open side) on the plate, dome up. The seam stays flat and the four screw bosses stand
+  vertical, so the Ø1.75 pilots print round. It needs tree support inside the dome, under the cradle lips and under
+  the bill.
+- **Head lower:** upside down (seam on the plate, bowl up), for the same reasons. The hinge ears then stand
+  vertical, and their Ø1.9 pin holes are horizontal: drill them to 1.9 mm after printing (a press fit needs a
+  clean hole anyway). Support under the bowl only where the slicer asks for it.
+- **Jaw:** on its side (−x down). The hinge bosses' axis is then vertical, so the Ø2.3 holes the jaw turns on come
+  out round. It needs support under the bill tip.
 - **Body shell:** upside down (roof on the plate). The board bay, battery compartment and well open upwards.
 - **Lid** flat; **keel cover** as modelled (rails up).
 
@@ -63,9 +67,9 @@ After printing, clear every hole with a drill bit of the listed size. Printed ho
 
 | Qty | Part | Where |
 |-|-|-|
-| 4 | M2 × 12 pan-head self-tapping screw + M2 washer | head shells, rear bosses (from below, into Ø1.75 pilots in the upper shell) |
-| 2 | M2 × 10 pan-head self-tapping screw + M2 washer | head shells, front bosses (head on the hinge web) |
-| 2 | M2 × 10 pan-head screw (or a Ø2 mm steel pin, glued in the ear) | jaw hinge pins, one per side: through the jaw boss (Ø2.3 clearance, the jaw turns on the shank) into the shell ear (Ø1.75 pilot) |
+| 2 | M2 × 12 pan-head self-tapping screw + M2 washer | head shells, **rear** bosses, from below, into the Ø1.75 pilots of the upper shell (about 7 mm of thread) |
+| 2 | M2 × 10 pan-head self-tapping screw, **no washer** | head shells, **front** bosses. The head sits in the Ø4.4 × 1 mm counterbore of the hinge web. A washer would meet the jaw at full opening |
+| 2 | Ø2 × 10 mm steel dowel pin (or 10 mm of 2 mm steel rod), CA glue | jaw hinge, one per side: through the jaw boss (Ø2.3, the jaw turns on the pin) and pressed into the shell ear (Ø1.9) with a drop of glue on the ear end. Do **not** use a screw: it clamps the knuckles together and the mouth servo (0.6 N·m) cannot turn the jaw |
 | 1 | 2 mm rod + 2 clevises/Z-bends, about 35 mm | mouth pushrod: servo horn → jaw lever pin (Ø2 hole in the jaw lever plate) |
 | 1 | 2.5 mm cable tie | mouth servo strap, through the two slots in the cradle plates |
 | 4 | M2.5 heat-set insert + M2.5 × 6 screw | UNO Q standoffs in the body bulkhead |
@@ -75,19 +79,22 @@ After printing, clear every hole with a drill bit of the listed size. Printed ho
 
 ## 5. Assembly order
 
-1. **Head.** Put the mouth servo into the cradle in the dome from below/+x (horn on the +x face, cable plugs to
-   the rear through the plate window) and strap it with the cable tie. Fit the pushrod to the horn.
-2. Put the jaw into the lower shell, line up the hinge bosses with the ears, and drive one M2 × 10 through each
-   boss into its ear. **Check that the jaw swings 0–30° freely** before going on. Clip the pushrod to the jaw lever.
-3. Route the head servo bus, the mouth servo cable and the camera cable down through the neck opening, with enough
+1. **Head.** Put the mouth servo into the cradle in the dome from below (horn on the +x face, cable plugs to the
+   rear through the plate window; the end plates leave 0.4 mm per end) and strap it with the cable tie. Fit the
+   pushrod to the horn.
+2. Fit the two **front** screws first: put the lower shell on the upper and drive the M2 × 10 screws (no washers)
+   up through the hinge webs. The webs are tied to the side walls only along about 3 mm, so the ears need these
+   screws before they take any load.
+3. Put the jaw between the ears, push a dowel through each jaw boss into its ear with a drop of CA glue on the ear
+   end, and **check that the jaw swings 0–30° freely** with no axial bind. Clip the pushrod to the jaw lever.
+4. Fit the two **rear** screws (M2 × 12 with washers). Do not over-tighten the self-tappers in PLA.
+5. Route the head servo bus, the mouth servo cable and the camera cable down through the neck opening, with enough
    slack for head yaw ±170° and full pitch/roll. Mount the head on the neck.
-4. Close the shells: the upper onto the lower, 2 × M2 × 10 (front, through the hinge webs) and 2 × M2 × 12
-   (rear) from below with washers. Do not over-tighten the self-tappers in PLA.
-5. **Body.** Press the heat-set inserts in, then put the UNO Q + HAT stack on the standoffs through the open rear
+6. **Body.** Press the heat-set inserts in, then put the UNO Q + HAT stack on the standoffs through the open rear
    and close the lid (2 hooks + 2 × M2). Put the LiPo into its compartment from below, plug its XT60 into the panel
    female, and close the keel cover (4 × M2). Drop the shell over the trunk (neck through the notch) and bolt it to
    the trunk plate (2 × M2) and to the hip-yaw servos (2 × M2).
-6. **Weigh** every printed part and every complete link and put the numbers in a copy of
+7. **Weigh** every printed part and every complete link and put the numbers in a copy of
    `config/robot_measurements.example.json`. Then rebuild the model and re-run the checks and the policy
    training (main README, "After printing").
 

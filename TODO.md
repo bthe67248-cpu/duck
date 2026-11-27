@@ -6,8 +6,9 @@ Everything in this repo runs in simulation on estimated numbers. These steps mak
 
 **Production-readiness update (27 Nov 2026):** the V4 printed parts now have head-shell fasteners, a jaw hinge and a
 mouth-servo cradle, pass the print checks (`design/v4/export_print.py`, [print guide](design/v4/PRINT_GUIDE.md)), the
-mesh fit check and the contact gate, and a V4-trained walking policy exists ([training](training/README.md)). Next
-physical step: print the head first as a test fit (section 2).
+mesh fit check and the contact gate. A CPU trainer for a V4 walking policy exists ([training](training/README.md));
+see README Part D for what the current policy does and does not pass yet. Next physical step: print the head first as
+a test fit (section 2).
 
 ## 1. Board bring-up (UNO_Q_HAT_IMU_SERVOS_XT60)
 
@@ -77,7 +78,8 @@ Windows-only `job2.sh`/`patch_ort.py` were not supplied. Ten-seed/layout and pai
 - [ ] Stop the escape / plan loop near walls (pure pursuit cuts corners into the clearance margin)
 - [ ] Roll (sideways) balance: only pitch is controlled now
 - [ ] YOLO: domain randomization, then fine-tune on real labelled camera photos
-- [x] Walking policy trained for V4 on the CPU (`training/`, PPO fine-tune of velstand with wide servo randomization and fall recovery)
+- [x] CPU trainer for a V4 walking policy (`training/`: PPO fine-tune of velstand, wide servo randomization, fall recovery)
+- [ ] Train it until `motions.py all --walk-policy` passes walk and obstacles (status: README Part D)
 - [ ] Fine-tune it again on measured masses and the bench-tested servo (`training/README.md`, "Before it goes on the real duck")
 - [ ] Finish `ros2/parked_commands` (steps in its README.txt), after command ownership is settled
 - [ ] Update `scripts/slam_nav.py` to use the fixed planner, or retire it

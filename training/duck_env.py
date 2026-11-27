@@ -9,7 +9,7 @@ microduck_rl/scripts/infer_policy.py), so a policy trained here drops into both 
 Joint order is the model's first 14 actuators: left leg 0-4, neck/head 5-8, right leg 9-13.
 
 Robustness (domain randomization, re-applied from stored defaults at every reset, so it never accumulates):
-  servo stiffness kp, damping kv, torque limit, command delay, joint damping/friction/armature, every body's mass,
+  servo stiffness kp, torque limit, command delay (around the model's value), joint damping/friction/armature, every body's mass,
   trunk and head centre of mass, foot friction, IMU mounting tilt, joint encoder bias, observation noise, pushes.
 The servo ranges are deliberately wide: the duck's Feetech servos have not been bench-tested yet (TODO.md step 3),
 so the policy must work across the plausible range around the model's (XL330) numbers. When scripts/make_duck.py is
@@ -21,6 +21,7 @@ proxies are what made the pretrained walk fail on V4 (README Part D).
 """
 import copy
 import math
+from collections import deque
 from pathlib import Path
 
 import mujoco
@@ -31,16 +32,22 @@ OBS_DIM, ACT_DIM, CRIT_EXTRA = 61, 14, 9
 CTRL_DT, PHYS_DT, SUBSTEPS = 0.02, 0.005, 4
 LEG = np.r_[0:5, 9:14]
 HEAD = np.r_[5:9]
-FALL_GEOMS = {"head_upper_collision", "head_lower_collision", "body_front_upper_collision", "body_rear_upper_collision", "body_board_bay_collision",
-              "body_connector_well_collision"}
+# the same set and the same 3-step persistence as scripts/motions.py's fall monitor (BODY_FALL_GEOMS)
+FALL_GEOMS = {"head_upper_collision", "head_lower_collision", "body_front_upper_collision", "body_rear_upper_collision",
+              "body_board_bay_collision"}
+FALL_STEPS = 3
 
 DEFAULT_CFG = dict(
     episode_s=20.0,
     # commands
     resample_s=(4.0, 8.0), zero_cmd_prob=0.2, turn_in_place_prob=0.1,
-    vx=(-0.2, 0.4), vy=(-0.15, 0.15), wz=(-1.0, 1.0), head=0.3, body=0.02,
+    # ranges cover what deployment sends: nav_node (head yaw sweep +-0.9, turn 1.2 rad/s) and motions.py dance
+    # (head up to 0.8, turn 1.5, body roll 0.15 / pitch 0.12 / height -0.015)
+    vx=(-0.2, 0.4), vy=(-0.15, 0.15), wz=(-1.5, 1.5), head=0.8, head_prob=0.7,
+    body_roll=0.15, body_pitch=0.12, body_z=(-0.015, 0.0), body_prob=0.4, body=0.005,
     # domain randomization (scales are multiplicative around the model's values)
-    kp=(0.75, 1.25), kv=(0.7, 1.3), torque=(0.8, 1.2), delay_s=(0.010, 0.040),
+    # delay: the model's servo_delay_s (20 ms estimate, or the measured value) times this factor
+    kp=(0.75, 1.25), torque=(0.8, 1.2), delay_scale=(0.5, 2.0),
     joint_damping=(0.5, 2.0), joint_friction=(0.5, 2.0), armature=(0.8, 1.2),
     mass=(0.9, 1.1), com_m=0.008, foot_friction=(0.5, 1.2), imu_tilt_deg=5.0, encoder_bias=0.015,
     push_interval_s=(3.0, 6.0), push_dv=0.3, init_joint_noise=0.05,
@@ -53,7 +60,7 @@ DEFAULT_CFG = dict(
     # rewards
     w_lin=2.0, s_lin=0.05, w_ang=2.0, s_ang=0.25, w_up=2.0, s_up=0.05, w_pose=1.0, w_head=1.0,
     w_air=3.0, air_min=0.125, air_max=0.30, w_clear=-30.0, clear_h=0.02, w_slip=-0.1, w_rate=-0.1,
-    w_angvel=-0.05, w_limits=-1.0, w_self=-1.0, w_torque=-0.002, w_term=-10.0,
+    w_angvel=-0.05, w_limits=-20.0, limit_margin=0.08, w_self=-1.0, w_torque=-0.002, w_term=-10.0,
 )
 STD_STAND = np.array([0.1, 0.05, 0.15, 0.15, 0.1] * 2)
 STD_WALK = np.array([0.3, 0.05, 0.4, 0.4, 0.25] * 2)
@@ -142,7 +149,7 @@ class DuckEnv:
         kp = U(c["kp"]) * U((0.95, 1.05), ACT_DIM)
         m.actuator_gainprm[:ACT_DIM, 0] = d0["gain"] * kp
         m.actuator_biasprm[:ACT_DIM, 1] = d0["bias1"] * kp
-        m.actuator_biasprm[:ACT_DIM, 2] = d0["bias2"] * U(c["kv"])
+        # (no kv randomization: these position actuators have kv = 0; joint damping below covers it)
         m.actuator_forcerange[:ACT_DIM] = d0["frc"] * U(c["torque"])
         m.dof_damping[:] = d0["damp"] * U(c["joint_damping"])
         m.dof_frictionloss[:] = d0["fric"] * U(c["joint_friction"])
@@ -156,7 +163,8 @@ class DuckEnv:
         m.geom_friction[:] = d0["gfric"]
         for g in self.feet:
             m.geom_friction[g, 0] = U(c["foot_friction"])
-        self.delay_steps = int(round(U(c["delay_s"]) / PHYS_DT))
+        base = self.base_delay if self.base_delay is not None else 0.020
+        self.delay_steps = int(round(base * U(c["delay_scale"]) / PHYS_DT))
         ang = math.radians(c["imu_tilt_deg"]) * r.uniform()
         ax = r.normal(size=3); ax /= np.linalg.norm(ax)
         self.imu_rot = np.zeros(9); mujoco.mju_quat2Mat(self.imu_rot, np.r_[math.cos(ang / 2), math.sin(ang / 2) * ax])
@@ -176,9 +184,13 @@ class DuckEnv:
             for i in range(3):                                    # small commands mean "stand": snap them to zero
                 if abs(self.cmd[i]) < (0.05 if i < 2 else 0.1):
                     self.cmd[i] = 0.0
-        if r.uniform() < 0.5:
+        if r.uniform() < c["head_prob"]:
             self.cmd[3:7] = r.uniform(-c["head"], c["head"], 4)
-        self.cmd[7:13] = r.uniform(-c["body"], c["body"], 6)      # keeps those input neurons alive; not tracked
+        self.cmd[7:13] = r.uniform(-c["body"], c["body"], 6)      # x, y, yaw: tiny, keeps those inputs alive
+        if r.uniform() < c["body_prob"]:                          # body pose [x, y, z, roll, pitch, yaw]: z, roll, pitch tracked
+            self.cmd[9] = r.uniform(*c["body_z"])
+            self.cmd[10] = r.uniform(-c["body_roll"], c["body_roll"])
+            self.cmd[11] = r.uniform(-c["body_pitch"], c["body_pitch"])
         self.t_cmd = r.uniform(*c["resample_s"])
 
     def reset(self):
@@ -192,9 +204,15 @@ class DuckEnv:
         d.ctrl[:] = 0.0
         d.ctrl[:ACT_DIM] = self.default
         mujoco.mj_forward(m, d)
-        self.delay_buf = [self.default.copy()] * (self.delay_steps + 1)
+        # same transport delay as ros2/duck_nav/duck_nav/actuation.ServoDelay (what motions.py and world_sim apply):
+        # the target issued at physics step k acts at step k + delay_steps
+        self.delay_buf = deque([self.default.copy()] * (self.delay_steps + 1), maxlen=self.delay_steps + 1)
+        self.body_run = 0
         self.last[:] = 0.0
-        self.t = 0.0
+        # episodes start at a random point of their time limit (first one only matters): time-outs do not all land in
+        # the same iteration
+        self.t = 0.0 if getattr(self, "_started", False) else r.uniform(0, 0.5 * c["episode_s"])
+        self._started = True
         self.t_push = r.uniform(*c["push_interval_s"])
         self.air = np.zeros(2); self.contact_prev = np.ones(2, bool)
         self.foot_pos = np.array([d.site_xpos[s].copy() for s in self.foot_sites])
@@ -221,6 +239,13 @@ class DuckEnv:
         self.recovering = True
         self.cmd[:3] = 0.0
         self.foot_pos = np.array([d.site_xpos[s_].copy() for s_ in self.foot_sites])
+
+    def _grav_target(self):
+        """Projected gravity of a trunk turned by the commanded body roll (about x) then pitch (about y): the
+        upright term tracks this, so a body-pose command tilts the trunk instead of fighting the upright reward."""
+        cr, sr, cp, sp = math.cos(self.cmd[10]), math.sin(self.cmd[10]), math.cos(self.cmd[11]), math.sin(self.cmd[11])
+        Rm = np.array([[cp, 0, sp], [sr * sp, cr, -sr * cp], [-cr * sp, sr, cr * cp]])   # Rx(roll) @ Ry(pitch)
+        return Rm.T @ np.array([0.0, 0.0, -1.0])
 
     def _potential(self):
         up_z = -quat_rotate_inv(self.d.qpos[3:7], np.array([0.0, 0.0, -1.0]))[2]
@@ -263,7 +288,7 @@ class DuckEnv:
         target = self.default + action
         for _ in range(SUBSTEPS):
             self.delay_buf.append(target)
-            d.ctrl[:ACT_DIM] = self.delay_buf.pop(0)
+            d.ctrl[:ACT_DIM] = self.delay_buf[0]
             mujoco.mj_step(m, d)
         self.t += CTRL_DT
         # pushes and command resampling
@@ -286,7 +311,7 @@ class DuckEnv:
         cmd = self.cmd
         moving = np.linalg.norm(cmd[:3]) > 0.01
         lv = self._yaw_frame(d.qvel[0:3])
-        av = quat_rotate_inv(d.qpos[3:7], d.qvel[3:6])           # body-frame angular velocity
+        av = d.qvel[3:6].copy()                                   # a free joint's angular velocity is in the body frame
         grav = quat_rotate_inv(d.qpos[3:7], np.array([0.0, 0.0, -1.0]))
         q = d.qpos[self.qadr]
         # contacts
@@ -312,14 +337,15 @@ class DuckEnv:
         std = STD_WALK if moving else STD_STAND
         pose = math.exp(-float(np.mean(np.square((q[LEG] - self.default[LEG]) / std))))
         self.head_ema += 0.02 / 1.0 * ((q[HEAD] - self.default[HEAD]) - self.head_ema)      # 1 s EMA (upstream lesson)
-        head = math.exp(-float(np.sum(np.abs(self.head_ema - cmd[3:7]))) / 0.3)
+        head = math.exp(-float(np.mean(np.square(self.head_ema - cmd[3:7]))) / 0.1)   # 0.2 rad error -> 0.67
         lo, hi = self.jrange[:, 0], self.jrange[:, 1]; span = hi - lo
-        lim = float(np.sum(np.maximum(0.0, lo + 0.05 * span - q) + np.maximum(0.0, q - hi + 0.05 * span)))
+        mg = c["limit_margin"] * span                              # motions.py balance requires >= 0.02 rad margin
+        lim = float(np.sum(np.maximum(0.0, lo + mg - q) + np.maximum(0.0, q - hi + mg)))
         torque = float(np.sum(np.square(d.actuator_force[:ACT_DIM])))
         terms = dict(
             lin=c["w_lin"] * math.exp(-float(np.sum(np.square(cmd[:2] - lv[:2]))) / c["s_lin"]),
             ang=c["w_ang"] * math.exp(-(cmd[2] - av[2]) ** 2 / c["s_ang"]),
-            up=c["w_up"] * math.exp(-float(np.sum(np.square(grav[:2]))) / c["s_up"]),
+            up=c["w_up"] * math.exp(-float(np.sum(np.square(grav[:2] - self._grav_target()[:2]))) / c["s_up"]),
             pose=c["w_pose"] * pose,
             head=c["w_head"] * head,
             air=(c["w_air"] * air_r / CTRL_DT) if moving else 0.0,
@@ -338,7 +364,8 @@ class DuckEnv:
         for k in ("lin", "ang", "up", "pose", "head", "air"):
             if terms[k] > 0:
                 terms[k] *= gate
-        down = bool(up_z < 0.5 or d.qpos[2] < 0.07 or body_floor)
+        self.body_run = self.body_run + 1 if body_floor else 0
+        down = bool(up_z < 0.5 or d.qpos[2] < 0.07 or self.body_run >= FALL_STEPS)
         fell = down or not np.all(np.isfinite(d.qpos))
         if self.recovering:
             phi = self._potential()

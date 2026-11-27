@@ -5,22 +5,17 @@
  "static": {
   "jaw_soft/head_lower_v4 vs jaw_soft/motor_support": {
    "new_mm": 0.9,
-   "old_mm": 0.9,
+   "old_mm": 1.0,
    "clash": true
   },
   "envelope/head_screw_front_l vs jaw_soft/head_lower_v4": {
-   "new_mm": 0.9,
+   "new_mm": 0.7,
    "old_mm": 0.5,
-   "clash": true
+   "clash": false
   },
   "envelope/head_screw_front_r vs jaw_soft/head_lower_v4": {
-   "new_mm": 0.9,
-   "old_mm": 0.6,
-   "clash": true
-  },
-  "jaw_soft/head_upper_v4 vs jaw_soft/mouth_servo_v4": {
-   "new_mm": 0.8,
-   "old_mm": 0.3,
+   "new_mm": 0.7,
+   "old_mm": 0.4,
    "clash": false
   },
   "jaw_soft/head_lower_v4 vs jaw_soft/seeed_bearing__configuration_default": {
@@ -268,11 +263,6 @@
    "old_mm": 0.3,
    "clash": false
   },
-  "jaw_soft/head_lower_v4 vs yaw_roll_motion/yaw_roll_motion": {
-   "new_mm": 0,
-   "old_mm": 0.1,
-   "clash": false
-  },
   "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": {
    "new_mm": 0,
    "old_mm": 1.6,
@@ -280,22 +270,22 @@
   },
   "jaw_soft/head_lower_v4 vs yaw_roll_motion/seeed_bearing__configuration__22x16x4": {
    "new_mm": 0,
-   "old_mm": 0.1,
+   "old_mm": 0,
    "clash": false
   },
   "jaw_soft/head_upper_v4 vs jaw_soft/lens": {
    "new_mm": 0,
-   "old_mm": 0.8,
+   "old_mm": 0.9,
    "clash": false
   },
   "jaw_soft/head_lower_v4 vs jaw_soft/xl330": {
    "new_mm": 0,
-   "old_mm": 2.1,
+   "old_mm": 2.2,
    "clash": false
   },
   "jaw_soft/head_lower_v4 vs jaw_soft/head_upper_v4": {
    "new_mm": 0,
-   "old_mm": 0,
+   "old_mm": 0.2,
    "clash": false
   },
   "envelope/mouth_servo_cable vs jaw_soft/head_upper_v4": {
@@ -303,14 +293,14 @@
    "old_mm": 0,
    "clash": false
   },
-  "jaw/jaw_v4 vs jaw_soft/head_lower_v4": {
-   "new_mm": 0,
-   "old_mm": 1.7,
-   "clash": false
-  },
-  "envelope/mouth_pushrod vs jaw_soft/head_lower_v4": {
+  "envelope/mouth_pushrod vs jaw_soft/head_upper_v4": {
    "new_mm": 0,
    "old_mm": 0.1,
+   "clash": false
+  },
+  "jaw/jaw_v4 vs jaw_soft/head_lower_v4": {
+   "new_mm": 0,
+   "old_mm": 1.4,
    "clash": false
   },
   "envelope/mouth_pushrod vs jaw_soft/mouth_servo_v4": {
@@ -337,12 +327,11 @@
  "clash_at_rest": [],
  "pose_envelope": {
   "pairs_checked": 2809,
-  "poses_with_clash": 143,
+  "poses_with_clash": 77,
   "poses_with_clash_old_method": 3000,
-  "poses_with_clash_not_at_rest": 143,
+  "poses_with_clash_not_at_rest": 77,
   "poses_per_pair": {
    "ankle_left/sole_left vs ankle_right/sole_right": 76,
-   "jaw_soft/head_upper_v4 vs yaw_roll_motion/yaw_roll_motion": 69,
    "ankle_left/foot_left vs ankle_right/sole_right": 65,
    "ankle_left/sole_left vs ankle_right/foot_right": 64,
    "ankle_left/foot_left vs ankle_right/foot_right": 49,
@@ -367,14 +356,13 @@
   },
   "poses_per_pair_old_method": {
    "jaw/jaw_v4 vs jaw_soft/head_lower_v4": 3000,
-   "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": 2695,
-   "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": 913,
-   "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": 528,
+   "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": 2423,
+   "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": 816,
+   "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": 487,
    "ankle_left/sole_left vs ankle_right/sole_right": 74,
    "ankle_left/sole_left vs ankle_right/foot_right": 62,
    "ankle_left/foot_left vs ankle_right/sole_right": 60,
    "ankle_left/foot_left vs ankle_right/foot_right": 49,
-   "jaw_soft/head_upper_v4 vs yaw_roll_motion/yaw_roll_motion": 30,
    "ankle_left/sole_left vs ankle_right/ankle_right": 23,
    "ankle_left/ankle_left vs ankle_right/sole_right": 21,
    "ankle_left/foot_left vs ankle_right/ankle_right": 18,

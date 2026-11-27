@@ -4,7 +4,7 @@ r"""train_ppo.py -- train a Duckling V4 walking policy with PPO on the CPU (MuJo
                                  [--init-onnx policies/velstand.onnx] [--resume training/runs/walk_v4/last.pt]
                                  [--model model/duck_v4_gc_scene.xml]
 
-Writes <out>/last.pt (resumable checkpoint), <out>/best.pt, <out>/log.csv and <out>/policy.onnx (the actor with the
+Writes <out>/last.pt (resumable checkpoint; pick a policy by evaluating it, not by training reward), <out>/log.csv and <out>/policy.onnx (the actor with the
 observation normalizer baked in: input "obs" [1, 61] -> output "actions" [1, 14], the same contract as the
 pretrained Microduck policies, so scripts/motions.py --walk-policy and world_sim run it directly).
 
@@ -32,7 +32,6 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # ---------------------------------------------------------------------------- workers
 def worker(conn, xml, n_envs, seed, cfg):
-    torch.set_num_threads(1)
     envs = [DuckEnv(xml=xml, seed=seed * 1000 + i, cfg=cfg) for i in range(n_envs)]
     obs = np.stack([e.obs() for e in envs]); crit = np.stack([e.critic_extra() for e in envs])
     conn.send((obs, crit))
@@ -212,6 +211,9 @@ def main(argv=None):
     ap.add_argument("--lr-min", type=float, default=1e-4); ap.add_argument("--lr-max", type=float, default=1e-3)
     ap.add_argument("--target-kl", type=float, default=0.01)
     ap.add_argument("--init-onnx"); ap.add_argument("--resume")
+    ap.add_argument("--freeze-normalizer", action="store_true",
+                    help="keep the observation normalizer fixed (default with --init-onnx: the pretrained actor's input "
+                         "scaling must not drift under it while it is frozen or fine-tuned)")
     ap.add_argument("--critic-warmup", type=int, default=0,
                     help="iterations at the start that train only the critic (actor frozen); use ~30 with --init-onnx "
                          "so an untrained critic cannot drag a pretrained actor away")
@@ -220,7 +222,7 @@ def main(argv=None):
     ap.add_argument("--max-hours", type=float, default=1e9)
     a = ap.parse_args(argv)
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
-    torch.manual_seed(a.seed); torch.set_num_threads(2)
+    torch.manual_seed(a.seed); torch.set_num_threads(1)     # the workers already use every core
     cfg = json.loads(a.cfg)
     ac = ActorCritic()
     opt = torch.optim.Adam(ac.parameters(), lr=a.lr)
@@ -228,8 +230,10 @@ def main(argv=None):
     if a.resume:
         ck = torch.load(a.resume, weights_only=False)
         ac.load_state_dict(ck["model"]); opt.load_state_dict(ck["opt"]); it0 = ck["iter"] + 1; best = ck.get("best", best)
+        a.lr = ck.get("lr", a.lr)
     elif a.init_onnx:
         print(f"warm start: {warm_start_from_onnx(ac, a.init_onnx)} layers from {a.init_onnx}", flush=True)
+    freeze_norm = a.freeze_normalizer or bool(a.init_onnx) or bool(a.resume and torch.load(a.resume, weights_only=False)["args"].get("init_onnx"))
     venv = VecEnv(a.model, a.workers, a.envs_per_worker, cfg, a.seed * 100)
     N = a.workers * a.envs_per_worker
     obs, crit = torch.as_tensor(venv.obs), torch.as_tensor(venv.crit)
@@ -262,7 +266,9 @@ def main(argv=None):
         # PPO ratio compares like with like
         with torch.no_grad():
             allo, allc = torch.cat(B_obs), torch.cat(B_crit)
-            ac.obs_norm.update(allo); ac.crit_norm.update(torch.cat([allo, allc], 1))
+            if not freeze_norm:
+                ac.obs_norm.update(allo)
+            ac.crit_norm.update(torch.cat([allo, allc], 1))
             B_logp = list(ac.dist(allo).log_prob(torch.cat(B_act)).sum(-1).reshape(T, N))
         adv = torch.zeros_like(rew); gae = torch.zeros(N)
         for t in reversed(range(T)):
@@ -317,11 +323,9 @@ def main(argv=None):
         log.writerow(row); logf.flush()
         if it % 10 == 0:
             print(" ".join(str(x) for x in row[:9]), terms, flush=True)
-        ck = dict(model=ac.state_dict(), opt=opt.state_dict(), iter=it, best=best, cfg=cfg, args=vars(a))
+        ck = dict(model=ac.state_dict(), opt=opt.state_dict(), iter=it, best=best, cfg=cfg, args=vars(a), lr=lr)
         if it % 25 == 0 or it == a.iters - 1:
             torch.save(ck, out / "last.pt")
-        if mean_r > best and it > 20:
-            best = mean_r; ck["best"] = best; torch.save(ck, out / "best.pt")
         if (time.time() - t_start) / 3600 > a.max_hours:
             print("time budget reached", flush=True); torch.save(ck, out / "last.pt"); break
     venv.close()

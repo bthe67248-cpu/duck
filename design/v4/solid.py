@@ -155,6 +155,18 @@ def box_mesh(lo, hi):
     return V, F
 
 
+def zcyl_mesh(cx, cy, r, z0, z1, seg=32):
+    """Closed, outward-oriented cylinder (V, F) about the vertical axis through (cx, cy), from z0 to z1."""
+    a = np.linspace(0, 2 * np.pi, seg, endpoint=False)
+    ring = np.stack([cx + r * np.cos(a), cy + r * np.sin(a)], 1)
+    V = np.vstack([np.c_[ring, np.full(seg, z0)], np.c_[ring, np.full(seg, z1)], [[cx, cy, z0], [cx, cy, z1]]])
+    F = []
+    for i in range(seg):
+        j = (i + 1) % seg
+        F += [[i, j, seg + j], [i, seg + j, seg + i], [2 * seg, j, i], [2 * seg + 1, seg + i, seg + j]]
+    return V, np.array(F)
+
+
 def mutual_depth(A, PA, B, PB):
     """Deepest penetration between two solids, both directions: samples of A inside B and samples of B inside A.
     PA / PB are A's / B's surface samples already expressed in the other solid's frame."""

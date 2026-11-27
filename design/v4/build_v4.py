@@ -214,6 +214,16 @@ def hull_of(ob, name, inset=0.6):
     return h
 
 
+def local_hull(ob, name, lo, hi, inset=0.6):
+    """Inset convex hull of the part of `ob` inside the box lo..hi: follows a curved skin much more closely than the
+    hull of the whole part (used to keep the hinge bosses and the pushrod lever inside the jaw's skin)."""
+    piece = ob.copy(); piece.data = ob.data.copy(); bpy.context.collection.objects.link(piece)
+    boolean(piece, box(name + "_win", lo, hi), "INTERSECT")
+    h = hull_of(piece, name, inset)
+    bpy.data.objects.remove(piece, do_unlink=True)
+    return h
+
+
 def hull_2d(pts):
     """Convex hull (counter-clockwise) of 2-D points, monotone chain."""
     pts = sorted(set(pts))
@@ -313,10 +323,33 @@ if ONLY in ("all", "head", "head_upper"):
     # mouth-servo cradle hanging from the dome, trimmed to the inside of the shell's convex hull
     MC = H["mouth_cradle"]
     sh = lambda s: ([s["lo"][0], s["lo"][1], s["lo"][2] - zs], [s["hi"][0], s["hi"][1], s["hi"][2] - zs])
-    cradle = box("cradle", *sh(MC["plates"][0]))
-    for s in MC["plates"][1:] + MC["lips"] + [MC["stop"]]:
+
+    def dome_hits(x, y):
+        """(inner, outer) z of the dome above (x, y), upper-mesh frame, from two upward rays."""
+        o = Vector((x, y, 50.0 - zs)); out = []
+        for _ in range(2):
+            hit, loc, _n, _i = upper.ray_cast(o, Vector((0, 0, 1)))
+            if not hit:
+                raise RuntimeError(f"cradle: no dome above ({x}, {y})")
+            out.append(loc.z); o = loc + Vector((0, 0, 1e-3))
+        return out
+
+    plates = []
+    for k, pl in enumerate(MC["plates"]):
+        (x0, y0, z0), (x1, y1, _z1) = sh(pl)
+        tops = []
+        for y in (y0, y1):
+            hits = [dome_hits(x0 + (x1 - x0) * i / 12, y) for i in range(13)]
+            top = min(h[1] for h in hits) - MC["top_inset"]
+            if top < max(h[0] for h in hits) + MC["min_anchor"]:
+                raise RuntimeError(f"cradle plate {k}: the dome wall is too thin/steep here to anchor the plate")
+            tops.append(top)
+        plates.append(prism_x(f"plate{k}", [(y0, z0), (y1, z0), (y1, tops[1]), (y0, tops[0])], x0, x1))
+    cradle = plates[0]
+    for pl in plates[1:]:
+        boolean(cradle, pl, "UNION")
+    for s in MC["lips"] + [MC["stop"]]:
         boolean(cradle, box("cr", *sh(s)), "UNION")
-    boolean(cradle, hull_of(upper, "upper_hull"), "INTERSECT")
     for s in [MC["cable_window"]] + MC["tie_slots"]:
         boolean(cradle, box("crcut", *sh(s)), "DIFFERENCE")
     boolean(upper, cradle, "UNION")
@@ -324,7 +357,7 @@ if ONLY in ("all", "head", "head_upper"):
     FS = H["fasteners"]
     for s in FS["screws"]:
         (sx, sy), top = s["xy"], s["upper_top_z"] - zs
-        boolean(upper, cyl_axis("fill", "z", (sx, sy), FS["fill_r"], (0.6, top + 1.0)), "UNION")
+        boolean(upper, cyl_axis("fill", "z", (sx, sy), FS["fill_r"], (s["upper_fill_from_z"] - zs, top + 1.0)), "UNION")
         boolean(upper, cyl_axis("pilot", "z", (sx, sy), FS["pilot_d"] / 2, (-1.0, top)), "DIFFERENCE")
     export(upper, "head_upper_v4.stl")
 
@@ -355,18 +388,30 @@ if ONLY in ("all", "head", "head_lower"):
     boolean(jaw, prism_x("jawcut", jaw_pts, *J["x"]), "INTERSECT")
     # lever plate on the heel for the mouth pushrod (pin hole on the plate), in the pushrod's plane
     lv = J["lever"]
-    boolean(jaw, prism_x("lever", [(hy, hz)] + arc(R - 0.5, -90, 0), *lv["x"]), "UNION")
+    # the plate's lower edge follows the bill's inner bottom surface (0.3 mm into the wall, never through it): the
+    # bottom is concave behind the hinge, so the plain quarter disc used to bulge out under the bill
+    xm = 0.5 * (lv["x"][0] + lv["x"][1])
+    prof = [(hy, hz)]
+    for pt_y, pt_z in arc(R - 0.5, -90, 0, 40):
+        floor = None
+        for xs_ in (lv["x"][0] + 0.2, xm, lv["x"][1] - 0.2):
+            hit, loc, _n, _i = jaw.ray_cast(Vector((xs_, pt_y, hz)), Vector((0, 0, -1)))
+            if hit:
+                floor = loc.z - 0.3 if floor is None else max(floor, loc.z - 0.3)
+        prof.append((pt_y, min(hz - 0.5, max(pt_z, floor)) if floor is not None else hz - 0.5))
+    boolean(jaw, prism_x("lever", prof, *lv["x"]), "UNION")
     boolean(jaw, cylinder_x("leverpin", lv["pin_yz"][0], lv["pin_yz"][1], lv["pin_d"] / 2, lv["x"][0] - 1, lv["x"][1] + 1), "DIFFERENCE")
     boolean(lo, prism_x("shellcut", cut_pts, J["x"][0] - 1, J["x"][1] + 1), "DIFFERENCE")
 
     # jaw hinge: pin bosses on the jaw's side walls (kept inside the jaw's outer skin), ears + seam webs on the shell
     Hg, FS = H["hinge"], H["fasteners"]
-    jhull = hull_of(jaw, "jaw_hull")
     for k in range(2):
-        b = cyl_axis("jawboss", "x", (hy, hz), Hg["jaw_boss_r"], Hg["jaw_boss_x"][k])
-        boolean(b, jhull, "INTERSECT", keep=True)
+        x0, x1 = Hg["jaw_boss_x"][k]
+        r_ = Hg["jaw_boss_r"]
+        jh = local_hull(jaw, "jaw_hull", [x0 - 3, hy - r_ - 3, hz - r_ - 3], [x1 + 3, hy + r_ + 3, hz + r_ + 3])
+        b = cyl_axis("jawboss", "x", (hy, hz), r_, (x0, x1))
+        boolean(b, jh, "INTERSECT")
         boolean(jaw, b, "UNION")
-    bpy.data.objects.remove(jhull, do_unlink=True)
     for k in range(2):
         boolean(lo, ear_tool("ear", Hg, k), "UNION")
         boolean(lo, box("web", Hg["web"][k]["lo"], Hg["web"][k]["hi"]), "UNION")
@@ -380,6 +425,8 @@ if ONLY in ("all", "head", "head_lower"):
         if "lower_fill_z" in s:
             boolean(lo, cyl_axis("fill", "z", tuple(s["xy"]), FS["lower_fill_r"], tuple(s["lower_fill_z"])), "UNION")
         boolean(lo, cyl_axis("clear", "z", tuple(s["xy"]), FS["clear_d"] / 2, (-1.0, FS["seam_z"] + 1.0)), "DIFFERENCE")
+        if "counterbore_d" in s:                          # screw head recessed into the web, clear of the jaw heel
+            boolean(lo, cyl_axis("cbore", "z", tuple(s["xy"]), s["counterbore_d"] / 2, (-1.0, s["counterbore_top_z"])), "DIFFERENCE")
     export(lo, "head_lower_v4.stl"); export(jaw, "jaw_v4.stl")
 if ONLY in ("all", "head"):
     clear(); export(box("mouth_servo", H["mouth_servo"]["lo"], H["mouth_servo"]["hi"], 1.0), "mouth_servo_v4.stl")
