@@ -19,7 +19,7 @@ This is the plan for moving what now runs in simulation (`C:\dev\duckling_sim`) 
 |-|-|
 | `slam_node`, `nav_node`, `duckslam.py` | Move over. The ToF path (`sensor_mode:=tof`) is written and runs in simulation with the realistic profile. It needs a real ToF driver node and a hardware `/tof/pose_level` + `/camera/pose_level` publisher (Step 6), and slower rates (Step 8) |
 | `yolo_node` | Code moves over. **The trained model does not**: it has only ever seen MuJoCo renders. Retrain on photos (Step 7) |
-| Walking / get-up policies | **Do not transfer.** They were trained for the Microduck with Dynamixel XL330 servos; your duck has Feetech bus servos. Even in simulation, with the corrected V3 masses and the rear shield's collision shapes, walk, obstacles and get-up now fail (README Part D). Start from the XGO-Duck project's own runtime and policy (Step 4) |
+| Walking / get-up policies | The pretrained Microduck policies **do not transfer** (trained for XL330 servos and the upstream masses; on the V4 model their walk, planks and backward get-up fail). `policies/duck_v4_walk.onnx` is velstand fine-tuned on the V4 model with wide servo randomization (`training/`). It passes all 8 simulated motion tests, but it is still trained on estimated masses and an unmeasured servo model. Two ways in Step 4: this policy (after re-training on your measured numbers), or the XGO-Duck project's own runtime and policy |
 | Balance loop from Simulink (2.34·pitch + 0.186·rate) | The structure moves over. The gains are for the simulated servo stiffness and provisional masses; recompute after the bench test and weighing (Step 3). The backward push margin is small (about 1 N for 0.05 s in simulation) |
 | `world_sim` | Stays on the development computer. On the robot it is replaced by two small driver nodes (Step 5) |
 | Model masses, servo model | Still estimates. Print masses are provisional 30% infill numbers (upper head 51.5 g, lower head 43.1 g, rear shield 32.3 g); the whole chain is only as good as these (Step 3) |
@@ -82,7 +82,7 @@ Then in MATLAB: `startup_duck`, `build_duck_sim`, `run_tests`. Then `scripts\tun
 
 1. **Standing first, with the balance loop on the STM32.** Port `tiltFilter` and the two gains into the 100 Hz loop (it is about ten lines of C). Robot on the floor, a hand ready. Compare the knee sag with the simulated 4.6°: that single number checks mass and servo stiffness together.
 2. **Walking: evaluate the official XGO-Duck UNO Q runtime and policy as an adaptation starting point.** [Runtime](https://github.com/LuwuDynamics/xgoduck_runtime_arduino), [training](https://github.com/LuwuDynamics/xgoduck_rl). It is not validated for your custom head, shield, masses or HAT. Verify servo variant/firmware, IDs, signs, zero offsets, limits, IMU axes, HAT wiring, observation order and action scaling before supported tests. The stock runtime has 14 policy-controlled joints and a separate mouth servo, ID 34: [mapping source](https://github.com/LuwuDynamics/xgoduck_runtime_arduino/blob/master/python/rl_core.py). That explains the stock 15-servo total; verify whether your integral-bill build retains the mouth actuator.
-3. If you want the Microduck behaviours (get-up, roll, sit): retrain in `microduck_rl` with your masses and a Feetech servo model. That needs an NVIDIA GPU (local or rented). Check each retrained policy in `scripts\motions.py` before it goes on the robot.
+3. **Or the V4-trained policy** (`policies/duck_v4_walk.onnx`, walking and get-up in one; sit, roll and pick still use the upstream one-shot policies). First fine-tune it again on your measured masses and bench-tested servo numbers: weigh, put the numbers in the calibration file, rebuild the model, then `python training/train_ppo.py --init-onnx policies/duck_v4_walk.onnx ...` on any multi-core PC, no GPU (`training/README.md`). Check it with `python training/evaluate.py <onnx>` before it goes on the robot. On the robot it needs the same contract as in simulation: the servo delay the model assumes, joint order 0–13 as in `world_sim.py`, targets = STAND + action, unfiltered, at 50 Hz.
 4. On Linux the policy is small: one ONNX Runtime call at 50 Hz. `world_sim.py` shows the exact observation layout (gyro, gravity direction, joint positions relative to STAND, joint velocities, last action, 13 command values).
 
 **Gate:** stands 60 s. Recovers from a light push. Walks 2 m in a straight line on the surface you will use, 5 times out of 5.
@@ -198,7 +198,7 @@ Replay the same `/cmd_vel` through `world_sim` on the development computer. Wher
 |-|-|-|
 | 1 | Steps 1 and 2: board inventory, MCU sketch with watchdog | Board, servos |
 | 2 | Step 3: weigh, bench-test, rerun the simulation tests | Scale, one servo, PC |
-| 3 | Step 4: stand, then walk with the XGO-Duck policy | Finished robot |
+| 3 | Step 4: stand, then walk with the re-trained `duck_v4_walk` policy or the XGO-Duck policy | Finished robot, measured masses and servo |
 | 4 | Step 5: ROS 2 in Docker, `duck_hw`, `usb_camera_node`, `duck_tof` | Robot walking |
 | 5 | Step 6: buy, check, mount and calibrate the B0385 camera and VL53L5CX | Parts |
 | 6 | Step 7: photos, labels, retrain YOLO | Camera working |
@@ -208,7 +208,7 @@ Replay the same `/cmd_vel` through `world_sim` on the development computer. Wher
 ## Not verified
 
 - Nothing here was run on a UNO Q. I do not have the board's default login, the router socket path, or its real Bridge throughput.
-- Whether the XGO-Duck repository's policy walks your V3 with the heavier head and the shield. With the corrected masses the simulation now says the Microduck policy does **not** walk straight (107° heading change in 8 s) and cannot get up past the shield; the real answer needs the real robot.
+- Whether either policy walks the real duck. In simulation the pretrained Microduck policy does **not** walk the V4 straight (100° heading change in 8 s) and cannot get up from a backward fall. The V4-trained policy passes, but its heading drifts about 40° in 8 s open loop, and its walking speed is low (0.1 m/s for a 0.3 command). Only the real robot will tell; navigation corrects heading from SLAM in any case.
 - YOLO and SLAM timing on the QRB2210. The rates in Step 8 are starting guesses.
 - The B0385 camera and VL53L5CX carrier are a selection, not tested parts. Nothing about their fit, power, enumeration or performance on this robot is verified.
 

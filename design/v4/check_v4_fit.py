@@ -25,7 +25,7 @@ from pathlib import Path
 import mujoco, numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from solid import Solid, box_mesh  # noqa: E402
+from solid import Solid, box_mesh, zcyl_mesh  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 MJ = ROOT / "model"
@@ -78,8 +78,11 @@ def head_mesh_frame(model_xml):
 
 
 def envelope_mesh(env):
-    """Closed mesh (metres) of a keep-out envelope: an axis-aligned box (lo, hi) or a box of half width `half_width`
+    """Closed mesh (metres) of a keep-out envelope: a vertical cylinder (cyl), an axis-aligned box (lo, hi) or a box of half width `half_width`
     along the segment p0 -> p1 (a rod or a cable run), in mm in the envelope's frame."""
+    if "cyl" in env:                                      # round part (a screw head): {"c": [x, y], "r": r, "z": [z0, z1]}
+        c = env["cyl"]; V, F = zcyl_mesh(c["c"][0], c["c"][1], c["r"], c["z"][0], c["z"][1])
+        return V / 1000, F
     if "p0" not in env:
         return box_mesh(np.array(env["lo"]) / 1000, np.array(env["hi"]) / 1000)
     p0, p1, hw = np.array(env["p0"], float), np.array(env["p1"], float), float(env["half_width"])

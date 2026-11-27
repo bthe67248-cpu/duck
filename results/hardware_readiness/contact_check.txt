@@ -1,46 +1,38 @@
-scene: duck_v3_gc_scene.xml; sha256: 19160eca7bd27bb4d46c6a59ea2d94374bc6f454b82ade391d53ceda68b365af
-compiled model sha256: 2f9714c4117eabaff8feed8ef223aaa07d7d5f222b5d73c1d242575c9c5f8f96
+scene: duck_v4_gc_scene.xml; sha256: aac683f8c0db9c7e766b7d2ac3ee144c997e76341ad5848bd93975205151581d
+compiled model sha256: 33e41244c8edb2fcfd7cb4550f30c9275c91c27fc07a3cb8502d099eb7884d85
 sampling seed: 1; poses per envelope: 6000
-proxy geoms (contype/conaffinity/body): bill_collision(1/1/jaw_soft), head_dome_collision(1/1/jaw_soft), head_lower_collision(1/1/jaw_soft), head_upper_skirt_collision(1/1/jaw_soft), shield_back_collision(1/1/trunk_base), shield_side_l_collision(1/1/trunk_base), shield_side_r_collision(1/1/trunk_base)
+proxy geoms (contype/conaffinity/body): body_battery_keel_collision(1/1/trunk_base), body_board_bay_collision(1/1/trunk_base), body_chest_a010_collision(1/1/trunk_base), body_connector_well_collision(1/1/trunk_base), body_front_upper_collision(1/1/trunk_base), body_rear_upper_collision(1/1/trunk_base), head_lower_collision(1/1/jaw_soft), head_upper_collision(1/1/jaw_soft), jaw_collision(1/1/jaw)
 
 1. STAND pose contacts (floor contacts listed, anything else is a defect):
 
-2a. 6000 random poses inside the operating envelope (head {'neck_pitch': 0.4, 'head_pitch': 0.6, 'head_yaw': 1.2, 'head_roll': 0.44} about STAND, legs +-0.3 rad): self-contacts with head/shield proxies
-   head_lower_collision <-> shield_back_collision: 868 poses (14.5%)  <== OPERATING-ENVELOPE CLASH (contact kept enabled)
-   head_lower_collision <-> shield_side_r_collision: 640 poses (10.7%)  <== OPERATING-ENVELOPE CLASH (contact kept enabled)
-   head_lower_collision <-> shield_side_l_collision: 633 poses (10.6%)  <== OPERATING-ENVELOPE CLASH (contact kept enabled)
-   head_upper_skirt_collision <-> shield_back_collision: 375 poses (6.2%)  <== OPERATING-ENVELOPE CLASH (contact kept enabled)
-   head_upper_skirt_collision <-> shield_side_r_collision: 157 poses (2.6%)  <== OPERATING-ENVELOPE CLASH (contact kept enabled)
-   head_dome_collision <-> shield_back_collision: 156 poses (2.6%)  <== OPERATING-ENVELOPE CLASH (contact kept enabled)
-   head_upper_skirt_collision <-> shield_side_l_collision: 147 poses (2.5%)  <== OPERATING-ENVELOPE CLASH (contact kept enabled)
-   head_dome_collision <-> shield_side_l_collision: 46 poses (0.8%)  <== OPERATING-ENVELOPE CLASH (contact kept enabled)
-   head_dome_collision <-> shield_side_r_collision: 44 poses (0.7%)  <== OPERATING-ENVELOPE CLASH (contact kept enabled)
-   leg_2/geom78 <-> shield_side_r_collision: 7 poses (0.1%)  <== OPERATING-ENVELOPE CLASH (contact kept enabled)
-   leg/geom30 <-> shield_side_l_collision: 7 poses (0.1%)  <== OPERATING-ENVELOPE CLASH (contact kept enabled)
-   head_lower_collision <-> trunk_base/geom9: 1 poses (0.0%)  <== OPERATING-ENVELOPE CLASH (contact kept enabled)
+2a. 6000 random poses inside the operating envelope (head {'neck_pitch': 0.4, 'head_pitch': 0.6, 'head_yaw': 1.2, 'head_roll': 0.44} about STAND, legs +-0.3 rad): self-contacts with head/jaw/body proxies
+   none deeper than 0.8 mm
+   grazing (<= 0.8 mm, within the proxies' over-reach): body_connector_well_collision <-> leg/geom32: 2 poses (0.03%)
+   grazing (<= 0.8 mm, within the proxies' over-reach): body_board_bay_collision <-> head_lower_collision: 1 poses (0.02%)
+   grazing (<= 0.8 mm, within the proxies' over-reach): body_connector_well_collision <-> leg_2/geom77: 1 poses (0.02%)
 
-2b. INFORMATIONAL, 6000 random poses over the FULL head joint limits and legs +-0.5 rad: real geometric clashes of the V3 head/shield with neck/torso/legs (kept enabled; keep head commands out of them on hardware)
-   head_dome_collision <-> shield_back_collision: 1030 poses (17.2%)
-   head_lower_collision <-> shield_side_l_collision: 954 poses (15.9%)
-   head_dome_collision <-> shield_side_r_collision: 938 poses (15.6%)
-   head_dome_collision <-> shield_side_l_collision: 933 poses (15.6%)
-   head_upper_skirt_collision <-> shield_side_r_collision: 925 poses (15.4%)
-   head_lower_collision <-> shield_side_r_collision: 924 poses (15.4%)
-   head_upper_skirt_collision <-> shield_side_l_collision: 907 poses (15.1%)
-   head_upper_skirt_collision <-> shield_back_collision: 871 poses (14.5%)
-   head_lower_collision <-> shield_back_collision: 742 poses (12.4%)
-   head_lower_collision <-> trunk_base/geom9: 510 poses (8.5%)
-   head_upper_skirt_collision <-> trunk_base/geom9: 412 poses (6.9%)
-   head_dome_collision <-> trunk_base/geom9: 379 poses (6.3%)
-   ... 29 distinct pairs in total
+2b. INFORMATIONAL, 6000 random poses over the FULL head joint limits and legs +-0.5 rad: real geometric clashes of the head/jaw/body with neck/torso/legs (kept enabled; keep head commands out of them on hardware)
+   body_front_upper_collision <-> head_lower_collision: 566 poses (9.4%)
+   body_front_upper_collision <-> head_upper_collision: 414 poses (6.9%)
+   body_rear_upper_collision <-> head_upper_collision: 381 poses (6.3%)
+   body_front_upper_collision <-> jaw_collision: 327 poses (5.5%)
+   body_board_bay_collision <-> head_upper_collision: 301 poses (5.0%)
+   body_chest_a010_collision <-> head_lower_collision: 244 poses (4.1%)
+   body_connector_well_collision <-> leg_2/geom77: 208 poses (3.5%)
+   body_connector_well_collision <-> leg/geom32: 201 poses (3.4%)
+   body_rear_upper_collision <-> head_lower_collision: 186 poses (3.1%)
+   body_chest_a010_collision <-> jaw_collision: 143 poses (2.4%)
+   body_chest_a010_collision <-> head_upper_collision: 125 poses (2.1%)
+   body_rear_upper_collision <-> jaw_collision: 103 poses (1.7%)
+   ... 25 distinct pairs in total
 
 3. Drops (robot placed 0.25 m high in the given attitude, settled 1.5 s): geoms touching the floor
-   on its front      : bill_collision, left_foot_collision, right_foot_collision
-   on its back       : shield_back_collision, shield_side_l_collision, shield_side_r_collision
-   on its left side  : head_dome_collision, head_lower_collision, hip_l_2/geom69, right_foot_collision
-   on its right side : head_dome_collision, head_lower_collision, hip_l/geom23, left_foot_collision
-   upside down       : shield_back_collision, shield_side_l_collision, shield_side_r_collision
+   on its front      : body_chest_a010_collision, jaw_collision, left_foot_collision, right_foot_collision
+   on its back       : body_board_bay_collision
+   on its left side  : body_board_bay_collision, head_lower_collision, head_upper_collision, hip_l_2/geom68, right_foot_collision
+   on its right side : body_board_bay_collision, head_lower_collision, head_upper_collision, hip_l/geom25, left_foot_collision
+   upside down       : body_board_bay_collision
 
-STAND-pose self contacts: 0; operating-envelope clash pairs: 12
+STAND-pose self contacts: 0; operating-envelope clash pairs: 0
 Random samples are a regression check, not a clearance certificate. Full-range findings and drops remain informational.
-GATE: FAIL
+GATE: PASS (sampled poses only)

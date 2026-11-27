@@ -5,12 +5,17 @@
  "static": {
   "jaw_soft/head_lower_v4 vs jaw_soft/motor_support": {
    "new_mm": 0.9,
-   "old_mm": 1.5,
+   "old_mm": 1.0,
    "clash": true
   },
-  "envelope/mouth_servo_cable vs jaw_soft/mouth_servo_v4": {
+  "jaw_soft/head_lower_v4 vs jaw_soft/seeed_bearing__configuration_default": {
    "new_mm": 0.6,
-   "old_mm": 0.3,
+   "old_mm": 0.5,
+   "clash": false
+  },
+  "trunk_base/battery_v4 vs trunk_base/keel_cover_v4": {
+   "new_mm": 0.5,
+   "old_mm": 0.1,
    "clash": false
   },
   "envelope/usb_c_ra vs trunk_base/pcb_stack_v4": {
@@ -20,27 +25,17 @@
   },
   "envelope/servo_bus_l_plug vs trunk_base/pcb_stack_v4": {
    "new_mm": 0.5,
-   "old_mm": 0.2,
-   "clash": false
-  },
-  "envelope/servo_bus_l_drop vs trunk_base/pcb_stack_v4": {
-   "new_mm": 0.5,
-   "old_mm": 0.2,
+   "old_mm": 0.3,
    "clash": false
   },
   "envelope/servo_bus_r_plug vs trunk_base/pcb_stack_v4": {
    "new_mm": 0.5,
-   "old_mm": 0.2,
-   "clash": false
-  },
-  "envelope/a010_usb vs trunk_base/a010_v4": {
-   "new_mm": 0.5,
    "old_mm": 0.3,
    "clash": false
   },
-  "jaw_soft/head_lower_v4 vs jaw_soft/seeed_bearing__configuration_default": {
+  "envelope/mouth_servo_cable vs jaw_soft/mouth_servo_v4": {
    "new_mm": 0.5,
-   "old_mm": 0.5,
+   "old_mm": 0.3,
    "clash": false
   },
   "envelope/servo_bus_l_down vs envelope/servo_bus_l_run": {
@@ -58,9 +53,19 @@
    "old_mm": 0.3,
    "clash": false
   },
-  "envelope/servo_bus_r_drop vs trunk_base/pcb_stack_v4": {
+  "envelope/servo_bus_l_drop vs trunk_base/pcb_stack_v4": {
    "new_mm": 0.4,
    "old_mm": 0.2,
+   "clash": false
+  },
+  "envelope/servo_bus_r_drop vs trunk_base/pcb_stack_v4": {
+   "new_mm": 0.4,
+   "old_mm": 0.1,
+   "clash": false
+  },
+  "envelope/a010_usb vs trunk_base/a010_v4": {
+   "new_mm": 0.4,
+   "old_mm": 0.4,
    "clash": false
   },
   "envelope/usb_c_ra vs envelope/usb_cable": {
@@ -108,6 +113,11 @@
    "old_mm": 0.4,
    "clash": false
   },
+  "trunk_base/body_lid_v4 vs trunk_base/body_shell_v4": {
+   "new_mm": 0.2,
+   "old_mm": 0.3,
+   "clash": false
+  },
   "trunk_base/body_shell_v4 vs trunk_base/trunk_base": {
    "new_mm": 0,
    "old_mm": 0.7,
@@ -120,7 +130,7 @@
   },
   "trunk_base/body_shell_v4 vs trunk_base/xl330": {
    "new_mm": 0,
-   "old_mm": 0.6,
+   "old_mm": 0.5,
    "clash": false
   },
   "envelope/servo_bus_l_down vs trunk_base/xl330": {
@@ -143,11 +153,6 @@
    "old_mm": 0.1,
    "clash": false
   },
-  "trunk_base/body_lid_v4 vs trunk_base/body_shell_v4": {
-   "new_mm": 0,
-   "old_mm": 0.2,
-   "clash": false
-  },
   "trunk_base/body_shell_v4 vs trunk_base/keel_cover_v4": {
    "new_mm": 0,
    "old_mm": 0.2,
@@ -155,27 +160,32 @@
   },
   "envelope/usb_c_ra vs trunk_base/body_shell_v4": {
    "new_mm": 0,
+   "old_mm": 0.3,
+   "clash": false
+  },
+  "envelope/usb_cable vs trunk_base/body_shell_v4": {
+   "new_mm": 0,
+   "old_mm": 0.1,
+   "clash": false
+  },
+  "envelope/servo_bus_l_plug vs trunk_base/body_shell_v4": {
+   "new_mm": 0,
    "old_mm": 0,
    "clash": false
   },
   "envelope/servo_bus_l_drop vs trunk_base/body_shell_v4": {
    "new_mm": 0,
-   "old_mm": 0.2,
+   "old_mm": 0.3,
    "clash": false
   },
   "envelope/servo_bus_l_run vs trunk_base/body_shell_v4": {
    "new_mm": 0,
-   "old_mm": 0,
-   "clash": false
-  },
-  "envelope/servo_bus_r_plug vs trunk_base/body_shell_v4": {
-   "new_mm": 0,
-   "old_mm": 0.2,
+   "old_mm": 0.1,
    "clash": false
   },
   "envelope/servo_bus_r_drop vs trunk_base/body_shell_v4": {
    "new_mm": 0,
-   "old_mm": 0.3,
+   "old_mm": 0.2,
    "clash": false
   },
   "envelope/servo_bus_r_run vs trunk_base/body_shell_v4": {
@@ -195,27 +205,17 @@
   },
   "envelope/lipo_leads_loop vs trunk_base/body_shell_v4": {
    "new_mm": 0,
-   "old_mm": 0,
-   "clash": false
-  },
-  "envelope/balance_plug vs trunk_base/body_shell_v4": {
-   "new_mm": 0,
-   "old_mm": 0.2,
-   "clash": false
-  },
-  "envelope/a010_cable_2 vs trunk_base/body_shell_v4": {
-   "new_mm": 0,
    "old_mm": 0.1,
    "clash": false
   },
   "envelope/a010_cable_3 vs trunk_base/body_shell_v4": {
    "new_mm": 0,
-   "old_mm": 0.1,
+   "old_mm": 0,
    "clash": false
   },
   "envelope/a010_cable_4 vs trunk_base/body_shell_v4": {
    "new_mm": 0,
-   "old_mm": 0.1,
+   "old_mm": 0,
    "clash": false
   },
   "envelope/usb_cable vs trunk_base/body_lid_v4": {
@@ -223,19 +223,19 @@
    "old_mm": 0.1,
    "clash": false
   },
-  "trunk_base/battery_v4 vs trunk_base/keel_cover_v4": {
+  "envelope/balance_plug vs trunk_base/keel_cover_v4": {
+   "new_mm": 0,
+   "old_mm": 0.6,
+   "clash": false
+  },
+  "envelope/usb_cable vs trunk_base/pcb_stack_v4": {
    "new_mm": 0,
    "old_mm": 0,
    "clash": false
   },
-  "envelope/balance_plug vs trunk_base/keel_cover_v4": {
-   "new_mm": 0,
-   "old_mm": 0.5,
-   "clash": false
-  },
   "envelope/lipo_leads_drop vs trunk_base/battery_v4": {
    "new_mm": 0,
-   "old_mm": 0.2,
+   "old_mm": 0.1,
    "clash": false
   },
   "envelope/xt60_rear vs trunk_base/xt60_v4": {
@@ -245,22 +245,22 @@
   },
   "envelope/lipo_leads_drop vs trunk_base/xt60_v4": {
    "new_mm": 0,
-   "old_mm": 0.3,
+   "old_mm": 0.2,
    "clash": false
   },
   "envelope/lipo_leads_loop vs trunk_base/xt60_v4": {
    "new_mm": 0,
-   "old_mm": 0.2,
-   "clash": false
-  },
-  "jaw_soft/head_lower_v4 vs yaw_roll_motion/yaw_roll_motion": {
-   "new_mm": 0,
-   "old_mm": 0.1,
+   "old_mm": 0.3,
    "clash": false
   },
   "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": {
    "new_mm": 0,
    "old_mm": 1.6,
+   "clash": false
+  },
+  "jaw_soft/head_lower_v4 vs yaw_roll_motion/seeed_bearing__configuration__22x16x4": {
+   "new_mm": 0,
+   "old_mm": 0,
    "clash": false
   },
   "jaw_soft/head_upper_v4 vs jaw_soft/lens": {
@@ -270,17 +270,37 @@
   },
   "jaw_soft/head_lower_v4 vs jaw_soft/xl330": {
    "new_mm": 0,
-   "old_mm": 1.9,
+   "old_mm": 2.2,
    "clash": false
   },
   "jaw_soft/head_lower_v4 vs jaw_soft/head_upper_v4": {
+   "new_mm": 0,
+   "old_mm": 0.2,
+   "clash": false
+  },
+  "envelope/mouth_servo_cable vs jaw_soft/head_upper_v4": {
+   "new_mm": 0,
+   "old_mm": 0,
+   "clash": false
+  },
+  "envelope/mouth_pushrod vs jaw_soft/head_upper_v4": {
    "new_mm": 0,
    "old_mm": 0.1,
    "clash": false
   },
   "jaw/jaw_v4 vs jaw_soft/head_lower_v4": {
    "new_mm": 0,
-   "old_mm": 1.5,
+   "old_mm": 1.4,
+   "clash": false
+  },
+  "envelope/head_screw_front_l vs jaw_soft/head_lower_v4": {
+   "new_mm": 0,
+   "old_mm": 0.1,
+   "clash": false
+  },
+  "envelope/head_screw_front_r vs jaw_soft/head_lower_v4": {
+   "new_mm": 0,
+   "old_mm": 0.1,
    "clash": false
   },
   "envelope/mouth_pushrod vs jaw_soft/mouth_servo_v4": {
@@ -306,7 +326,7 @@
  },
  "clash_at_rest": [],
  "pose_envelope": {
-  "pairs_checked": 2665,
+  "pairs_checked": 2809,
   "poses_with_clash": 77,
   "poses_with_clash_old_method": 3000,
   "poses_with_clash_not_at_rest": 77,
@@ -336,9 +356,9 @@
   },
   "poses_per_pair_old_method": {
    "jaw/jaw_v4 vs jaw_soft/head_lower_v4": 3000,
-   "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": 1483,
-   "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": 557,
-   "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": 263,
+   "jaw_soft/head_lower_v4 vs yaw_roll_motion/xl330": 2423,
+   "jaw_soft/head_lower_v4 vs neck_pitch/seeed_bearing__configuration__22x16x4": 816,
+   "jaw_soft/head_lower_v4 vs neck_pitch/neck_pitch": 487,
    "ankle_left/sole_left vs ankle_right/sole_right": 74,
    "ankle_left/sole_left vs ankle_right/foot_right": 62,
    "ankle_left/foot_left vs ankle_right/sole_right": 60,
@@ -353,7 +373,6 @@
    "ankle_left/foot_left vs leg_2/xl330": 2,
    "ankle_left/seeed_bearing__configuration_default vs ankle_right/ankle_right": 2,
    "ankle_left/seeed_bearing__configuration_default vs ankle_right/foot_right": 2,
-   "leg/leg vs trunk_base/body_shell_v4": 1,
    "ankle_right/ankle_right vs leg/leg": 1,
    "ankle_left/ankle_left vs leg_2/xl330": 1,
    "ankle_left/ankle_left vs leg_2/leg": 1,
@@ -379,223 +398,5 @@
    "ankle_right/ankle_right vs leg/xl330": 1.4
   }
  },
- "motions": {
-  "balance": {
-   "frames": 550,
-   "seconds": 11.0,
-   "frames_with_clash": 0,
-   "frames_with_clash_not_at_rest": 0,
-   "frames_with_clash_old_method": 550,
-   "frames_per_pair": {},
-   "worst_mm": {},
-   "proxy_contact_frames": 0,
-   "proxy_contacts": {}
-  },
-  "dance": {
-   "frames": 1100,
-   "seconds": 22.0,
-   "frames_with_clash": 0,
-   "frames_with_clash_not_at_rest": 0,
-   "frames_with_clash_old_method": 1100,
-   "frames_per_pair": {},
-   "worst_mm": {},
-   "proxy_contact_frames": 0,
-   "proxy_contacts": {}
-  },
-  "fall_getup": {
-   "frames": 1372,
-   "seconds": 27.4,
-   "frames_with_clash": 20,
-   "frames_with_clash_not_at_rest": 20,
-   "frames_with_clash_old_method": 1372,
-   "frames_per_pair": {
-    "ankle_left/foot_left vs jaw_soft/head_upper_v4": 9,
-    "ankle_right/sole_right vs jaw_soft/head_upper_v4": 5,
-    "ankle_right/foot_right vs jaw_soft/head_upper_v4": 5,
-    "ankle_left/foot_left vs trunk_base/body_shell_v4": 4,
-    "ankle_left/sole_left vs trunk_base/body_lid_v4": 4,
-    "ankle_left/foot_left vs trunk_base/body_lid_v4": 4,
-    "ankle_right/sole_right vs jaw_soft/head_lower_v4": 4,
-    "leg/leg vs trunk_base/body_shell_v4": 3,
-    "ankle_right/foot_right vs jaw_soft/head_lower_v4": 3,
-    "leg/xl330 vs trunk_base/body_shell_v4": 2,
-    "ankle_left/sole_left vs trunk_base/body_shell_v4": 2,
-    "ankle_left/foot_left vs trunk_base/pcb_stack_v4": 2,
-    "ankle_left/ankle_left vs trunk_base/body_shell_v4": 2,
-    "ankle_left/sole_left vs trunk_base/pcb_stack_v4": 1,
-    "ankle_left/sole_left vs jaw_soft/head_upper_v4": 1
-   },
-   "worst_mm": {
-    "leg/xl330 vs trunk_base/body_shell_v4": 2.2,
-    "ankle_left/foot_left vs trunk_base/body_shell_v4": 2.1,
-    "ankle_left/foot_left vs trunk_base/body_lid_v4": 2.1,
-    "ankle_left/foot_left vs jaw_soft/head_upper_v4": 2.0,
-    "ankle_right/foot_right vs jaw_soft/head_upper_v4": 1.9,
-    "ankle_right/foot_right vs jaw_soft/head_lower_v4": 1.7,
-    "ankle_right/sole_right vs jaw_soft/head_upper_v4": 1.6,
-    "ankle_left/sole_left vs trunk_base/pcb_stack_v4": 1.2
-   },
-   "proxy_contact_frames": 25,
-   "proxy_contacts": {
-    "body_board_bay_collision vs leg/geom": 24,
-    "body_chest_a010_collision vs head_lower_collision": 8,
-    "body_board_bay_collision vs left_foot_collision": 7,
-    "head_upper_skirt_collision vs left_foot_collision": 6,
-    "head_upper_skirt_collision vs right_foot_collision": 4,
-    "head_lower_collision vs right_foot_collision": 3,
-    "head_dome_collision vs right_foot_collision": 1
-   }
-  },
-  "fall_getup_oldtraj": {
-   "frames": 889,
-   "seconds": 17.8,
-   "frames_with_clash": 26,
-   "frames_with_clash_not_at_rest": 26,
-   "frames_with_clash_old_method": 889,
-   "frames_per_pair": {
-    "leg/leg vs trunk_base/body_shell_v4": 14,
-    "leg/xl330 vs trunk_base/body_shell_v4": 13,
-    "ankle_right/sole_right vs jaw_soft/head_upper_v4": 12,
-    "ankle_right/foot_right vs jaw_soft/head_upper_v4": 12,
-    "ankle_right/sole_right vs jaw_soft/head_lower_v4": 12,
-    "ankle_right/foot_right vs jaw_soft/head_lower_v4": 12,
-    "ankle_right/sole_right vs jaw_soft/xl330": 11,
-    "ankle_right/foot_right vs jaw_soft/xl330": 10,
-    "ankle_left/ankle_left vs trunk_base/body_shell_v4": 7,
-    "ankle_left/foot_left vs trunk_base/body_lid_v4": 6,
-    "ankle_left/ankle_left vs trunk_base/body_lid_v4": 6,
-    "leg/leg vs trunk_base/pcb_stack_v4": 6,
-    "ankle_left/seeed_bearing__configuration_default vs trunk_base/body_shell_v4": 6,
-    "ankle_left/ankle_left vs trunk_base/pcb_stack_v4": 5,
-    "ankle_left/foot_left vs trunk_base/body_shell_v4": 4
-   },
-   "worst_mm": {
-    "ankle_right/foot_right vs jaw_soft/xl330": 7.0,
-    "ankle_right/sole_right vs jaw_soft/xl330": 6.7,
-    "ankle_left/ankle_left vs trunk_base/pcb_stack_v4": 5.5,
-    "leg/xl330 vs trunk_base/body_shell_v4": 5.5,
-    "ankle_left/foot_left vs trunk_base/pcb_stack_v4": 3.8,
-    "ankle_left/ankle_left vs trunk_base/body_lid_v4": 3.0,
-    "leg/leg vs trunk_base/pcb_stack_v4": 2.7,
-    "leg/xl330 vs trunk_base/pcb_stack_v4": 2.3
-   },
-   "proxy_contact_frames": 28,
-   "proxy_contacts": {
-    "head_upper_skirt_collision vs right_foot_collision": 35,
-    "head_lower_collision vs right_foot_collision": 33,
-    "body_board_bay_collision vs leg/geom": 28,
-    "head_dome_collision vs right_foot_collision": 10,
-    "body_board_bay_collision vs left_foot_collision": 8,
-    "body_board_bay_collision vs leg_2/geom": 6,
-    "body_chest_a010_collision vs head_lower_collision": 5,
-    "body_connector_well_collision vs leg/geom": 3,
-    "body_board_bay_collision vs right_foot_collision": 1
-   }
-  },
-  "obstacles": {
-   "frames": 1490,
-   "seconds": 29.8,
-   "frames_with_clash": 0,
-   "frames_with_clash_not_at_rest": 0,
-   "frames_with_clash_old_method": 1490,
-   "frames_per_pair": {},
-   "worst_mm": {},
-   "proxy_contact_frames": 0,
-   "proxy_contacts": {}
-  },
-  "pick": {
-   "frames": 315,
-   "seconds": 6.3,
-   "frames_with_clash": 0,
-   "frames_with_clash_not_at_rest": 0,
-   "frames_with_clash_old_method": 315,
-   "frames_per_pair": {},
-   "worst_mm": {},
-   "proxy_contact_frames": 0,
-   "proxy_contacts": {}
-  },
-  "roulade": {
-   "frames": 375,
-   "seconds": 7.5,
-   "frames_with_clash": 27,
-   "frames_with_clash_not_at_rest": 27,
-   "frames_with_clash_old_method": 375,
-   "frames_per_pair": {
-    "jaw/jaw_v4 vs trunk_base/body_shell_v4": 27
-   },
-   "worst_mm": {
-    "jaw/jaw_v4 vs trunk_base/body_shell_v4": 1.2,
-    "hip_l/hip_l vs hip_l_2/hip_l": 0.6,
-    "jaw_soft/head_lower_v4 vs trunk_base/body_shell_v4": 0.6,
-    "hip_l_2/seeed_bearing__configuration__22x16x4 vs trunk_base/body_shell_v4": 0.5,
-    "jaw/jaw_v4 vs trunk_base/a010_v4": 0.5,
-    "bearing_roll/seeed_bearing__configuration__22x16x4 vs yaw2roll/seeed_bearing__configuration__22x16x4": 0.4
-   },
-   "proxy_contact_frames": 19,
-   "proxy_contacts": {
-    "body_chest_a010_collision vs head_lower_collision": 11,
-    "body_front_upper_collision vs head_lower_collision": 10,
-    "body_rear_upper_collision vs head_lower_collision": 7,
-    "body_chest_a010_collision vs jaw_collision": 7,
-    "body_board_bay_collision vs head_lower_collision": 4
-   }
-  },
-  "roulade_oldtraj": {
-   "frames": 375,
-   "seconds": 7.5,
-   "frames_with_clash": 18,
-   "frames_with_clash_not_at_rest": 18,
-   "frames_with_clash_old_method": 375,
-   "frames_per_pair": {
-    "jaw/jaw_v4 vs trunk_base/body_shell_v4": 18,
-    "jaw_soft/head_lower_v4 vs trunk_base/body_shell_v4": 1
-   },
-   "worst_mm": {
-    "jaw/jaw_v4 vs trunk_base/body_shell_v4": 1.2,
-    "jaw_soft/head_lower_v4 vs trunk_base/body_shell_v4": 1.0,
-    "jaw/jaw_v4 vs trunk_base/a010_v4": 0.8,
-    "ankle_left/foot_left vs ankle_right/sole_right": 0.7,
-    "hip_l_2/seeed_bearing__configuration__22x16x4 vs trunk_base/body_shell_v4": 0.6,
-    "ankle_left/ankle_left vs ankle_right/sole_right": 0.6,
-    "hip_l/seeed_bearing__configuration__22x16x4 vs trunk_base/body_shell_v4": 0.4,
-    "hip_l/hip_l vs hip_l_2/hip_l": 0.4
-   },
-   "proxy_contact_frames": 17,
-   "proxy_contacts": {
-    "body_chest_a010_collision vs head_lower_collision": 11,
-    "body_rear_upper_collision vs head_lower_collision": 7,
-    "body_front_upper_collision vs head_lower_collision": 6,
-    "body_board_bay_collision vs head_lower_collision": 4,
-    "body_chest_a010_collision vs jaw_collision": 2,
-    "jaw_collision vs right_foot_collision": 1
-   }
-  },
-  "sitstand": {
-   "frames": 475,
-   "seconds": 9.5,
-   "frames_with_clash": 0,
-   "frames_with_clash_not_at_rest": 0,
-   "frames_with_clash_old_method": 475,
-   "frames_per_pair": {},
-   "worst_mm": {
-    "ankle_right/sole_right vs trunk_base/body_shell_v4": 0.4
-   },
-   "proxy_contact_frames": 1,
-   "proxy_contacts": {
-    "body_front_upper_collision vs left_foot_collision": 2,
-    "body_front_upper_collision vs right_foot_collision": 2
-   }
-  },
-  "walk": {
-   "frames": 500,
-   "seconds": 10.0,
-   "frames_with_clash": 0,
-   "frames_with_clash_not_at_rest": 0,
-   "frames_with_clash_old_method": 500,
-   "frames_per_pair": {},
-   "worst_mm": {},
-   "proxy_contact_frames": 0,
-   "proxy_contacts": {}
-  }
- }
+ "motions": {}
 }

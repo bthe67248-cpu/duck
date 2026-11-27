@@ -1,83 +1,108 @@
 {
- "_comment": "S1 collision proxies, millimetres. head/jaw: head-mesh axes (x width, -y front, z up), centre relative to the named mesh's origin (jaw: the jaw geom origin = lower-head frame). The torso proxies are the outer blocks of design/v4/v4_params.json (bevels ignored, so slightly conservative), named body_<block>_collision; scripts/make_duck.py derives them from there. Verify with scripts/check_collision_proxies.py.",
+ "_comment": "S1 collision proxies, millimetres. head/jaw: type 'hull' = a collision geom using the print mesh itself, which MuJoCo collides as its convex hull (tight on the outside of the shells; the bodies carry explicit inertia, so nothing changes in the dynamics); type box/ellipsoid: head-mesh axes (x width, -y front, z up), centre relative to the named mesh's origin. The torso proxies are the outer blocks of design/v4/v4_params.json (bevels ignored, so slightly conservative), named body_<block>_collision; scripts/make_duck.py derives them from there. Verify with scripts/check_collision_proxies.py.",
  "head": [
   {
-   "name": "head_dome_collision",
-   "type": "ellipsoid",
+   "name": "head_upper_collision",
+   "type": "hull",
    "frame": "head_upper_v4",
-   "size_mm": [
-    47.3,
-    60.0,
-    32.0
-   ],
-   "centre_mm": [
-    -2.0,
-    5.0,
-    18.0
-   ]
-  },
-  {
-   "name": "head_upper_skirt_collision",
-   "type": "box",
-   "frame": "head_upper_v4",
-   "size_mm": [
-    44.0,
-    52.0,
-    9.0
-   ],
-   "centre_mm": [
-    -2.0,
-    8.0,
-    9.0
-   ]
+   "mesh": "head_upper_v4"
   },
   {
    "name": "head_lower_collision",
-   "type": "box",
+   "type": "hull",
    "frame": "head_lower_v4",
-   "size_mm": [
-    45.6,
-    53.0,
-    11.17
-   ],
-   "centre_mm": [
-    -2.0,
-    11.0,
-    11.17
-   ]
-  },
-  {
-   "name": "bill_upper_collision",
-   "type": "ellipsoid",
-   "frame": "head_lower_v4",
-   "size_mm": [
-    23.0,
-    11.0,
-    3.5
-   ],
-   "centre_mm": [
-    -2.0,
-    -55.0,
-    22.0
-   ]
+   "mesh": "head_lower_v4"
   }
  ],
  "jaw": [
   {
    "name": "jaw_collision",
-   "type": "box",
+   "type": "hull",
    "frame": "jaw_v4",
-   "size_mm": [
-    31.55,
-    9.85,
-    7.49
-   ],
-   "centre_mm": [
-    -2.0,
-    -56.37,
-    11.12
-   ]
+   "mesh": "jaw_v4"
   }
  ],
- "exclude": []
+ "exclude": [],
+ "_old_primitives_2026_11_25": {
+  "head": [
+   {
+    "name": "head_dome_collision",
+    "type": "ellipsoid",
+    "frame": "head_upper_v4",
+    "size_mm": [
+     47.3,
+     60.0,
+     32.0
+    ],
+    "centre_mm": [
+     -2.0,
+     5.0,
+     18.0
+    ]
+   },
+   {
+    "name": "head_upper_skirt_collision",
+    "type": "box",
+    "frame": "head_upper_v4",
+    "size_mm": [
+     44.0,
+     52.0,
+     9.0
+    ],
+    "centre_mm": [
+     -2.0,
+     8.0,
+     9.0
+    ]
+   },
+   {
+    "name": "head_lower_collision",
+    "type": "box",
+    "frame": "head_lower_v4",
+    "size_mm": [
+     45.6,
+     53.0,
+     11.17
+    ],
+    "centre_mm": [
+     -2.0,
+     11.0,
+     11.17
+    ]
+   },
+   {
+    "name": "bill_upper_collision",
+    "type": "ellipsoid",
+    "frame": "head_lower_v4",
+    "size_mm": [
+     23.0,
+     11.0,
+     3.5
+    ],
+    "centre_mm": [
+     -2.0,
+     -55.0,
+     22.0
+    ]
+   }
+  ],
+  "jaw": [
+   {
+    "name": "jaw_collision",
+    "type": "box",
+    "frame": "jaw_v4",
+    "size_mm": [
+     31.55,
+     9.85,
+     7.49
+    ],
+    "centre_mm": [
+     -2.0,
+     -56.37,
+     11.12
+    ]
+   }
+  ],
+  "_note": "replaced by convex-hull mesh geoms of the shells (collision_proxy_check: the jaw box left 23 % of the jaw outside, the lower-head box reached up to 22 mm past the shell and failed the head/body contact gate); kept for reference only, not used"
+ }
 }

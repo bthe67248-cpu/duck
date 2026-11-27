@@ -1,6 +1,6 @@
 """Duckling V4 parts (Blender). Writes design/v4/*.stl in millimetres.
 
-    E:lenderlender.exe --background --python design/v4/build_v4.py [-- body|head]
+    E:lenderlender.exe --background --python design/v4/build_v4.py [-- body|head|head_upper|head_lower]
 
 Parts (all OUR geometry; upstream meshes are not used or written). Dimensions: v4_params.json.
   body_shell_v4.stl     torso enclosure replacing the upstream left/right shells, the rear shield and the battery
@@ -47,6 +47,8 @@ def box(name, lo, hi, bevel=0.0, seg=3):
 
 
 def boolean(target, tool, op, keep=False):
+    if os.environ.get("V4_DEBUG"):
+        print(f"bool {op} {target.name} ({len(target.data.polygons)}) <- {tool.name} ({len(tool.data.polygons)})", flush=True)
     md = target.modifiers.new("b", "BOOLEAN"); md.operation = op; md.object = tool; md.solver = "EXACT"
     bpy.context.view_layer.objects.active = target; bpy.ops.object.modifier_apply(modifier=md.name)
     if not keep:
@@ -90,7 +92,11 @@ def drop_slivers(ob, min_vol=1.0):
 def check_closed(ob, fname):
     """Every edge must join exactly two faces (closed, manifold): the masses and the simulation rely on it."""
     bm = bmesh.new(); bm.from_mesh(ob.data)
-    bad = sum(1 for e in bm.edges if len(e.link_faces) != 2)
+    bad_e = [e for e in bm.edges if len(e.link_faces) != 2]
+    bad = len(bad_e)
+    if bad and os.environ.get("V4_DEBUG"):
+        pts = sorted({tuple(round(c, 1) for c in v.co) for e in bad_e for v in e.verts})
+        print(f"{fname}: non-manifold edges near", pts[:: max(1, len(pts) // 25)], flush=True)
     bm.free()
     if bad:
         raise RuntimeError(f"{fname}: {bad} edge(s) not shared by exactly two faces; the part is not a closed solid")
@@ -182,6 +188,90 @@ def cyl_axis(name, axis, c, r, span, seg=32):
     return mesh_object(name, V, F)
 
 
+def rotate_about_x(ob, y0, z0, ang):
+    """Rotate an object's mesh by ang (rad) about the axis along x through (y0, z0); +ang turns +y towards +z."""
+    c, s = math.cos(ang), math.sin(ang)
+    for v in ob.data.vertices:
+        dy, dz = v.co.y - y0, v.co.z - z0
+        v.co.y, v.co.z = y0 + c * dy - s * dz, z0 + s * dy + c * dz
+    ob.data.update()
+
+
+def hull_of(ob, name, inset=0.6):
+    """Convex hull of an object, moved `inset` mm inwards, as a new closed object. Used to keep added features inside a
+    part's outer skin: the inset makes them end inside the wall instead of on the skin (coincident faces break the
+    boolean's manifold result)."""
+    bm = bmesh.new(); bm.from_mesh(ob.data)
+    res = bmesh.ops.convex_hull(bm, input=bm.verts)
+    bmesh.ops.delete(bm, geom=[g for g in res["geom_interior"] + res["geom_unused"] if isinstance(g, bmesh.types.BMVert)],
+                     context="VERTS")
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.normal_update()
+    moves = [(v, v.normal.copy()) for v in bm.verts]
+    for v, n in moves:
+        v.co -= n * inset
+    me = bpy.data.meshes.new(name); bm.to_mesh(me); bm.free()
+    h = bpy.data.objects.new(name, me); bpy.context.collection.objects.link(h)
+    return h
+
+
+def local_hull(ob, name, lo, hi, inset=0.6):
+    """Inset convex hull of the part of `ob` inside the box lo..hi: follows a curved skin much more closely than the
+    hull of the whole part (used to keep the hinge bosses and the pushrod lever inside the jaw's skin)."""
+    piece = ob.copy(); piece.data = ob.data.copy(); bpy.context.collection.objects.link(piece)
+    boolean(piece, box(name + "_win", lo, hi), "INTERSECT")
+    h = hull_of(piece, name, inset)
+    bpy.data.objects.remove(piece, do_unlink=True)
+    return h
+
+
+def hull_2d(pts):
+    """Convex hull (counter-clockwise) of 2-D points, monotone chain."""
+    pts = sorted(set(pts))
+    cross = lambda o, a, b: (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+    lo_, hi_ = [], []
+    for p in pts:
+        while len(lo_) >= 2 and cross(lo_[-2], lo_[-1], p) <= 0: lo_.pop()
+        lo_.append(p)
+    for p in reversed(pts):
+        while len(hi_) >= 2 and cross(hi_[-2], hi_[-1], p) <= 0: hi_.pop()
+        hi_.append(p)
+    return lo_[:-1] + hi_[:-1]
+
+
+def ear_profile(Hg, k, grow=0.0):
+    """(y, z) outline of hinge ear k (0 = left, 1 = right): convex hull of the ring about the hinge axis and the web's
+    underside; `grow` enlarges it (clearance)."""
+    J = P["head"]["jaw"]; hy, hz = J["hinge_y"], J["hinge_z"]
+    r = Hg["ring_r"] + grow
+    w = Hg["web"][k]
+    pts = [(hy + r * math.cos(2 * math.pi * i / 48), hz + r * math.sin(2 * math.pi * i / 48)) for i in range(48)]
+    # the plain ear ends 0.3 mm inside the web (no coincident faces in the union); the clearance outline covers it all
+    d = 0.3 if grow == 0 else -grow
+    pts += [(w["lo"][1] + d, w["lo"][2] + d), (w["hi"][1] - d, w["lo"][2] + d),
+            (w["lo"][1] + d, w["hi"][2] - max(d, 0)), (w["hi"][1] - d, w["hi"][2] - max(d, 0))]
+    return hull_2d(pts)
+
+
+def ear_tool(name, Hg, k):
+    x0, x1 = Hg["ear_x"][k]
+    return prism_x(name, ear_profile(Hg, k), x0, x1)
+
+
+def ear_sweep_tool(name, Hg, k):
+    """Clearance slot the jaw needs for ear k: the ear grown by `gap`, turned (in the jaw's frame) over the jaw's whole
+    travel, as one prism (2-D convex hull of the turned outlines: one boolean instead of one per angle, and a little
+    conservative). The jaw sees the ear turn the other way as it opens."""
+    J = P["head"]["jaw"]; hy, hz = J["hinge_y"], J["hinge_z"]
+    prof, g = ear_profile(Hg, k, Hg["gap"]), Hg["gap"]
+    a0, a1 = Hg["sweep_deg"]
+    pts = []
+    for i in range(25):
+        a = -math.radians(a0 + (a1 - a0) * i / 24); c, s_ = math.cos(a), math.sin(a)
+        pts += [(round(hy + c * (y - hy) - s_ * (z - hz), 4), round(hz + s_ * (y - hy) + c * (z - hz), 4)) for y, z in prof]
+    x0, x1 = Hg["ear_x"][k]
+    return prism_x(name, hull_2d(pts), x0 - g, x1 + g)
+
+
 def prim(spec):
     """A box (lo, hi, bevel) or a cylinder ({"cyl": {axis, c, r, span}}) from v4_params.json."""
     if "cyl" in spec:
@@ -221,7 +311,7 @@ if ONLY in ("all", "body"):
 # mm with a smoothstep (parameters kept in v4_params.json "head" as the record). Rebuilt here: the lens opening, the
 # clearance cuts around the neck mechanism (head_clearance.py measures them), the jaw split and the mouth servo.
 H = P["head"]
-if ONLY in ("all", "head"):
+if ONLY in ("all", "head", "head_upper"):
     clear()
     upper = load(os.path.join(HERE, "head_upper_v4_whole.stl"), "head_upper_v4")
     # the upper part's STL keeps its own frame (z shifted by the seam height): cutters are given in the lower-head frame
@@ -230,8 +320,48 @@ if ONLY in ("all", "head"):
     (lx, lz), lr = L["centre_xz"], L["radius"]
     boolean(upper, cylinder_y("lens", lx, lz - zs, lr, *L["y"]), "DIFFERENCE")
     boolean(upper, box("lensnotch", [lx - lr, L["y"][0], L["notch_to_z"] - zs], [lx + lr, L["y"][1], lz - zs]), "DIFFERENCE")
+    # mouth-servo cradle hanging from the dome, trimmed to the inside of the shell's convex hull
+    MC = H["mouth_cradle"]
+    sh = lambda s: ([s["lo"][0], s["lo"][1], s["lo"][2] - zs], [s["hi"][0], s["hi"][1], s["hi"][2] - zs])
+
+    def dome_hits(x, y):
+        """(inner, outer) z of the dome above (x, y), upper-mesh frame, from two upward rays."""
+        o = Vector((x, y, 50.0 - zs)); out = []
+        for _ in range(2):
+            hit, loc, _n, _i = upper.ray_cast(o, Vector((0, 0, 1)))
+            if not hit:
+                raise RuntimeError(f"cradle: no dome above ({x}, {y})")
+            out.append(loc.z); o = loc + Vector((0, 0, 1e-3))
+        return out
+
+    plates = []
+    for k, pl in enumerate(MC["plates"]):
+        (x0, y0, z0), (x1, y1, _z1) = sh(pl)
+        tops = []
+        for y in (y0, y1):
+            hits = [dome_hits(x0 + (x1 - x0) * i / 12, y) for i in range(13)]
+            top = min(h[1] for h in hits) - MC["top_inset"]
+            if top < max(h[0] for h in hits) + MC["min_anchor"]:
+                raise RuntimeError(f"cradle plate {k}: the dome wall is too thin/steep here to anchor the plate")
+            tops.append(top)
+        plates.append(prism_x(f"plate{k}", [(y0, z0), (y1, z0), (y1, tops[1]), (y0, tops[0])], x0, x1))
+    cradle = plates[0]
+    for pl in plates[1:]:
+        boolean(cradle, pl, "UNION")
+    for s in MC["lips"] + [MC["stop"]]:
+        boolean(cradle, box("cr", *sh(s)), "UNION")
+    for s in [MC["cable_window"]] + MC["tie_slots"]:
+        boolean(cradle, box("crcut", *sh(s)), "DIFFERENCE")
+    boolean(upper, cradle, "UNION")
+    # head-shell screws: fill each upper boss bore and re-drill a round pilot (the V4 widening made the rear ones oval)
+    FS = H["fasteners"]
+    for s in FS["screws"]:
+        (sx, sy), top = s["xy"], s["upper_top_z"] - zs
+        boolean(upper, cyl_axis("fill", "z", (sx, sy), FS["fill_r"], (s["upper_fill_from_z"] - zs, top + 1.0)), "UNION")
+        boolean(upper, cyl_axis("pilot", "z", (sx, sy), FS["pilot_d"] / 2, (-1.0, top)), "DIFFERENCE")
     export(upper, "head_upper_v4.stl")
 
+if ONLY in ("all", "head", "head_lower"):
     clear()
     lo = load(os.path.join(HERE, "head_lower_v4_whole.stl"), "head_lower_v4")
     CL = H["clearance"]
@@ -258,10 +388,47 @@ if ONLY in ("all", "head"):
     boolean(jaw, prism_x("jawcut", jaw_pts, *J["x"]), "INTERSECT")
     # lever plate on the heel for the mouth pushrod (pin hole on the plate), in the pushrod's plane
     lv = J["lever"]
-    boolean(jaw, prism_x("lever", [(hy, hz)] + arc(R - 0.5, -90, 0), *lv["x"]), "UNION")
+    # the plate's lower edge follows the bill's inner bottom surface (0.3 mm into the wall, never through it): the
+    # bottom is concave behind the hinge, so the plain quarter disc used to bulge out under the bill
+    xm = 0.5 * (lv["x"][0] + lv["x"][1])
+    prof = [(hy, hz)]
+    for pt_y, pt_z in arc(R - 0.5, -90, 0, 40):
+        floor = None
+        for xs_ in (lv["x"][0] + 0.2, xm, lv["x"][1] - 0.2):
+            hit, loc, _n, _i = jaw.ray_cast(Vector((xs_, pt_y, hz)), Vector((0, 0, -1)))
+            if hit:
+                floor = loc.z - 0.3 if floor is None else max(floor, loc.z - 0.3)
+        prof.append((pt_y, min(hz - 0.5, max(pt_z, floor)) if floor is not None else hz - 0.5))
+    boolean(jaw, prism_x("lever", prof, *lv["x"]), "UNION")
     boolean(jaw, cylinder_x("leverpin", lv["pin_yz"][0], lv["pin_yz"][1], lv["pin_d"] / 2, lv["x"][0] - 1, lv["x"][1] + 1), "DIFFERENCE")
     boolean(lo, prism_x("shellcut", cut_pts, J["x"][0] - 1, J["x"][1] + 1), "DIFFERENCE")
+
+    # jaw hinge: pin bosses on the jaw's side walls (kept inside the jaw's outer skin), ears + seam webs on the shell
+    Hg, FS = H["hinge"], H["fasteners"]
+    for k in range(2):
+        x0, x1 = Hg["jaw_boss_x"][k]
+        r_ = Hg["jaw_boss_r"]
+        jh = local_hull(jaw, "jaw_hull", [x0 - 3, hy - r_ - 3, hz - r_ - 3], [x1 + 3, hy + r_ + 3, hz + r_ + 3])
+        b = cyl_axis("jawboss", "x", (hy, hz), r_, (x0, x1))
+        boolean(b, jh, "INTERSECT")
+        boolean(jaw, b, "UNION")
+    for k in range(2):
+        boolean(lo, ear_tool("ear", Hg, k), "UNION")
+        boolean(lo, box("web", Hg["web"][k]["lo"], Hg["web"][k]["hi"]), "UNION")
+        boolean(jaw, ear_sweep_tool("earsweep", Hg, k), "DIFFERENCE")
+    for x0, x1 in Hg["jaw_boss_x"]:
+        boolean(jaw, cyl_axis("pinclear", "x", (hy, hz), Hg["pin_clear_d"] / 2, (x0 - 2, x1 + 1)), "DIFFERENCE")
+    for x0, x1 in Hg["ear_x"]:
+        boolean(lo, cyl_axis("pinpilot", "x", (hy, hz), Hg["pin_pilot_d"] / 2, (x0 - 1, x1 + 1)), "DIFFERENCE")
+    # head-shell screws: clean clearance holes through the lower bosses (and the webs that wrap the front ones)
+    for s in FS["screws"]:
+        if "lower_fill_z" in s:
+            boolean(lo, cyl_axis("fill", "z", tuple(s["xy"]), FS["lower_fill_r"], tuple(s["lower_fill_z"])), "UNION")
+        boolean(lo, cyl_axis("clear", "z", tuple(s["xy"]), FS["clear_d"] / 2, (-1.0, FS["seam_z"] + 1.0)), "DIFFERENCE")
+        if "counterbore_d" in s:                          # screw head recessed into the web, clear of the jaw heel
+            boolean(lo, cyl_axis("cbore", "z", tuple(s["xy"]), s["counterbore_d"] / 2, (-1.0, s["counterbore_top_z"])), "DIFFERENCE")
     export(lo, "head_lower_v4.stl"); export(jaw, "jaw_v4.stl")
+if ONLY in ("all", "head"):
     clear(); export(box("mouth_servo", H["mouth_servo"]["lo"], H["mouth_servo"]["hi"], 1.0), "mouth_servo_v4.stl")
 
 print("V4_DONE")

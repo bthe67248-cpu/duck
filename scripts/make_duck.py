@@ -240,9 +240,28 @@ def bought_kg(name, ledger):
     return BOUGHT_G[name] / 1000.0
 
 
+def chamfered_box_points(lo, hi, bevel):
+    """Corner points (mm) of a box whose edges are chamfered tangent to a fillet of radius `bevel`: the chamfer plane
+    touches the fillet arc, so its convex hull covers the rounded block completely (over-reach <= 0.41 * bevel at
+    an edge) instead of the plain box's corners. Cut length along each edge: (2 - sqrt 2) * bevel."""
+    c = (2.0 - np.sqrt(2.0)) * float(bevel)
+    pts = []
+    for sx in (0, 1):
+        for sy in (0, 1):
+            for sz in (0, 1):
+                corner = np.array([(lo, hi)[s][i] for i, s in enumerate((sx, sy, sz))], float)
+                inward = np.array([1 if s == 0 else -1 for s in (sx, sy, sz)], float)
+                for ax in range(3):                 # on the face normal to `ax`, inset along the other two axes
+                    q = corner + inward * c; q[ax] = corner[ax]
+                    pts.append(q)
+    return np.array(pts)
+
+
 def body_proxies(params):
-    """Torso collision boxes = the outer blocks of the V4 body shell (bevels ignored), torso frame, mm (half sizes)."""
-    return [dict(name=f"body_{b['name']}_collision", type="box",
+    """Torso collision proxies = the outer blocks of the V4 body shell, torso frame, mm. Each is a convex mesh of the
+    block with its bevel as a tangent chamfer (type "hull_box"; the plain box over-reached by up to the bevel at
+    every edge and corner, which tripped the shank/connector-well and head/board-bay contact gate)."""
+    return [dict(name=f"body_{b['name']}_collision", type="hull_box", lo=b["lo"], hi=b["hi"], bevel=b.get("bevel", 0.0),
                  size_mm=[(h - l) / 2 for l, h in zip(b["lo"], b["hi"])],
                  centre_mm=[(h + l) / 2 for l, h in zip(b["lo"], b["hi"])]) for b in params["body"]["outer"]]
 
@@ -458,13 +477,27 @@ def main():
         c = origin + R @ (np.array(centre_mm) / 1000.0)
         ET.SubElement(parent, "geom", name=name, type=kind, **{"class": "collision"},
                       size=" ".join(f"{s / 1000.0:.5f}" for s in size_mm), pos=fmt(c), quat=fmt(quat_of(R), 6))
+    def hull(parent, name, mesh, origin):
+        """collision geom on the print mesh itself: MuJoCo collides a mesh geom as its convex hull"""
+        ET.SubElement(parent, "geom", name=name, type="mesh", mesh=mesh, **{"class": "collision"},
+                      pos=fmt(origin), quat=fmt(quat_mb, 6))
     if GC:
         for p_ in PROXIES["head"]:
-            proxy(head, p_["name"], p_["type"], p_["size_mm"], p_["centre_mm"], place[p_["frame"]], R_mb)
+            if p_["type"] == "hull":
+                hull(head, p_["name"], p_["mesh"], place[p_["frame"]])
+            else:
+                proxy(head, p_["name"], p_["type"], p_["size_mm"], p_["centre_mm"], place[p_["frame"]], R_mb)
         for p_ in PROXIES["jaw"]:
-            proxy(jaw, p_["name"], p_["type"], p_["size_mm"], p_["centre_mm"], jaw_rel, R_mb)
+            if p_["type"] == "hull":
+                hull(jaw, p_["name"], p_["mesh"], jaw_rel)
+            else:
+                proxy(jaw, p_["name"], p_["type"], p_["size_mm"], p_["centre_mm"], jaw_rel, R_mb)
         for b_ in body_proxies(params):
-            proxy(trunk, b_["name"], b_["type"], b_["size_mm"], b_["centre_mm"], np.zeros(3), np.eye(3))
+            hull_mesh = trimesh.convex.convex_hull(chamfered_box_points(b_["lo"], b_["hi"], b_["bevel"]) / 1000.0)
+            mname = f"proxy_{b_['name']}"
+            hull_mesh.export(DST / "assets" / f"{mname}.stl")
+            ET.SubElement(asset, "mesh", name=mname, file=f"{mname}.stl")
+            ET.SubElement(trunk, "geom", name=b_["name"], type="mesh", mesh=mname, **{"class": "collision"})
         if PROXIES.get("exclude"):
             contact = root.find("contact")
             if contact is None:

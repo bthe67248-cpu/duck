@@ -56,7 +56,7 @@
   <worldbody>
     <body name="trunk_base" pos="0 0 0.12" quat="1 0 0 0" childclass="microduck">
       <freejoint name="trunk_base_freejoint" />
-      <inertial pos="-0.0325199 1.10445e-05 0.0024247" mass="0.278234" fullinertia="0.000353875 0.000615875 0.0004874 9.39831e-08 -4.63766e-05 4.09797e-08" />
+      <inertial pos="-0.0325198 1.10415e-05 0.00242474" mass="0.278236" fullinertia="0.000353879 0.000615883 0.000487408 9.39479e-08 -4.63773e-05 4.0974e-08" />
       <geom type="mesh" class="visual" pos="0.006 0.0175 -0.005" quat="1 -0 -0 0" mesh="seeed_bearing__configuration__22x16x4" material="seeed_bearing__configuration__22x16x4_material" />
       <geom type="mesh" class="visual" pos="0.004 -0 -0.0175" quat="0.707107 -0 -0 0.707107" mesh="trunk_base" material="black_pla" />
       <geom type="mesh" class="visual" pos="0.006 0.0175 0.0115" quat="0 -0.707107 0 -0.707107" mesh="xl330" material="xl330_material" />
@@ -125,7 +125,7 @@
             <geom type="mesh" class="visual" pos="0.018 0 0.0145" quat="0.707107 0 -0.707107 -0" mesh="seeed_bearing__configuration__22x16x4" material="seeed_bearing__configuration__22x16x4_material" />
             <body name="jaw_soft" pos="-0.0179 0 0.0145" quat="0.707107 0 -0.707107 -0">
               <joint axis="0 0 1" name="head_roll" type="hinge" range="-0.43633231299858327 0.4363323129985815" class="chosen_actuator" />
-              <inertial pos="0.0144456 0.00146751 -0.0199315" mass="0.185195" fullinertia="0.000620461 0.000425156 0.000364911 1.66499e-06 1.92943e-05 7.73382e-06" />
+              <inertial pos="0.0148082 0.00142264 -0.0204293" mass="0.191424" fullinertia="0.000627706 0.000432953 0.00036899 1.71966e-06 1.96892e-05 7.66193e-06" />
               <geom type="mesh" class="visual" pos="0.0155 -9.13778e-05 -0.05548" quat="0.5 -0.5 0.5 -0.5" mesh="lens" material="lens_glass" />
               <geom type="mesh" class="visual" pos="0.003 0.0255 -0.018" quat="0.707107 0 -0 -0.707107" mesh="xl330" material="xl330_material" />
               <geom type="mesh" class="visual" pos="-0.0045 -0 -0.018" quat="0.5 0.5 0.5 0.5" mesh="motor_support" material="black_pla" />
@@ -141,17 +141,15 @@
               <geom type="mesh" mesh="head_lower_v4" class="visual" material="black_pla" pos="-0.01694 0.00200 -0.02819" quat="0.500000 0.500000 0.500000 0.500000" />
               <geom type="mesh" mesh="mouth_servo_v4" class="visual" material="v4_servo" pos="-0.01694 0.00200 -0.02819" quat="0.500000 0.500000 0.500000 0.500000" />
               <body name="jaw" pos="-0.004936 0.002000 -0.074190">
-                <inertial pos="-0.00228646 -0.00121745 -0.00690263" mass="0.005899" fullinertia="2.70048e-06 5.05954e-07 2.40728e-06 6.76846e-09 8.45628e-08 -5.19919e-08" />
+                <inertial pos="-0.00219473 -0.00146264 -0.00718258" mass="0.005803" fullinertia="2.65368e-06 4.79847e-07 2.38709e-06 3.69947e-09 8.04997e-08 -3.35053e-08" />
                 <joint name="mouth" type="hinge" axis="0.000000 1.000000 0.000000" range="0 0.523599" damping="0.01" armature="0.0005" frictionloss="0.0048" />
                 <geom type="mesh" mesh="jaw_v4" class="visual" material="black_pla" pos="-0.01200 0.00000 0.04600" quat="0.500000 0.500000 0.500000 0.500000" />
                 <site group="3" name="mouth_tip" pos="-0.005629 -0.002220 -0.016183" />
-                <geom name="jaw_collision" type="box" class="collision" size="0.03155 0.00985 0.00749" pos="-0.00088 -0.00200 -0.01037" quat="0.500000 0.500000 0.500000 0.500000" />
+                <geom name="jaw_collision" type="mesh" mesh="jaw_v4" class="collision" pos="-0.01200 0.00000 0.04600" quat="0.500000 0.500000 0.500000 0.500000" />
               </body>
               <camera name="head_cam" fovy="60" pos="0.01550 -0.00009 -0.08530" quat="0.707107 0.000000 0.000000 -0.707107" />
-              <geom name="head_dome_collision" type="ellipsoid" class="collision" size="0.04730 0.06000 0.03200" pos="0.02341 -0.00000 -0.02319" quat="0.500000 0.500000 0.500000 0.500000" />
-              <geom name="head_upper_skirt_collision" type="box" class="collision" size="0.04400 0.05200 0.00900" pos="0.01441 -0.00000 -0.02019" quat="0.500000 0.500000 0.500000 0.500000" />
-              <geom name="head_lower_collision" type="box" class="collision" size="0.04560 0.05300 0.01117" pos="-0.00577 -0.00000 -0.01719" quat="0.500000 0.500000 0.500000 0.500000" />
-              <geom name="bill_upper_collision" type="ellipsoid" class="collision" size="0.02300 0.01100 0.00350" pos="0.00506 -0.00000 -0.08319" quat="0.500000 0.500000 0.500000 0.500000" />
+              <geom name="head_upper_collision" type="mesh" mesh="head_upper_v4" class="collision" pos="0.00541 0.00200 -0.02819" quat="0.500000 0.500000 0.500000 0.500000" />
+              <geom name="head_lower_collision" type="mesh" mesh="head_lower_v4" class="collision" pos="-0.01694 0.00200 -0.02819" quat="0.500000 0.500000 0.500000 0.500000" />
             </body>
           </body>
         </body>
@@ -205,12 +203,12 @@
       <geom type="mesh" mesh="battery_v4" class="visual" material="v4_lipo" />
       <geom type="mesh" mesh="xt60_v4" class="visual" material="v4_xt60" />
       <site group="3" name="tof_body" pos="0.048000 0.000000 0.005500" />
-      <geom name="body_front_upper_collision" type="box" class="collision" size="0.03875 0.03450 0.02250" pos="-0.00125 0.00000 0.02250" quat="1.000000 0.000000 0.000000 0.000000" />
-      <geom name="body_rear_upper_collision" type="box" class="collision" size="0.01300 0.03450 0.01750" pos="-0.04900 0.00000 0.02150" quat="1.000000 0.000000 0.000000 0.000000" />
-      <geom name="body_chest_a010_collision" type="box" class="collision" size="0.00900 0.02400 0.01475" pos="0.04200 0.00000 0.00475" quat="1.000000 0.000000 0.000000 0.000000" />
-      <geom name="body_board_bay_collision" type="box" class="collision" size="0.01350 0.03000 0.04250" pos="-0.07150 0.00000 -0.00150" quat="1.000000 0.000000 0.000000 0.000000" />
-      <geom name="body_battery_keel_collision" type="box" class="collision" size="0.01100 0.01750 0.01750" pos="-0.03750 0.00000 -0.01150" quat="1.000000 0.000000 0.000000 0.000000" />
-      <geom name="body_connector_well_collision" type="box" class="collision" size="0.01625 0.01750 0.00910" pos="-0.03225 0.00000 -0.03410" quat="1.000000 0.000000 0.000000 0.000000" />
+      <geom name="body_front_upper_collision" type="mesh" mesh="proxy_body_front_upper_collision" class="collision" />
+      <geom name="body_rear_upper_collision" type="mesh" mesh="proxy_body_rear_upper_collision" class="collision" />
+      <geom name="body_chest_a010_collision" type="mesh" mesh="proxy_body_chest_a010_collision" class="collision" />
+      <geom name="body_board_bay_collision" type="mesh" mesh="proxy_body_board_bay_collision" class="collision" />
+      <geom name="body_battery_keel_collision" type="mesh" mesh="proxy_body_battery_keel_collision" class="collision" />
+      <geom name="body_connector_well_collision" type="mesh" mesh="proxy_body_connector_well_collision" class="collision" />
       <site name="push_point" pos="0 0 0" />
     </body>
   </worldbody>
@@ -259,6 +257,12 @@
     <mesh name="a010_v4" file="a010_v4.stl" />
     <mesh name="battery_v4" file="battery_v4.stl" />
     <mesh name="xt60_v4" file="xt60_v4.stl" />
+    <mesh name="proxy_body_front_upper_collision" file="proxy_body_front_upper_collision.stl" />
+    <mesh name="proxy_body_rear_upper_collision" file="proxy_body_rear_upper_collision.stl" />
+    <mesh name="proxy_body_chest_a010_collision" file="proxy_body_chest_a010_collision.stl" />
+    <mesh name="proxy_body_board_bay_collision" file="proxy_body_board_bay_collision.stl" />
+    <mesh name="proxy_body_battery_keel_collision" file="proxy_body_battery_keel_collision.stl" />
+    <mesh name="proxy_body_connector_well_collision" file="proxy_body_connector_well_collision.stl" />
     <material name="black_pla" rgba="0.025 0.025 0.025 1" specular="0.35" shininess="0.30" />
     <material name="lens_glass" rgba="0.04 0.07 0.12 1" specular="0.9" shininess="0.95" />
     <material name="v4_pcb" rgba="0.05 0.35 0.15 1" />

@@ -12,6 +12,8 @@ done
 PKG=$P/ros2/duck_nav
 mkdir -p "$PKG/models" "$PKG/mjcf/assets" ~/duck_ws/src
 cp "$P/policies/velstand.onnx" "$P/policies/alpha_sitstand.onnx" "$P/policies/roulade.onnx" "$P/policies/alpha_ground_pick.onnx" "$P/yolo/duck_yolo.onnx" "$PKG/models/"
+# the V4-trained walking policy (training/README.md), if one has been installed: launch with walk_policy:=duck_v4_walk.onnx
+if [ -f "$P/policies/duck_v4_walk.onnx" ]; then cp "$P/policies/duck_v4_walk.onnx" "$PKG/models/"; fi
 cp "$P/model/duck_v4_gc.xml" "$P/model/duck_v4_gc_world.xml" "$P/model/world.json" "$PKG/mjcf/"
 cp "$P"/model/assets/*.stl "$PKG/mjcf/assets/"
 rm -rf ~/duck_ws/src/duck_nav ~/duck_ws/src/duck_description

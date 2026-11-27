@@ -1432,6 +1432,234 @@
    ],
    "notch_to_z": 21.0,
    "note": "M12 lens (17 mm) + 1 mm radial clearance; the hole is open down to the shell seam (no sliver under it)"
+  },
+  "fasteners": {
+   "_note": "4 x M2 self-tapping pan-head screws join the head shells from below (upstream boss positions). Lower bosses: \u00d82.4 clearance; upper bosses: \u00d81.75 pilot. The V4 widening had stretched the rear bores to 2.1 x 3.6 mm ovals: each upper bore (and the rear lower ones) is filled and re-drilled round; the upper fill starts 0.1 mm above the seam so the bosses meet within 0.25 mm. Rear: M2 x 12 with an M2 washer. Front: M2 x 10, NO washer, head in a \u00d84.4 x 1 mm counterbore in the hinge web (the jaw heel sweeps 1.6 mm below it at full opening).",
+   "seam_z": 22.35,
+   "clear_d": 2.4,
+   "pilot_d": 1.75,
+   "fill_r": 2.4,
+   "screws": [
+    {
+     "name": "rear_l",
+     "xy": [
+      -33.9,
+      46.8
+     ],
+     "upper_top_z": 34.5,
+     "length_mm": 12,
+     "lower_fill_z": [
+      18.3,
+      22.2
+     ],
+     "upper_fill_from_z": 22.45
+    },
+    {
+     "name": "rear_r",
+     "xy": [
+      29.9,
+      46.8
+     ],
+     "upper_top_z": 34.5,
+     "length_mm": 12,
+     "lower_fill_z": [
+      18.3,
+      22.2
+     ],
+     "upper_fill_from_z": 22.45
+    },
+    {
+     "name": "front_l",
+     "xy": [
+      -31.7,
+      -37.0
+     ],
+     "upper_top_z": 32.8,
+     "length_mm": 10,
+     "upper_fill_from_z": 22.45,
+     "counterbore_d": 4.4,
+     "counterbore_top_z": 20.45
+    },
+    {
+     "name": "front_r",
+     "xy": [
+      27.7,
+      -37.0
+     ],
+     "upper_top_z": 32.8,
+     "length_mm": 10,
+     "upper_fill_from_z": 22.45,
+     "counterbore_d": 4.4,
+     "counterbore_top_z": 20.45
+    }
+   ],
+   "lower_fill_r": 2.8
+  },
+  "hinge": {
+   "_note": "jaw hinge, two knuckles per side: the jaw's side wall (with a pin boss) outside, an ear on the lower shell inside. The ears hang from a 2.75 mm web at the seam that wraps the front screw bosses (fit the front screws before loading the jaw). Pin: a \u00d82 x 10 mm steel dowel (or 2 mm steel rod) pressed into the ear's \u00d81.9 hole with a drop of CA glue, free in the jaw's \u00d82.3 hole: the jaw turns on a smooth pin, nothing clamps the knuckles together, and the jaw straddles both ears, so it cannot slide off. The jaw loses each ear grown by `gap`, swept over the jaw's travel. Lower-head frame, mm.",
+   "ear_x": [
+    [
+     -28.5,
+     -25.5
+    ],
+    [
+     21.5,
+     24.5
+    ]
+   ],
+   "ring_r": 3.5,
+   "web": [
+    {
+     "lo": [
+      -36.0,
+      -41.0,
+      19.45
+     ],
+     "hi": [
+      -25.9,
+      -33.0,
+      22.2
+     ]
+    },
+    {
+     "lo": [
+      21.9,
+      -41.0,
+      19.45
+     ],
+     "hi": [
+      32.0,
+      -33.0,
+      22.2
+     ]
+    }
+   ],
+   "jaw_boss_r": 3.2,
+   "jaw_boss_x": [
+    [
+     -35.0,
+     -28.5
+    ],
+    [
+     24.5,
+     31.0
+    ]
+   ],
+   "gap": 0.5,
+   "pin_clear_d": 2.3,
+   "pin_pilot_d": 1.9,
+   "sweep_deg": [
+    -3.0,
+    33.0
+   ],
+   "pin_length_mm": 10
+  },
+  "mouth_cradle": {
+   "_note": "cradle for the mouth XL330 hanging from the dome (upper shell): end plates at the servo's -y/+y ends (34.8 mm gap for the 34 mm case), lips under the servo ends, a stop bar on the -x side (front half only: further back the head-roll XL330 sweeps up to z 39), a window for the cable plugs and slots for a 2.5 mm cable tie. Each plate's top is a slope ray-traced from the dome: top_inset mm under the outer surface at both faces of the plate, and checked to reach at least min_anchor mm past the inner surface (the dome is concave here, so a convex-hull trim poked through the forehead). Lower-head frame, mm. Check against your servo's case before printing.",
+   "plates": [
+    {
+     "lo": [
+      -13.0,
+      -25.2,
+      37.0
+     ],
+     "hi": [
+      13.0,
+      -22.4,
+      80.0
+     ]
+    },
+    {
+     "lo": [
+      -13.0,
+      12.4,
+      37.0
+     ],
+     "hi": [
+      13.0,
+      15.2,
+      80.0
+     ]
+    }
+   ],
+   "lips": [
+    {
+     "lo": [
+      -13.0,
+      -22.7,
+      37.0
+     ],
+     "hi": [
+      13.0,
+      -18.0,
+      39.8
+     ]
+    },
+    {
+     "lo": [
+      -13.0,
+      8.0,
+      37.0
+     ],
+     "hi": [
+      13.0,
+      12.7,
+      39.8
+     ]
+    }
+   ],
+   "stop": {
+    "lo": [
+     -15.8,
+     -25.2,
+     37.0
+    ],
+    "hi": [
+     -13.4,
+     -6.0,
+     42.0
+    ]
+   },
+   "cable_window": {
+    "lo": [
+     -4.0,
+     11.0,
+     41.0
+    ],
+    "hi": [
+     13.5,
+     16.0,
+     59.0
+    ]
+   },
+   "tie_slots": [
+    {
+     "lo": [
+      -1.5,
+      -26.0,
+      62.0
+     ],
+     "hi": [
+      1.5,
+      -21.0,
+      63.6
+     ]
+    },
+    {
+     "lo": [
+      -1.5,
+      11.0,
+      62.0
+     ],
+     "hi": [
+      1.5,
+      16.0,
+      63.6
+     ]
+    }
+   ],
+   "top_inset": 0.6,
+   "min_anchor": 0.4
   }
  },
  "envelopes": [
@@ -1765,6 +1993,38 @@
    ],
    "half_width": 2.5,
    "note": "pushrod (2 mm rod + clevis) from the mouth-servo horn pin towards the jaw-heel lever pin (-40, 8), mouth closed; oriented box along p0-p1, stopping where the rod reaches the lever plate (the clevis on the lever is part of the jaw). ESTIMATE"
+  },
+  {
+   "name": "head_screw_front_l",
+   "frame": "head",
+   "note": "M2 pan head (3.8 x 1.6 mm) of a front head-shell screw in its counterbore under the hinge web (no washer); the jaw heel sweeps below it",
+   "cyl": {
+    "c": [
+     -31.7,
+     -37.0
+    ],
+    "r": 1.9,
+    "z": [
+     18.85,
+     20.45
+    ]
+   }
+  },
+  {
+   "name": "head_screw_front_r",
+   "frame": "head",
+   "note": "M2 pan head (3.8 x 1.6 mm) of a front head-shell screw in its counterbore under the hinge web (no washer); the jaw heel sweeps below it",
+   "cyl": {
+    "c": [
+     27.7,
+     -37.0
+    ],
+    "r": 1.9,
+    "z": [
+     18.85,
+     20.45
+    ]
+   }
   }
  ],
  "print": {
