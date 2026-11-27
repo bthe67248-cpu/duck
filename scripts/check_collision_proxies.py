@@ -20,7 +20,21 @@ SEAM_MM = 22.35
 SHIFT = {"head_lower_v4": 0.0, "head_upper_v4": SEAM_MM, "jaw_v4": 0.0, "body_shell_v4": 0.0, "torso": 0.0}
 
 
+def hull_of(pr):
+    """Convex hull (mm, group frame) of a 'hull' proxy (the print mesh) or a 'hull_box' proxy (chamfered block)."""
+    if pr["type"] == "hull":
+        m = trimesh.load(ASSET / f"{pr['mesh']}.stl"); m.apply_scale(1000.0)
+        return trimesh.convex.convex_hull(m.vertices + [0, 0, SHIFT[pr["mesh"]]])
+    m = trimesh.load(ASSET / f"proxy_{pr['name']}.stl"); m.apply_scale(1000.0)
+    return m
+
+
 def sdist(pr, pts):
+    if pr["type"] in ("hull", "hull_box"):
+        h = hull_of(pr)
+        n, o = h.face_normals, h.triangles[:, 0]
+        off = np.sum(n * o, axis=1)                                   # exact inside, a lower bound outside
+        return np.concatenate([np.max(c @ n.T - off, axis=1) for c in np.array_split(pts, max(1, len(pts) // 4000))])
     q = pts - np.array(pr["centre_mm"]); s = np.array(pr["size_mm"])
     if pr["type"] == "box":
         d = np.abs(q) - s
@@ -30,6 +44,8 @@ def sdist(pr, pts):
 
 
 def surface(pr, n=6000):
+    if pr["type"] in ("hull", "hull_box"):
+        return trimesh.sample.sample_surface(hull_of(pr), n, seed=0)[0]
     rng = np.random.default_rng(0); s = np.array(pr["size_mm"]); c = np.array(pr["centre_mm"])
     if pr["type"] == "ellipsoid":
         u = rng.normal(size=(n, 3)); u /= np.linalg.norm(u, axis=1)[:, None]; return c + u * s
@@ -44,7 +60,7 @@ def mesh_pts(name, n=120000):
 
 
 groups = {"head": (["head_upper_v4", "head_lower_v4"], P["head"]), "jaw": (["jaw_v4"], P["jaw"]),
-          "body": (["body_shell_v4"], [dict(name=f"body_{b['name']}_collision", type="box", frame="torso",
+          "body": (["body_shell_v4"], [dict(name=f"body_{b['name']}_collision", type="hull_box", frame="torso",
                                              size_mm=[(h - l) / 2 for l, h in zip(b["lo"], b["hi"])],
                                              centre_mm=[(h + l) / 2 for l, h in zip(b["lo"], b["hi"])])
                                         for b in json.loads((ROOT / "design/v4/v4_params.json").read_text())["body"]["outer"]])}
@@ -53,7 +69,9 @@ for g, (meshes, prs) in groups.items():
     pts = np.vstack([mesh_pts(m) for m in meshes])
     shifted = []
     for p in prs:
-        q = dict(p); q["centre_mm"] = list(np.array(p["centre_mm"]) + [0, 0, SHIFT.get(p.get("frame", "torso"), 0.0)])
+        q = dict(p)
+        if "centre_mm" in p:
+            q["centre_mm"] = list(np.array(p["centre_mm"]) + [0, 0, SHIFT.get(p.get("frame", "torso"), 0.0)])
         shifted.append(q)
     d = np.min([sdist(p, pts) for p in shifted], axis=0)
     tree = cKDTree(pts)

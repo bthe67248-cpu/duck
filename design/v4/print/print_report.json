@@ -1,0 +1,132 @@
+{
+ "head_upper_v4": {
+  "description": "upper head shell (dome, bill, lens opening, mouth-servo cradle, 4 pilot holes)",
+  "closed": true,
+  "volume_cm3": 61.06,
+  "bbox_mm": [
+   97.9,
+   50.0,
+   121.6
+  ],
+  "orientation": "on -y side",
+  "fits_bed": true,
+  "overhang_cm2": 55.4,
+  "wall_mm": {
+   "p1": 1.07,
+   "p5": 1.49,
+   "median": 3.11,
+   "share_below_min_pct": 0.1
+  },
+  "warning": ""
+ },
+ "head_lower_v4": {
+  "description": "lower head shell (neck clearance, jaw hinge ears, 4 clearance holes)",
+  "closed": true,
+  "volume_cm3": 38.91,
+  "bbox_mm": [
+   95.4,
+   22.4,
+   120.7
+  ],
+  "orientation": "on -y side",
+  "fits_bed": true,
+  "overhang_cm2": 24.7,
+  "wall_mm": {
+   "p1": 0.36,
+   "p5": 1.11,
+   "median": 3.0,
+   "share_below_min_pct": 2.6
+  },
+  "warning": ""
+ },
+ "jaw_v4": {
+  "description": "jaw / lower bill (hinge bosses, pushrod lever)",
+  "closed": true,
+  "volume_cm3": 4.75,
+  "bbox_mm": [
+   76.1,
+   17.0,
+   31.2
+  ],
+  "orientation": "on +y side",
+  "fits_bed": true,
+  "overhang_cm2": 4.5,
+  "wall_mm": {
+   "p1": 0.12,
+   "p5": 0.64,
+   "median": 1.96,
+   "share_below_min_pct": 6.2
+  },
+  "warning": "5th-percentile wall 0.64 mm < 0.8 mm: enable variable-width walls (Arachne) and check the thin areas in the slicer preview"
+ },
+ "body_shell_v4": {
+  "description": "body shell (board bay, battery compartment, connector well, A010 pocket, trunk mounts)",
+  "closed": true,
+  "volume_cm3": 68.91,
+  "bbox_mm": [
+   136.0,
+   69.0,
+   89.0
+  ],
+  "orientation": "upside down",
+  "fits_bed": true,
+  "overhang_cm2": 72.4,
+  "wall_mm": {
+   "p1": 0.65,
+   "p5": 1.53,
+   "median": 2.0,
+   "share_below_min_pct": 1.2
+  },
+  "warning": ""
+ },
+ "body_lid_v4": {
+  "description": "rear lid of the board bay",
+  "closed": true,
+  "volume_cm3": 7.45,
+  "bbox_mm": [
+   85.0,
+   60.0,
+   4.8
+  ],
+  "orientation": "on +x side",
+  "fits_bed": true,
+  "overhang_cm2": 0.3,
+  "wall_mm": {
+   "p1": 1.4,
+   "p5": 1.5,
+   "median": 1.8,
+   "share_below_min_pct": 0.0
+  },
+  "warning": ""
+ },
+ "keel_cover_v4": {
+  "description": "keel cover of the connector well (LiPo rails)",
+  "closed": true,
+  "volume_cm3": 3.18,
+  "bbox_mm": [
+   32.5,
+   30.0,
+   20.4
+  ],
+  "orientation": "as modelled",
+  "fits_bed": true,
+  "overhang_cm2": 0.0,
+  "wall_mm": {
+   "p1": 1.38,
+   "p5": 2.0,
+   "median": 2.0,
+   "share_below_min_pct": 0.2
+  },
+  "warning": ""
+ },
+ "_settings": {
+  "bed_mm": [
+   220.0,
+   220.0,
+   250.0
+  ],
+  "min_wall_mm": 0.8,
+  "hard_wall_mm": 0.6,
+  "note": "STLs in mm, oriented and placed on the bed; slice with the settings in PRINT_GUIDE.md"
+ }
+}

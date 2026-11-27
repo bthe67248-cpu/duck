@@ -5,8 +5,8 @@ Usage:  .venv\Scripts\python.exe scripts\check_contacts.py
 2. Joint-range sweep (head chain over its full range, legs over a walking-size range, random combinations):
    robot-robot contacts that involve a head/jaw/body proxy are counted per geom pair. They must be empty (or explained).
 3. Lie-down drops: the robot is dropped on its front, back, left and right side; which proxies reach the floor.
-Exits 1 for STAND self-contact OR a head/jaw/body clash in the sampled operating
-envelope. --report-only restores the old stand-only exit status. Random sampling
+Exits 1 for STAND self-contact OR a head/jaw/body clash deeper than --clear-mm (0.8 mm, as the mesh fit check) in
+the sampled operating envelope; shallower grazes are listed. --report-only restores the old stand-only exit status. Random sampling
 does not prove full-range clearance or get-up feasibility. Historical reports are
 preserved: the default output is results/hardware_readiness/contact_check.txt.
 """
@@ -22,6 +22,10 @@ ap.add_argument("--samples", type=int, default=6000)
 ap.add_argument("--seed", type=int, default=1)
 ap.add_argument("--output", type=Path, default=ROOT / "results/hardware_readiness/contact_check.txt")
 ap.add_argument("--report-only", action="store_true", help="report envelope clashes without failing (diagnostics only)")
+ap.add_argument("--clear-mm", type=float, default=0.8,
+                help="penetration (mm) that counts as an envelope clash; shallower contacts are listed as grazing. Same "
+                     "threshold as design/v4/check_v4_fit.py: the convex proxies over-reach the real parts by about "
+                     "this much (tangent chamfers up to 0.41 x bevel, hulls of concave upstream parts more)")
 args = ap.parse_args()
 if args.samples < 1:
     ap.error("--samples must be positive")
@@ -96,10 +100,10 @@ ENV = dict(neck_pitch=0.4, head_pitch=0.6, head_yaw=1.2, head_roll=0.44)
 N = args.samples
 
 
-def sweep(full):
+def sweep(full, graze=None):
     pairs = Counter()
     for k in range(N):
-        pose_pairs = set()
+        pose_pairs, pose_graze = set(), set()
         d.qpos[:] = home
         for n in head:
             d.qpos[qa[n]] = rng.uniform(*rg[n]) if full else np.clip(home[qa[n]] + rng.uniform(-ENV[n], ENV[n]), *rg[n])
@@ -111,17 +115,25 @@ def sweep(full):
                 continue
             a, b = gname(c.geom1), gname(c.geom2)
             if a in PROXY or b in PROXY:
-                pose_pairs.add(tuple(sorted((a, b))))
+                if -c.dist * 1000.0 > args.clear_mm:
+                    pose_pairs.add(tuple(sorted((a, b))))
+                else:
+                    pose_graze.add(tuple(sorted((a, b))))
         pairs.update(pose_pairs)
+        if graze is not None:
+            graze.update(pose_graze)
     return pairs
 
 
 log(f"\n2a. {N} random poses inside the operating envelope (head {ENV} about STAND, legs +-0.3 rad): self-contacts with head/jaw/body proxies")
-env = sweep(False)
+grazes = Counter()
+env = sweep(False, grazes)
 if not env:
-    log("   none")
+    log(f"   none deeper than {args.clear_mm} mm")
 for (a, b), n in env.most_common():
     log(f"   {a} <-> {b}: {n} poses ({100*n/N:.1f}%)  <== OPERATING-ENVELOPE CLASH (contact kept enabled)"); findings += 1
+for (a, b), n in grazes.most_common():
+    log(f"   grazing (<= {args.clear_mm} mm, within the proxies' over-reach): {a} <-> {b}: {n} poses ({100*n/N:.2f}%)")
 log(f"\n2b. INFORMATIONAL, {N} random poses over the FULL head joint limits and legs +-0.5 rad: real geometric clashes of the "
     "head/jaw/body with neck/torso/legs (kept enabled; keep head commands out of them on hardware)")
 full = sweep(True)

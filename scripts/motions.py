@@ -26,7 +26,7 @@ value; --servo-delay overrides it; ros2/duck_nav/duck_nav/actuation.py). --recor
 
 Fall monitor (Duck.mon, sampled every 50 Hz control step, latched): FALL when torso up-axis z < 0.5 (tilt > 60 deg),
 or torso height < 0.07 m, or a head-dome/head-lower/body collision proxy touches the floor for >= 3 consecutive
-steps. The bill proxy is deliberately not a fall indicator (picking uses it). Final uprightness alone is never used.
+steps. The jaw (lower bill) proxy is deliberately not a fall indicator (picking uses it). Final uprightness alone is never used.
 """
 import argparse, math, os, sys
 from collections import Counter
@@ -42,7 +42,7 @@ SCENE = ROOT / "model" / "duck_v4_gc_scene.xml"
 DISABLE = None          # None | "body" | "head" | "all": switch off those S1 collision proxies (A/B diagnosis only)
 SERVO_DELAY = None      # s; None = the model's servo_delay_s
 RECORD = None           # directory for the qpos recordings (--record)
-BODY_FALL_GEOMS = {"head_dome_collision", "head_lower_collision", "head_upper_skirt_collision",
+BODY_FALL_GEOMS = {"head_upper_collision", "head_lower_collision",
                    "body_front_upper_collision", "body_rear_upper_collision", "body_board_bay_collision"}
 
 
@@ -364,7 +364,7 @@ def m_pick(a):
         d.cmd[0], d.cmd[1] = math.cos(2 * math.pi * phase), math.sin(2 * math.pi * phase)
         d.step(); phase += 0.02 / 4.0; lowest = min(lowest, d.d.site_xpos[tip][2])
     d.cmd[:] = 0; d.use("velstand"); d.run(2.0); d.save("pick")
-    bill_steps = d.mon.floor_touch.get("bill_collision", 0)
+    bill_steps = d.mon.floor_touch.get("jaw_collision", 0)
     # a "fall" here is only a body-proxy-on-floor / tilt event; crouching is expected to tilt the torso a lot
     ok = d.upright() and lowest < PICK_TIP_MAX_M and not d.mon.fell
     return ok, (f"bill tip (mouth_tip site) came down to {lowest*1000:.0f} mm above the floor (need < {PICK_TIP_MAX_M*1000:.0f}); "
