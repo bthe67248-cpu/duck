@@ -11,18 +11,15 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import duck_nav.duckslam as ds  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import ros_shims  # noqa: E402
+
 PARAMS = {"target_height": 0.28, "size_agreement": 0.3, "size_max_range": 2.5, "range_spread_max": 0.15}
 
 
 @pytest.fixture
 def node(monkeypatch):
-    names = {"rclpy": {}, "rclpy.executors": {"ExternalShutdownException": Exception}, "rclpy.node": {"Node": object},
-             "geometry_msgs.msg": dict.fromkeys(["PointStamped", "PoseStamped", "TransformStamped", "Twist"], object),
-             "nav_msgs.msg": {"OccupancyGrid": object}, "std_msgs.msg": {"String": object},
-             "sensor_msgs.msg": dict.fromkeys(["CameraInfo", "Image", "Imu", "PointCloud2"], object),
-             "tf2_ros": {"TransformBroadcaster": object}, "vision_msgs.msg": {"Detection2DArray": object}}
-    for name, values in names.items():
-        m = ModuleType(name); m.__dict__.update(values); monkeypatch.setitem(sys.modules, name, m)
+    ros_shims.install(monkeypatch)
     mod = importlib.import_module("duck_nav.slam_node")
     n = object.__new__(mod.SlamNode)
     n.get_parameter = lambda k: SimpleNamespace(value=PARAMS[k])

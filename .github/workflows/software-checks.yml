@@ -3,6 +3,8 @@ on: [push, pull_request]
 permissions:
   contents: read
 jobs:
+  # Pinned numerical toolchain on a clean checkout: every model a test needs is generated into a temporary
+  # directory from the pinned upstream source (tests/conftest.py), never read from leftover local assets.
   numerical-and-model-tests:
     runs-on: ubuntu-latest
     steps:
@@ -19,5 +21,45 @@ jobs:
           git -C microduck_rl remote add origin https://github.com/pollen-robotics/microduck_rl.git
           git -C microduck_rl fetch --depth 1 origin 0daab160d3fb1c2cbaba16a4a19052f36709dd9e
           git -C microduck_rl checkout --detach FETCH_HEAD
-      - run: python -m pytest tests ros2/duck_nav/test -q
-      - run: python -m compileall -q scripts ros2/duck_nav/duck_nav ros2/duck_nav/launch
+      - run: python -m pytest tests ros2/duck_nav/test -q -rs
+      - run: python -m compileall -q scripts training ros2/duck_nav/duck_nav ros2/duck_nav/launch
+
+  # The camera path (optical flow, distortion, image decoding against OpenCV) must actually run, not skip.
+  vision-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-vision.txt
+      - run: python -m pip install -r requirements-vision.txt
+      - name: OpenCV-dependent tests (fails if any of them is skipped for a missing cv2)
+        run: |
+          set -o pipefail
+          python -m pytest ros2/duck_nav/test -q -rs | tee pytest.out
+          ! grep -q "could not import 'cv2'" pytest.out
+
+  # Policy export (normalizer baked into the ONNX) and warm start round trip, on CPU PyTorch.
+  training-export-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-train.txt
+      - run: python -m pip install -r requirements-train.txt --extra-index-url https://download.pytorch.org/whl/cpu
+      - name: Fetch exact model assets used by the training environment tests
+        run: |
+          git init microduck_rl
+          git -C microduck_rl remote add origin https://github.com/pollen-robotics/microduck_rl.git
+          git -C microduck_rl fetch --depth 1 origin 0daab160d3fb1c2cbaba16a4a19052f36709dd9e
+          git -C microduck_rl checkout --detach FETCH_HEAD
+      - name: Training tests (fails if the export test is skipped for a missing torch/onnx)
+        run: |
+          set -o pipefail
+          python -m pytest tests/test_training.py -q -rs | tee pytest.out
+          ! grep -qE "could not import '(torch|onnx)'" pytest.out

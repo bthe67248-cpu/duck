@@ -27,12 +27,14 @@ from rclpy.executors import ExternalShutdownException
 from geometry_msgs.msg import PointStamped, PoseStamped, TransformStamped, Twist
 from nav_msgs.msg import OccupancyGrid
 from rclpy.node import Node
+from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import CameraInfo, Image, Imu, PointCloud2
 from std_msgs.msg import String
 from tf2_ros import TransformBroadcaster
 from vision_msgs.msg import Detection2DArray
 
 from . import duckslam as ds
+from . import image_codec
 
 
 def stamp_ns(h):
@@ -65,6 +67,15 @@ class StampBuffer:
             return None, None
         best = min(self.d, key=lambda s: abs(s - k))
         return (best, self.d[best]) if abs(best - k) <= tol_ns else (None, None)
+
+
+def sensor_qos_factory(mode):
+    """depth -> QoSProfile for a sensor subscription. "best_effort" is compatible with best-effort AND reliable
+    publishers (a reliable subscription silently receives nothing from a best-effort publisher)."""
+    if mode not in ("best_effort", "reliable"):
+        raise ValueError("sensor_qos must be 'best_effort' or 'reliable'")
+    rel = ReliabilityPolicy.BEST_EFFORT if mode == "best_effort" else ReliabilityPolicy.RELIABLE
+    return lambda depth: QoSProfile(history=HistoryPolicy.KEEP_LAST, depth=depth, reliability=rel)
 
 
 class SlamNode(Node):
@@ -130,6 +141,11 @@ class SlamNode(Node):
         self.declare_parameter("goal_confirmations", 2)       # consistent ranged sightings before /goal is published
         # floor flow pairs images at least flow_interval s apart (keeping the older image until then), at most
         # flow_max_gap s; the simulator's 5 fps camera pairs every frame, a 30 fps USB camera every 5th
+        # QoS of the sensor subscriptions (imu, camera_info, camera/depth, tof/zones, camera/image_raw and the two
+        # pose_level topics). best_effort (default) accepts both best-effort publishers (sensor drivers usually use
+        # sensor-data QoS) and reliable ones (the simulator); reliable would receive nothing from a best-effort
+        # driver. Commands and detections stay reliable.
+        self.declare_parameter("sensor_qos", "best_effort")
         self.declare_parameter("flow_interval", 0.15)
         self.declare_parameter("flow_max_gap", 0.3)
         self.mode = str(self.get_parameter("sensor_mode").value)
@@ -218,17 +234,18 @@ class SlamNode(Node):
         self.pub_goal = self.create_publisher(PointStamped, "goal", 10)
         self.pub_beacon = self.create_publisher(String, "slam/beacon", 10)
         self.tf = TransformBroadcaster(self)
-        self.create_subscription(Imu, "imu", self.on_imu, 50)
+        sq = sensor_qos_factory(self.get_parameter("sensor_qos").value)
+        self.create_subscription(Imu, "imu", self.on_imu, sq(50))
         self.create_subscription(Twist, "cmd_vel", self.on_cmd, 10)
-        self.create_subscription(CameraInfo, "camera/camera_info", self.on_info, 2)
-        self.create_subscription(PoseStamped, "camera/pose_level", self.on_cam_pose, 10)
+        self.create_subscription(CameraInfo, "camera/camera_info", self.on_info, sq(2))
+        self.create_subscription(PoseStamped, "camera/pose_level", self.on_cam_pose, sq(10))
         if self.mode == "depth":
-            self.create_subscription(Image, "camera/depth", self.on_frame, 2)
+            self.create_subscription(Image, "camera/depth", self.on_frame, sq(2))
         else:
-            self.create_subscription(PoseStamped, "tof/pose_level", self.on_sensor_pose, 10)
-            self.create_subscription(PointCloud2, "tof/zones", self.on_frame, 5)
+            self.create_subscription(PoseStamped, "tof/pose_level", self.on_sensor_pose, sq(10))
+            self.create_subscription(PointCloud2, "tof/zones", self.on_frame, sq(5))
         if self.flow is not None:
-            self.create_subscription(Image, "camera/image_raw", self.on_image, 2)
+            self.create_subscription(Image, "camera/image_raw", self.on_image, sq(2))
         self.create_subscription(Detection2DArray, "yolo/detections", self.on_det, 5)
         self.create_timer(1.0, self.publish_map)
         self.create_timer(0.2, self.flush_detections)
@@ -432,9 +449,12 @@ class SlamNode(Node):
         ns = stamp_ns(msg.header)
         if self.flow_prev is not None and (ns - self.flow_prev[0]) * 1e-9 < self.flow_interval:
             return                                              # not due yet: keep the older image for the pair
-        a = np.frombuffer(msg.data, np.uint8).reshape(msg.height, msg.width, -1)
         cv2 = self.flowodom.cv2
-        gray = cv2.cvtColor(a, cv2.COLOR_BGR2GRAY if msg.encoding == "bgr8" else cv2.COLOR_RGB2GRAY)             if a.shape[2] == 3 else a[:, :, 0]
+        try:
+            gray = image_codec.to_gray(msg, cv2)                # honours `step` (padded rows) and the encoding
+        except image_codec.ImageDecodeError as e:
+            self.get_logger().warn(f"camera/image_raw dropped for optical flow: {e}", throttle_duration_sec=10.0)
+            return
         if self.K is not None and self.K.dist:              # flow geometry is pinhole: undistort the image first
             K = np.array([[self.K.fx, 0.0, self.K.cx], [0.0, self.K.fy, self.K.cy], [0.0, 0.0, 1.0]])
             gray = cv2.undistort(gray, K, np.array(self.K.dist + (0.0,) * (5 - len(self.K.dist))))

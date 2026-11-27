@@ -9,25 +9,13 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-ROOT = Path(__file__).resolve().parents[1]
-UPSTREAM = Path(os.environ.get("DUCKLING_UPSTREAM", ROOT / "microduck_rl/src/mjlab_microduck/robot/microduck"))
+from conftest import ROOT, UPSTREAM, make_model_root  # noqa: E402  (tests/conftest.py, shared builder)
 
 
 @pytest.fixture(scope="module")
 def built(tmp_path_factory):
     mujoco = pytest.importorskip("mujoco")
-    if not (UPSTREAM / "robot_walk.xml").exists():
-        pytest.skip("clone the pinned microduck_rl model to run model integration tests")
-    root = tmp_path_factory.mktemp("model")
-    # Copy rather than symlink: Windows symlinks can require elevated rights.
-    shutil.copytree(ROOT / "design/v4", root / "design/v4", ignore=shutil.ignore_patterns("preview", "sim_runs", "*.py"))
-    (root / "scripts").mkdir()
-    (root / "scripts/collision_proxies.json").write_bytes((ROOT / "scripts/collision_proxies.json").read_bytes())
-    env = {**os.environ, "DUCKLING_ROOT": str(root), "DUCKLING_UPSTREAM": str(UPSTREAM)}
-
-    def run(script, *args, check=True):
-        return subprocess.run([sys.executable, str(ROOT / "scripts" / script), *map(str, args)],
-                              env=env, text=True, capture_output=True, check=check)
+    root, run = make_model_root(tmp_path_factory.mktemp("model"))
 
     run("prep_meshes.py")
     run("make_duck.py")

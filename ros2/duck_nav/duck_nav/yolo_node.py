@@ -22,6 +22,8 @@ from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from vision_msgs.msg import Detection2D, Detection2DArray, ObjectHypothesisWithPose
 
+from . import image_codec
+
 PALETTE = [(255, 0, 255), (255, 220, 0), (0, 200, 255), (0, 255, 0)]
 
 
@@ -82,17 +84,8 @@ def detect(session, rgb, conf=0.5, in_hw=(256, 320), iou=0.5):
 
 
 def image_to_rgb(msg):
-    """sensor_msgs/Image -> (H, W, 3) uint8 RGB, honouring encoding and row stride."""
-    ch = {"rgb8": 3, "bgr8": 3, "mono8": 1}.get(msg.encoding)
-    if ch is None:
-        raise ValueError(f"unsupported encoding {msg.encoding}")
-    buf = np.frombuffer(msg.data, np.uint8).reshape(msg.height, msg.step)[:, :msg.width * ch]
-    img = buf.reshape(msg.height, msg.width, ch)
-    if msg.encoding == "bgr8":
-        img = img[..., ::-1]
-    elif ch == 1:
-        img = np.repeat(img, 3, axis=2)
-    return np.ascontiguousarray(img)
+    """sensor_msgs/Image -> (H, W, 3) uint8 RGB, honouring encoding and row stride (duck_nav.image_codec)."""
+    return image_codec.to_rgb(msg)
 
 
 def ort_options():
